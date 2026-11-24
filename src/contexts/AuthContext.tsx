@@ -164,12 +164,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const hasPermission = (permission: string): boolean => {
     if (!currentUser) return false;
+    if (!currentUser.isActive) return false;
     if (currentUser.role === 'Super Admin') return true;
+    if (Array.isArray(currentUser.permissions) && currentUser.permissions.length > 0) {
+      return currentUser.permissions.includes(permission) || currentUser.permissions.includes('*');
+    }
 
-    // Find role definition in rolesList
     const roleDef = rolesList.find(r => r.name === currentUser.role);
     if (!roleDef || !roleDef.isActive) return false;
-
     return roleDef.permissions.includes(permission) || roleDef.permissions.includes('*');
   };
 

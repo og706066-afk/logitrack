@@ -5,7 +5,7 @@ import type { UserProfile, Role } from '../types';
 import { getUsers, updateUserRoleAndStatus, getRoles } from '../services/rbacService';
 
 export const Users: React.FC = () => {
-  const { currentUser } = useAuth();
+  const { currentUser, refreshUserData } = useAuth();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,6 +59,7 @@ export const Users: React.FC = () => {
       await updateUserRoleAndStatus(selectedUser.uid, newRole, newIsActive, currentUser);
       setSuccess(`Role pengguna ${selectedUser.email} berhasil diperbarui.`);
       setIsModalOpen(false);
+      await refreshUserData();
       loadData();
     } catch (err: any) {
       setError(err.message || 'Gagal memperbarui pengguna');

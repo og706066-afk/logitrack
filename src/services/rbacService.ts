@@ -21,32 +21,61 @@ export const MASTER_PERMISSIONS: Permission[] = [
   { id: 'products.edit', module: 'Bahan Makanan', action: 'edit', name: 'Edit Bahan Makanan', description: 'Mengubah data bahan makanan' },
   { id: 'products.delete', module: 'Bahan Makanan', action: 'delete', name: 'Hapus Bahan Makanan', description: 'Menghapus data bahan makanan' },
 
+  { id: 'categories.view', module: 'Kategori', action: 'view', name: 'Lihat Kategori', description: 'Melihat daftar kategori bahan makanan' },
+  { id: 'categories.create', module: 'Kategori', action: 'create', name: 'Tambah Kategori', description: 'Menambahkan kategori baru' },
+  { id: 'categories.edit', module: 'Kategori', action: 'edit', name: 'Edit Kategori', description: 'Mengubah data kategori' },
+  { id: 'categories.delete', module: 'Kategori', action: 'delete', name: 'Hapus Kategori', description: 'Menghapus kategori' },
+
   // Suppliers
   { id: 'suppliers.view', module: 'Supplier', action: 'view', name: 'Lihat Supplier', description: 'Melihat daftar supplier' },
   { id: 'suppliers.create', module: 'Supplier', action: 'create', name: 'Tambah Supplier', description: 'Menambahkan supplier baru' },
   { id: 'suppliers.edit', module: 'Supplier', action: 'edit', name: 'Edit Supplier', description: 'Mengubah data supplier' },
   { id: 'suppliers.delete', module: 'Supplier', action: 'delete', name: 'Hapus Supplier', description: 'Menghapus data supplier' },
 
+  { id: 'warehouses.view', module: 'Stok Gudang', action: 'view', name: 'Lihat Stok Gudang', description: 'Melihat gudang dan batch stok yang tersedia' },
+  { id: 'warehouses.create', module: 'Stok Gudang', action: 'create', name: 'Tambah Gudang', description: 'Menambahkan data gudang' },
+  { id: 'warehouses.edit', module: 'Stok Gudang', action: 'edit', name: 'Edit Gudang', description: 'Mengubah data gudang' },
+  { id: 'warehouses.delete', module: 'Stok Gudang', action: 'delete', name: 'Hapus Gudang', description: 'Menghapus data gudang' },
+  { id: 'stock_batches.view', module: 'Stok Gudang', action: 'view', name: 'Lihat Batch Stok', description: 'Melihat batch dan tanggal kedaluwarsa stok' },
+  { id: 'stock_batches.create', module: 'Stok Gudang', action: 'create', name: 'Tambah Batch Stok', description: 'Menambahkan batch stok baru' },
+  { id: 'stock_batches.edit', module: 'Stok Gudang', action: 'edit', name: 'Edit Batch Stok', description: 'Mengubah jumlah batch stok' },
+  { id: 'stock_batches.delete', module: 'Stok Gudang', action: 'delete', name: 'Hapus Batch Stok', description: 'Menghapus batch stok' },
+  { id: 'stock_movements.view', module: 'Stok Gudang', action: 'view', name: 'Lihat Pergerakan Stok', description: 'Melihat riwayat pergerakan stok' },
+  { id: 'stock_movements.create', module: 'Stok Gudang', action: 'create', name: 'Catat Pergerakan Stok', description: 'Mencatat pergerakan stok masuk dan keluar' },
+  { id: 'stock_movements.edit', module: 'Stok Gudang', action: 'edit', name: 'Edit Pergerakan Stok', description: 'Mengubah catatan pergerakan stok' },
+  { id: 'stock_movements.delete', module: 'Stok Gudang', action: 'delete', name: 'Hapus Pergerakan Stok', description: 'Menghapus catatan pergerakan stok' },
+
+  { id: 'vehicles.view', module: 'Kendaraan', action: 'view', name: 'Lihat Kendaraan', description: 'Melihat data kendaraan operasional' },
+  { id: 'vehicles.create', module: 'Kendaraan', action: 'create', name: 'Tambah Kendaraan', description: 'Menambahkan data kendaraan' },
+  { id: 'vehicles.edit', module: 'Kendaraan', action: 'edit', name: 'Edit Kendaraan', description: 'Mengubah data kendaraan' },
+  { id: 'vehicles.delete', module: 'Kendaraan', action: 'delete', name: 'Hapus Kendaraan', description: 'Menghapus data kendaraan' },
+
   // Stock In (Barang Masuk)
   { id: 'stock_in.view', module: 'Barang Masuk', action: 'view', name: 'Lihat Barang Masuk', description: 'Melihat riwayat barang masuk & stok gudang' },
   { id: 'stock_in.create', module: 'Barang Masuk', action: 'create', name: 'Catat Barang Masuk', description: 'Mencatat transaksi barang masuk dari supplier' },
   { id: 'stock_in.edit', module: 'Barang Masuk', action: 'edit', name: 'Edit Barang Masuk', description: 'Mengubah data transaksi barang masuk' },
+  { id: 'stock_in.delete', module: 'Barang Masuk', action: 'delete', name: 'Hapus Barang Masuk', description: 'Menghapus transaksi barang masuk' },
 
   // Stock Out (Barang Keluar)
   { id: 'stock_out.view', module: 'Barang Keluar', action: 'view', name: 'Lihat Barang Keluar', description: 'Melihat riwayat barang keluar' },
   { id: 'stock_out.create', module: 'Barang Keluar', action: 'create', name: 'Catat Barang Keluar', description: 'Mencatat pengeluaran barang' },
+  { id: 'stock_out.edit', module: 'Barang Keluar', action: 'edit', name: 'Edit Barang Keluar', description: 'Mengubah transaksi barang keluar' },
+  { id: 'stock_out.delete', module: 'Barang Keluar', action: 'delete', name: 'Hapus Barang Keluar', description: 'Menghapus transaksi barang keluar' },
 
   // Requests (Permintaan Dapur)
   { id: 'requests.view', module: 'Permintaan Dapur', action: 'view', name: 'Lihat Permintaan', description: 'Melihat daftar permintaan bahan makanan dari dapur' },
   { id: 'requests.create', module: 'Permintaan Dapur', action: 'create', name: 'Buat Permintaan', description: 'Mengajukan permintaan bahan makanan baru' },
   { id: 'requests.approve', module: 'Permintaan Dapur', action: 'approve', name: 'Setujui Permintaan', description: 'Menyetujui permintaan dapur oleh Manager' },
   { id: 'requests.reject', module: 'Permintaan Dapur', action: 'reject', name: 'Tolak Permintaan', description: 'Menolak permintaan dapur' },
+  { id: 'requests.delete', module: 'Permintaan Dapur', action: 'delete', name: 'Hapus Permintaan', description: 'Menghapus permintaan dapur' },
 
   // Deliveries (Pengiriman)
   { id: 'deliveries.view', module: 'Pengiriman', action: 'view', name: 'Lihat Pengiriman', description: 'Melihat daftar tugas pengiriman' },
   { id: 'deliveries.create', module: 'Pengiriman', action: 'create', name: 'Buat Tugas Pengiriman', description: 'Menugaskan driver untuk pengiriman' },
   { id: 'deliveries.update', module: 'Pengiriman', action: 'update', name: 'Update Status Pengiriman', description: 'Driver memperbarui status pengiriman' },
   { id: 'deliveries.complete', module: 'Pengiriman', action: 'complete', name: 'Konfirmasi Penerimaan', description: 'Konfirmasi barang diterima di dapur' },
+  { id: 'deliveries.edit', module: 'Pengiriman', action: 'edit', name: 'Edit Pengiriman', description: 'Mengubah data tugas pengiriman' },
+  { id: 'deliveries.delete', module: 'Pengiriman', action: 'delete', name: 'Hapus Pengiriman', description: 'Menghapus tugas pengiriman' },
 
   // Reports
   { id: 'reports.view', module: 'Laporan', action: 'view', name: 'Lihat Laporan', description: 'Melihat laporan dan analitik logistik' },
@@ -81,9 +110,10 @@ export const DEFAULT_ROLES: Role[] = [
     name: 'Manager',
     description: 'Memantau operasional logistik, menyetujui permintaan dapur, dan melihat laporan.',
     permissions: [
-      'dashboard.view', 'products.view', 'suppliers.view', 'stock_in.view', 
-      'stock_out.view', 'requests.view', 'requests.approve', 'requests.reject', 
-      'deliveries.view', 'reports.view', 'reports.export'
+      'dashboard.view', 'products.view', 'categories.view', 'suppliers.view',
+      'stock_in.view', 'stock_out.view', 'warehouses.view', 'stock_batches.view',
+      'stock_movements.view', 'vehicles.view', 'requests.view', 'requests.approve',
+      'requests.reject', 'deliveries.view', 'reports.view', 'reports.export'
     ],
     isSystem: true,
     isActive: true,
@@ -95,10 +125,15 @@ export const DEFAULT_ROLES: Role[] = [
     name: 'Staf Gudang',
     description: 'Mengelola data bahan makanan, stok, supplier, barang masuk, dan persiapan barang keluar.',
     permissions: [
-      'dashboard.view', 'products.view', 'products.create', 'products.edit',
-      'suppliers.view', 'suppliers.create', 'suppliers.edit',
-      'stock_in.view', 'stock_in.create', 'stock_in.edit',
-      'stock_out.view', 'stock_out.create', 'requests.view', 'deliveries.view', 'deliveries.create'
+      'dashboard.view', 'products.view', 'products.create', 'products.edit', 'products.delete',
+      'categories.view', 'categories.create', 'categories.edit', 'categories.delete',
+      'suppliers.view', 'suppliers.create', 'suppliers.edit', 'suppliers.delete',
+      'warehouses.view', 'warehouses.create', 'warehouses.edit', 'warehouses.delete',
+      'stock_batches.view', 'stock_batches.create', 'stock_batches.edit', 'stock_batches.delete',
+      'stock_movements.view', 'stock_movements.create', 'vehicles.view',
+      'stock_in.view', 'stock_in.create', 'stock_in.edit', 'stock_in.delete',
+      'stock_out.view', 'stock_out.create', 'stock_out.edit', 'stock_out.delete',
+      'requests.view', 'requests.create', 'deliveries.view', 'deliveries.create'
     ],
     isSystem: true,
     isActive: true,
@@ -110,7 +145,8 @@ export const DEFAULT_ROLES: Role[] = [
     name: 'Driver',
     description: 'Melihat tugas pengiriman, rincian barang, memperbarui status pengiriman, dan konfirmasi.',
     permissions: [
-      'dashboard.view', 'deliveries.view', 'deliveries.update', 'deliveries.complete'
+      'dashboard.view', 'deliveries.view', 'deliveries.update', 'deliveries.complete',
+      'stock_batches.view', 'vehicles.view'
     ],
     isSystem: true,
     isActive: true,
@@ -122,7 +158,9 @@ export const DEFAULT_ROLES: Role[] = [
     name: 'Viewer',
     description: 'Hanya dapat melihat informasi dan laporan tanpa hak ubah data.',
     permissions: [
-      'dashboard.view', 'products.view', 'stock_in.view', 'stock_out.view', 'requests.view', 'deliveries.view', 'reports.view'
+      'dashboard.view', 'products.view', 'categories.view', 'suppliers.view',
+      'stock_in.view', 'stock_out.view', 'warehouses.view', 'stock_batches.view',
+      'stock_movements.view', 'vehicles.view', 'requests.view', 'deliveries.view', 'reports.view'
     ],
     isSystem: true,
     isActive: true,
@@ -153,9 +191,29 @@ export async function getRoles(): Promise<Role[]> {
   return DEFAULT_ROLES;
 }
 
+async function syncRoleToUsers(savedRole: Role, previousName?: string): Promise<void> {
+  const users = await getUsers();
+  const affected = users.filter(u => u.role === savedRole.name || (previousName && u.role === previousName));
+  if (affected.length === 0) return;
+
+  const updatedUsers = users.map(u => affected.includes(u)
+    ? { ...u, role: savedRole.name, permissions: savedRole.permissions, updatedAt: new Date() }
+    : u);
+  localStorage.setItem(STORAGE_USERS_KEY, JSON.stringify(updatedUsers));
+
+  if (isFirebaseConfigured && db) {
+    await Promise.all(affected.map(u => updateDoc(doc(db!, 'users', u.uid), {
+      role: savedRole.name,
+      permissions: savedRole.permissions,
+      updatedAt: serverTimestamp()
+    })));
+  }
+}
+
 export async function saveRole(roleData: Partial<Role>, currentUser: UserProfile): Promise<Role> {
   const roles = await getRoles();
   const isEditing = Boolean(roleData.id);
+  const previousName = isEditing ? roles.find(r => r.id === roleData.id)?.name : undefined;
   let savedRole: Role;
 
   if (isEditing) {
@@ -170,6 +228,7 @@ export async function saveRole(roleData: Partial<Role>, currentUser: UserProfile
     if (isFirebaseConfigured && db) {
       await updateDoc(doc(db, 'roles', savedRole.id), { ...savedRole, updatedAt: serverTimestamp() });
     }
+    await syncRoleToUsers(savedRole, previousName);
 
     await logAudit({
       userId: currentUser.uid,
@@ -196,6 +255,7 @@ export async function saveRole(roleData: Partial<Role>, currentUser: UserProfile
     if (isFirebaseConfigured && db) {
       await setDoc(doc(db, 'roles', newId), { ...savedRole, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
     }
+    await syncRoleToUsers(savedRole);
 
     await logAudit({
       userId: currentUser.uid,

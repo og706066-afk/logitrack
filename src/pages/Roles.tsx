@@ -5,7 +5,7 @@ import type { Role } from '../types';
 import { getRoles, saveRole, deleteRole, MASTER_PERMISSIONS } from '../services/rbacService';
 
 export const Roles: React.FC = () => {
-  const { currentUser, hasPermission } = useAuth();
+  const { currentUser, hasPermission, refreshUserData } = useAuth();
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -88,6 +88,7 @@ export const Roles: React.FC = () => {
 
       setSuccess('Role berhasil disimpan.');
       setIsModalOpen(false);
+      await refreshUserData();
       loadData();
     } catch (err: any) {
       setError(err.message || 'Gagal menyimpan role');
@@ -103,6 +104,7 @@ export const Roles: React.FC = () => {
     try {
       await deleteRole(roleId, currentUser);
       setSuccess('Role berhasil dihapus.');
+      await refreshUserData();
       loadData();
     } catch (err: any) {
       setError(err.message || 'Gagal menghapus role');

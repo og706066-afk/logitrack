@@ -175,7 +175,7 @@ service cloud.firestore {
         getUserRole() == 'Manager' || 
         hasPermission('requests.create')
       ) && 
-      request.resource.data.requestId in get(/databases/$(database)/documents/requests/$(request.resource.data.requestId)).data.id;
+      request.resource.data.requestId == get(/databases/$(database)/documents/requests/$(request.resource.data.requestId)).data.id;
       
       allow update: if isUserActive() && (
         getUserRole() == 'Super Admin' || 
@@ -184,7 +184,7 @@ service cloud.firestore {
         hasPermission('requests.create')
       ) && 
       request.resource.data.requestId == resource.data.requestId &&
-      request.resource.data.requestId in get(/databases/$(database)/documents/requests/$(request.resource.data.requestId)).data.id;
+      request.resource.data.requestId == get(/databases/$(database)/documents/requests/$(request.resource.data.requestId)).data.id;
       
       allow delete: if hasPermission('requests.delete');
     }

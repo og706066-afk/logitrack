@@ -86,6 +86,19 @@ export interface StockIn {
   createdAt: any;
 }
 
+export interface StockOut {
+  id: string;
+  stockOutNumber: string;
+  productId: string;
+  productName: string;
+  quantity: number;
+  date: string;
+  destination: string;
+  notes?: string;
+  createdBy: string;
+  createdAt: any;
+}
+
 export interface KitchenRequest {
   id: string;
   requestNumber: string;
@@ -97,6 +110,16 @@ export interface KitchenRequest {
   approvedAt?: any;
   rejectedReason?: string;
   createdAt: any;
+}
+
+export interface RequestDetail {
+  id: string;
+  requestId: string;
+  productId: string;
+  productName: string;
+  requestedQty: number;
+  approvedQty?: number;
+  unit: string;
 }
 
 export interface Delivery {
@@ -111,6 +134,36 @@ export interface Delivery {
   deliveredAt?: any;
   proofImageUrl?: string;
   notes?: string;
+  createdAt: any;
+}
+
+export interface DeliveryDetail {
+  id: string;
+  deliveryId: string;
+  productId: string;
+  productName: string;
+  quantity: number;
+  unit: string;
+}
+
+export interface Vehicle {
+  id: string;
+  plateNumber: string;
+  type: string;
+  capacity: string;
+  driverId?: string;
+  isActive: boolean;
+  createdAt: any;
+}
+
+export interface StockMovement {
+  id: string;
+  productId: string;
+  productName: string;
+  type: 'IN' | 'OUT';
+  quantity: number;
+  referenceId: string;
+  date: string;
   createdAt: any;
 }
 
