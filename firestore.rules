@@ -1,0 +1,246 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ==========================================
+    // HELPER FUNCTIONS & RBAC
+    // ==========================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isUserActive() {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+             getUserDoc().isActive == true;
+    }
+
+    function getUserRole() {
+      return isUserActive() ? getUserDoc().role : '';
+    }
+
+    function hasPermission(perm) {
+      return isUserActive() && (
+        getUserRole() == 'Super Admin' || 
+        (getUserDoc().permissions is list && getUserDoc().permissions.hasAll([perm]))
+      );
+    }
+
+    // ==========================================
+    // 1. USERS COLLECTION
+    // ==========================================
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      
+      // Self registration: uid must match auth, must be Viewer, isActive true, email matches auth token, NO permissions field allowed
+      allow create: if isAuthenticated() && 
+                    request.auth.uid == userId && 
+                    request.resource.data.uid == request.auth.uid &&
+                    request.resource.data.role == 'Viewer' &&
+                    request.resource.data.isActive == true &&
+                    request.resource.data.email == request.auth.token.email &&
+                    !request.resource.data.keys().hasAny(['permissions']) &&
+                    request.resource.data.keys().hasAll(['uid', 'email', 'displayName', 'role', 'isActive', 'createdAt', 'updatedAt']) &&
+                    request.resource.data.keys().hasOnly(['uid', 'email', 'displayName', 'role', 'isActive', 'createdAt', 'updatedAt', 'phoneNumber']);
+
+      // Super Admin can update anything; regular users can only update allowed profile fields (NO role, permissions, or isActive)
+      allow update: if getUserRole() == 'Super Admin' || (
+        isAuthenticated() && 
+        request.auth.uid == userId && 
+        isUserActive() &&
+        request.resource.data.role == resource.data.role &&
+        request.resource.data.isActive == resource.data.isActive &&
+        request.resource.data.uid == resource.data.uid &&
+        request.resource.data.permissions == resource.data.permissions &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'phoneNumber', 'updatedAt'])
+      );
+
+      allow delete: if getUserRole() == 'Super Admin';
+    }
+
+    // ==========================================
+    // 2. ROLES & PERMISSIONS COLLECTIONS
+    // ==========================================
+    // Inactive users cannot read roles and permissions
+    match /roles/{roleId} {
+      allow read: if isUserActive();
+      allow write: if getUserRole() == 'Super Admin';
+    }
+
+    match /permissions/{permId} {
+      allow read: if isUserActive();
+      allow write: if getUserRole() == 'Super Admin';
+    }
+
+    // ==========================================
+    // 3. AUDIT LOGS COLLECTION (Append-Only)
+    // ==========================================
+    match /audit_logs/{logId} {
+      allow read: if isUserActive();
+      // Do not trust actor info from frontend; enforce userId == auth.uid
+      allow create: if isUserActive() && 
+                    request.resource.data.userId == request.auth.uid &&
+                    request.resource.data.keys().hasAll(['userId', 'userName', 'action', 'module', 'description', 'createdAt']);
+      allow update, delete: if false;
+    }
+
+    // ==========================================
+    // 4. MASTER DATA (Products, Categories, Suppliers)
+    // ==========================================
+    match /products/{id} {
+      allow read: if isUserActive();
+      allow create: if hasPermission('products.create');
+      allow update: if hasPermission('products.edit');
+      allow delete: if hasPermission('products.delete');
+    }
+
+    match /categories/{id} {
+      allow read: if isUserActive();
+      allow create: if hasPermission('categories.create');
+      allow update: if hasPermission('categories.edit');
+      allow delete: if hasPermission('categories.delete');
+    }
+
+    match /suppliers/{id} {
+      allow read: if isUserActive();
+      allow create: if hasPermission('suppliers.create');
+      allow update: if hasPermission('suppliers.edit');
+      allow delete: if hasPermission('suppliers.delete');
+    }
+
+    // ==========================================
+    // 5. WAREHOUSE & STOCK BATCHES (Dynamic RBAC - no hardcoded role bypass)
+    // ==========================================
+    match /warehouses/{id} {
+      allow read: if isUserActive();
+      allow create: if hasPermission('warehouses.create');
+      allow update: if hasPermission('warehouses.edit');
+      allow delete: if hasPermission('warehouses.delete');
+    }
+
+    match /stock_batches/{id} {
+      allow read: if isUserActive();
+      allow create: if hasPermission('stock_batches.create');
+      allow update: if hasPermission('stock_batches.edit');
+      allow delete: if hasPermission('stock_batches.delete');
+    }
+
+    // ==========================================
+    // 6. TRANSACTIONS (Stock In, Stock Out)
+    // ==========================================
+    match /stock_in/{id} {
+      allow read: if isUserActive();
+      allow create: if hasPermission('stock_in.create');
+      allow update: if hasPermission('stock_in.edit');
+      allow delete: if hasPermission('stock_in.delete');
+    }
+
+    match /stock_out/{id} {
+      allow read: if isUserActive();
+      allow create: if hasPermission('stock_out.create');
+      allow update: if hasPermission('stock_out.edit');
+      allow delete: if hasPermission('stock_out.delete');
+    }
+
+    // ==========================================
+    // 7. KITCHEN REQUESTS & DETAILS
+    // ==========================================
+    match /requests/{id} {
+      allow read: if isUserActive();
+      allow create: if hasPermission('requests.create');
+      
+      // Approval/Update restricted to specific fields regardless of who has requests.approve permission
+      allow update: if isUserActive() && (
+        getUserRole() == 'Super Admin' || 
+        (
+          hasPermission('requests.approve') && 
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'approvedBy', 'approvedAt', 'rejectedReason', 'updatedAt'])
+        )
+      );
+      allow delete: if hasPermission('requests.delete');
+    }
+
+    match /request_details/{id} {
+      allow read: if isUserActive();
+      
+      // Validate relation to parent request document and prevent requestId manipulation
+      allow create: if isUserActive() && (
+        getUserRole() == 'Super Admin' || 
+        getUserRole() == 'Staf Gudang' || 
+        getUserRole() == 'Manager' || 
+        hasPermission('requests.create')
+      ) && 
+      request.resource.data.requestId in get(/databases/$(database)/documents/requests/$(request.resource.data.requestId)).data.id;
+      
+      allow update: if isUserActive() && (
+        getUserRole() == 'Super Admin' || 
+        getUserRole() == 'Staf Gudang' || 
+        getUserRole() == 'Manager' || 
+        hasPermission('requests.create')
+      ) && 
+      request.resource.data.requestId == resource.data.requestId &&
+      request.resource.data.requestId in get(/databases/$(database)/documents/requests/$(request.resource.data.requestId)).data.id;
+      
+      allow delete: if hasPermission('requests.delete');
+    }
+
+    // ==========================================
+    // 8. DELIVERIES & DETAILS (Strict Driver Isolation)
+    // ==========================================
+    match /deliveries/{id} {
+      // Drivers can only read deliveries assigned to them
+      allow read: if isUserActive() && (getUserRole() != 'Driver' || resource.data.driverId == request.auth.uid);
+      allow create: if hasPermission('deliveries.create');
+      
+      allow update: if isUserActive() && (
+        getUserRole() == 'Super Admin' || 
+        hasPermission('deliveries.edit') || 
+        (
+          getUserRole() == 'Driver' && 
+          resource.data.driverId == request.auth.uid &&
+          request.resource.data.driverId == resource.data.driverId &&
+          request.resource.data.requestId == resource.data.requestId &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'proofImageUrl', 'notes', 'deliveredAt'])
+        )
+      );
+      
+      allow delete: if hasPermission('deliveries.delete');
+    }
+
+    match /delivery_details/{id} {
+      allow read: if isUserActive() && (
+        getUserRole() != 'Driver' || 
+        get(/databases/$(database)/documents/deliveries/$(resource.data.deliveryId)).data.driverId == request.auth.uid
+      );
+      allow create: if isUserActive() && (getUserRole() == 'Super Admin' || hasPermission('deliveries.create'));
+      allow update: if isUserActive() && (
+        getUserRole() == 'Super Admin' || 
+        hasPermission('deliveries.edit') ||
+        request.resource.data.deliveryId == resource.data.deliveryId
+      );
+      allow delete: if hasPermission('deliveries.delete');
+    }
+
+    // ==========================================
+    // 9. VEHICLES & STOCK MOVEMENTS (Dynamic RBAC)
+    // ==========================================
+    match /vehicles/{id} {
+      allow read: if isUserActive();
+      allow create: if hasPermission('vehicles.create');
+      allow update: if hasPermission('vehicles.edit');
+      allow delete: if hasPermission('vehicles.delete');
+    }
+
+    match /stock_movements/{id} {
+      allow read: if isUserActive();
+      allow create: if hasPermission('stock_movements.create');
+      allow update: if hasPermission('stock_movements.edit');
+      allow delete: if hasPermission('stock_movements.delete');
+    }
+  }
+}
