@@ -14,9 +14,10 @@ import {
   YAxis,
 } from 'recharts';
 import { useAuth } from '../contexts/AuthContext';
-import { AlertBox, InfoCard, PageHeader, StatusBadge } from '../components/ui';
+import { AlertBox, InfoCard, LoadingOverlay, PageHeader, StatusBadge } from '../components/ui';
 import { getAuditLogs } from '../services/rbacService';
-import { asNumber, getSeededRows, today, type DataRow } from '../services/logisticsService';
+import { asNumber, getRows, today, type DataRow } from '../services/logisticsService';
+import { ACTION_DELAY_MS, wait } from '../utils/async';
 
 const CHART_COLORS = ['#047857', '#0ea5e9', '#f59e0b', '#8b5cf6', '#ef4444', '#14b8a6'];
 
@@ -46,15 +47,17 @@ export const ReportsPage: React.FC = () => {
   const [deliveries, setDeliveries] = useState<DataRow[]>([]);
   const [logs, setLogs] = useState<DataRow[]>([]);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     void Promise.all([
-      getSeededRows('products'),
-      getSeededRows('stock_batches'),
-      getSeededRows('stock_in'),
-      getSeededRows('stock_out'),
-      getSeededRows('requests'),
-      getSeededRows('deliveries'),
+      getRows('products'),
+      getRows('stock_batches'),
+      getRows('stock_in'),
+      getRows('stock_out'),
+      getRows('requests'),
+      getRows('deliveries'),
       getAuditLogs(),
     ]).then(([productRows, batchRows, inRows, outRows, requestRows, deliveryRows, logRows]) => {
       setProducts(productRows);
@@ -64,7 +67,8 @@ export const ReportsPage: React.FC = () => {
       setRequests(requestRows);
       setDeliveries(deliveryRows);
       setLogs(logRows);
-    }).catch((e: any) => setError(e.message || 'Gagal memuat laporan'));
+    }).catch((e: any) => setError(e.message || 'Gagal memuat laporan'))
+      .finally(() => setLoading(false));
   }, []);
 
   const categoryData = useMemo(() => {
@@ -100,15 +104,27 @@ export const ReportsPage: React.FC = () => {
   const inValue = stockIn.reduce((sum, row) => sum + asNumber(row.totalAmount), 0);
   const outQuantity = stockOut.reduce((sum, row) => sum + asNumber(row.quantity), 0);
 
-  const exportReport = () => {
-    downloadCsv(`silog-laporan-stok-${new Date().toISOString().slice(0, 10)}.csv`, products, ['name', 'categoryName', 'unit', 'currentStock', 'minStock']);
+  const exportReport = async () => {
+    setExporting(true);
+    try {
+      await wait(ACTION_DELAY_MS);
+      downloadCsv(`silog-laporan-stok-${new Date().toISOString().slice(0, 10)}.csv`, products, ['name', 'categoryName', 'unit', 'currentStock', 'minStock']);
+    } finally {
+      setExporting(false);
+    }
   };
 
-  const exportTransactions = () => {
-    downloadCsv(`silog-laporan-transaksi-${new Date().toISOString().slice(0, 10)}.csv`, [
-      ...stockIn.map(row => ({ tanggal: row.date, nomor: row.invoiceNumber, jenis: 'MASUK', bahan: row.productName, jumlah: row.quantity, keterangan: row.supplierName })),
-      ...stockOut.map(row => ({ tanggal: row.date, nomor: row.stockOutNumber, jenis: 'KELUAR', bahan: row.productName, jumlah: row.quantity, keterangan: row.destination })),
-    ], ['tanggal', 'nomor', 'jenis', 'bahan', 'jumlah', 'keterangan']);
+  const exportTransactions = async () => {
+    setExporting(true);
+    try {
+      await wait(ACTION_DELAY_MS);
+      downloadCsv(`silog-laporan-transaksi-${new Date().toISOString().slice(0, 10)}.csv`, [
+        ...stockIn.map(row => ({ tanggal: row.date, nomor: row.invoiceNumber, jenis: 'MASUK', bahan: row.productName, jumlah: row.quantity, keterangan: row.supplierName })),
+        ...stockOut.map(row => ({ tanggal: row.date, nomor: row.stockOutNumber, jenis: 'KELUAR', bahan: row.productName, jumlah: row.quantity, keterangan: row.destination })),
+      ], ['tanggal', 'nomor', 'jenis', 'bahan', 'jumlah', 'keterangan']);
+    } finally {
+      setExporting(false);
+    }
   };
 
   if (!hasPermission('reports.view')) {
@@ -211,7 +227,7 @@ export const ReportsPage: React.FC = () => {
           <h3 className="font-bold text-slate-800 text-sm">Bahan Makanan dengan Stok Terendah</h3>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full min-w-[640px] text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase tracking-wider">
                 <th className="p-4 font-semibold">Bahan Makanan</th>
@@ -239,6 +255,8 @@ export const ReportsPage: React.FC = () => {
       </div>
 
       <p className="text-xs text-slate-400 text-center">Laporan dihasilkan dari data SILOG per {today()}</p>
+
+      {(loading || exporting) && <LoadingOverlay label={exporting ? 'Menyiapkan laporan...' : 'Memuat laporan...'} />}
     </div>
   );
 };

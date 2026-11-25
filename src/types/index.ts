@@ -1,4 +1,4 @@
-export type UserRole = 'Super Admin' | 'Manager' | 'Staf Gudang' | 'Driver' | 'Viewer' | string;
+export type UserRole = 'Super Admin' | 'Manager' | 'Staf Gudang' | 'Kepala Gudang' | 'Staf Bahan Dapur' | 'Staf Konsumsi' | 'Staf Sayuran' | 'Staf Bumbu Alam' | 'Staf Logistik' | 'Staf Kebersihan' | 'Driver' | 'Viewer' | string;
 
 export interface UserProfile {
   uid: string;

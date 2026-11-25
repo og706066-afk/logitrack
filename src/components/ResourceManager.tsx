@@ -2,16 +2,17 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Check, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { AlertBox, ConfirmDialog, PageHeader } from './ui';
+import { AlertBox, ConfirmDialog, LoadingOverlay, PageHeader } from './ui';
 import {
   deleteRow,
   formatDate,
-  getSeededRows,
+  getRows,
   newId,
   saveRow,
   type CollectionName,
   type DataRow,
 } from '../services/logisticsService';
+import { ACTION_DELAY_MS, wait } from '../utils/async';
 
 export interface ResourceField {
   key: string;
@@ -66,6 +67,7 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({
   const [success, setSuccess] = useState('');
   const [form, setForm] = useState<DataRow | null>(null);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const canCreate = Boolean(permissions.create && hasPermission(permissions.create));
@@ -75,7 +77,7 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({
   const load = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await getSeededRows(collection);
+      const data = await getRows(collection);
       setRows(data);
     } catch (e: any) {
       setError(e.message || 'Gagal memuat data');
@@ -137,6 +139,7 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({
     setError('');
     setSuccess('');
     try {
+      await wait(ACTION_DELAY_MS);
       const isNew = !form.id;
       const withId = { ...form, id: form.id || newId(collection) };
       const candidate = transform ? transform(withId, rows) : withId;
@@ -157,7 +160,9 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({
   const handleDelete = async () => {
     if (!deleteId) return;
     setError('');
+    setDeleting(true);
     try {
+      await wait(ACTION_DELAY_MS);
       const target = rows.find(row => row.id === deleteId);
       await deleteRow(collection, deleteId, currentUser);
       if (target && onDeleted) await onDeleted(target);
@@ -166,6 +171,7 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({
     } catch (e: any) {
       setError(e.message || 'Gagal menghapus data');
     } finally {
+      setDeleting(false);
       setDeleteId(null);
     }
   };
@@ -185,30 +191,33 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({
   ) : undefined;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <PageHeader title={title} description={description} icon={icon} action={addButton} />
       <AlertBox message={error} onClose={() => setError('')} />
       <AlertBox message={success} kind="success" onClose={() => setSuccess('')} />
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="p-4 border-b border-slate-200 flex items-center space-x-3">
-          <Search className="w-5 h-5 text-slate-400" />
+        <div className="p-3 sm:p-4 border-b border-slate-200 flex items-center gap-2 sm:gap-3">
+          <Search className="w-5 h-5 text-slate-400 shrink-0" />
           <input
             value={search}
             onChange={event => setSearch(event.target.value)}
             placeholder="Cari data..."
-            className="flex-1 text-sm focus:outline-hidden text-slate-800 placeholder-slate-400"
+            className="flex-1 min-w-0 text-sm focus:outline-hidden text-slate-800 placeholder-slate-400"
           />
-          <span className="text-xs text-slate-500">{filteredRows.length} data</span>
+          <span className="text-xs text-slate-500 shrink-0">{filteredRows.length} data</span>
         </div>
 
         {loading ? (
-          <div className="text-center py-12 text-slate-500">Memuat data...</div>
+          <div className="flex flex-col items-center justify-center py-12 gap-3 text-slate-500 text-sm">
+            <div className="w-8 h-8 border-4 border-emerald-100 border-t-emerald-600 rounded-full animate-spin" />
+            Memuat data...
+          </div>
         ) : filteredRows.length === 0 ? (
-          <div className="text-center py-12 text-slate-500">Belum ada data yang tersedia.</div>
+          <div className="text-center py-12 text-slate-500 text-sm">Belum ada data yang tersedia.</div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full min-w-[640px] text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase tracking-wider">
                   {visibleColumns.map(key => (
@@ -248,11 +257,11 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({
       {form && (
         <div className="fixed inset-0 bg-slate-900/50 z-50 flex items-center justify-center p-4 backdrop-blur-xs">
           <div className="bg-white rounded-2xl max-w-xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
-            <div className="p-6 border-b border-slate-200 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-slate-800">{form.id ? 'Ubah Data' : 'Tambah Data Baru'}</h3>
+            <div className="p-4 sm:p-6 border-b border-slate-200 flex items-center justify-between gap-3">
+              <h3 className="text-base sm:text-lg font-bold text-slate-800">{form.id ? 'Ubah Data' : 'Tambah Data Baru'}</h3>
               <button onClick={() => setForm(null)} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
             </div>
-            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4">
+            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
               {fields.map(field => (
                 <div key={field.key}>
                   <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">{field.label}</label>
@@ -309,6 +318,8 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({
           onCancel={() => setDeleteId(null)}
         />
       )}
+
+      {(saving || deleting) && <LoadingOverlay label={saving ? 'Menyimpan data...' : 'Menghapus data...'} />}
     </div>
   );
 };

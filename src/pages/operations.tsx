@@ -10,14 +10,14 @@ import {
   X,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { AlertBox, PageHeader, StatusBadge } from '../components/ui';
+import { AlertBox, LoadingOverlay, PageHeader, StatusBadge } from '../components/ui';
 import { ResourceManager, type ResourceField } from '../components/ResourceManager';
 import { getUsers, updateUserRoleAndStatus } from '../services/rbacService';
 import {
   asNumber,
   deleteRow,
   formatDate,
-  getSeededRows,
+  getRows,
   newId,
   patchRow,
   saveRow,
@@ -25,6 +25,7 @@ import {
   type DataRow,
 } from '../services/logisticsService';
 import type { UserProfile } from '../types';
+import { ACTION_DELAY_MS, wait } from '../utils/async';
 
 function parseItems(text: string, products: DataRow[]): { productId: string; productName: string; requestedQty: number; unit: string }[] {
   const result: { productId: string; productName: string; requestedQty: number; unit: string }[] = [];
@@ -49,13 +50,14 @@ export const KitchenRequestsPage: React.FC = () => {
   const [form, setForm] = useState<DataRow | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [processing, setProcessing] = useState('');
 
   const load = useCallback(async () => {
     try {
       const [requestRows, detailRows, productRows] = await Promise.all([
-        getSeededRows('requests'),
-        getSeededRows('request_details'),
-        getSeededRows('products'),
+        getRows('requests'),
+        getRows('request_details'),
+        getRows('products'),
       ]);
       setRows(requestRows.sort((a, b) => String(b.requestNumber).localeCompare(String(a.requestNumber))));
       setDetails(detailRows);
@@ -77,7 +79,7 @@ export const KitchenRequestsPage: React.FC = () => {
       if (product) {
         await patchRow('products', product.id, { currentStock: Math.max(0, asNumber(product.currentStock) - quantity), updatedAt: new Date() }, currentUser);
       }
-      const batches = await getSeededRows('stock_batches');
+      const batches = await getRows('stock_batches');
       let remaining = quantity;
       const sorted = batches
         .filter(batch => batch.productId === item.productId && asNumber(batch.quantity) > 0)
@@ -116,7 +118,9 @@ export const KitchenRequestsPage: React.FC = () => {
   const changeStatus = async (row: DataRow, status: string, extra: DataRow = {}) => {
     setError('');
     setSuccess('');
+    setProcessing('Memperbarui permintaan...');
     try {
+      await wait(ACTION_DELAY_MS);
       await patchRow('requests', row.id, { status, ...extra, updatedAt: new Date() }, currentUser);
       if (status === 'Approved') {
         await Promise.all(details
@@ -128,6 +132,8 @@ export const KitchenRequestsPage: React.FC = () => {
       await load();
     } catch (e: any) {
       setError(e.message || 'Gagal memperbarui permintaan');
+    } finally {
+      setProcessing('');
     }
   };
 
@@ -135,7 +141,9 @@ export const KitchenRequestsPage: React.FC = () => {
     event.preventDefault();
     if (!form) return;
     setError('');
+    setProcessing('Menyimpan permintaan...');
     try {
+      await wait(ACTION_DELAY_MS);
       const items = parseItems(String(form.itemsText || ''), products);
       if (items.length === 0) throw new Error('Tambahkan minimal satu item dengan format: id-bahan:jumlah');
       const request = await saveRow('requests', {
@@ -158,15 +166,23 @@ export const KitchenRequestsPage: React.FC = () => {
       await load();
     } catch (e: any) {
       setError(e.message || 'Gagal membuat permintaan');
+    } finally {
+      setProcessing('');
     }
   };
 
   const handleDelete = async (row: DataRow) => {
     if (!window.confirm(`Hapus permintaan ${row.requestNumber}?`)) return;
-    const related = details.filter(item => item.requestId === row.id);
-    await Promise.all(related.map(item => deleteRow('request_details', item.id, currentUser)));
-    await deleteRow('requests', row.id, currentUser);
-    await load();
+    setProcessing('Menghapus permintaan...');
+    try {
+      await wait(ACTION_DELAY_MS);
+      const related = details.filter(item => item.requestId === row.id);
+      await Promise.all(related.map(item => deleteRow('request_details', item.id, currentUser)));
+      await deleteRow('requests', row.id, currentUser);
+      await load();
+    } finally {
+      setProcessing('');
+    }
   };
 
   const visibleRows = rows.filter(row =>
@@ -191,12 +207,12 @@ export const KitchenRequestsPage: React.FC = () => {
       <AlertBox message={success} kind="success" onClose={() => setSuccess('')} />
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="p-4 border-b border-slate-200 flex items-center space-x-3">
-          <Search className="w-5 h-5 text-slate-400" />
-          <input value={search} onChange={event => setSearch(event.target.value)} placeholder="Cari nomor atau peminta..." className="flex-1 text-sm focus:outline-hidden text-slate-800" />
+        <div className="p-3 sm:p-4 border-b border-slate-200 flex items-center gap-3">
+          <Search className="w-5 h-5 text-slate-400 shrink-0" />
+          <input value={search} onChange={event => setSearch(event.target.value)} placeholder="Cari nomor atau peminta..." className="flex-1 min-w-0 text-sm focus:outline-hidden text-slate-800" />
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full min-w-[720px] text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase tracking-wider">
                 <th className="p-4 font-semibold">No. Permintaan</th>
@@ -247,11 +263,11 @@ export const KitchenRequestsPage: React.FC = () => {
       {form && (
         <div className="fixed inset-0 bg-slate-900/50 z-50 flex items-center justify-center p-4 backdrop-blur-xs">
           <div className="bg-white rounded-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-            <div className="p-6 border-b border-slate-200 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-slate-800">Buat Permintaan Dapur</h3>
+            <div className="p-4 sm:p-6 border-b border-slate-200 flex items-center justify-between gap-3">
+              <h3 className="text-base sm:text-lg font-bold text-slate-800">Buat Permintaan Dapur</h3>
               <button onClick={() => setForm(null)} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
             </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 uppercase mb-2">No. Permintaan</label>
@@ -283,6 +299,8 @@ export const KitchenRequestsPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {processing && <LoadingOverlay label={processing} />}
     </div>
   );
 };
@@ -298,14 +316,15 @@ export const DeliveriesPage: React.FC = () => {
   const [form, setForm] = useState<DataRow | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [processing, setProcessing] = useState('');
 
   const load = useCallback(async () => {
     try {
       const [deliveryRows, requestRows, detailRows, vehicleRows, userRows] = await Promise.all([
-        getSeededRows('deliveries'),
-        getSeededRows('requests'),
-        getSeededRows('delivery_details'),
-        getSeededRows('vehicles'),
+        getRows('deliveries'),
+        getRows('requests'),
+        getRows('delivery_details'),
+        getRows('vehicles'),
         getUsers(),
       ]);
       setRows(isDriver ? deliveryRows.filter(row => row.driverId === currentUser?.uid) : deliveryRows);
@@ -328,7 +347,9 @@ export const DeliveriesPage: React.FC = () => {
     event.preventDefault();
     if (!form) return;
     setError('');
+    setProcessing('Menyimpan pengiriman...');
     try {
+      await wait(ACTION_DELAY_MS);
       const driver = drivers.find(user => user.uid === form.driverId);
       const delivery = await saveRow('deliveries', {
         id: newId('del'),
@@ -356,27 +377,39 @@ export const DeliveriesPage: React.FC = () => {
       await load();
     } catch (e: any) {
       setError(e.message || 'Gagal membuat pengiriman');
+    } finally {
+      setProcessing('');
     }
   };
 
   const updateStatus = async (row: DataRow, patch: DataRow) => {
     setError('');
     setSuccess('');
+    setProcessing('Memperbarui status pengiriman...');
     try {
+      await wait(ACTION_DELAY_MS);
       await patchRow('deliveries', row.id, { ...patch, updatedAt: new Date() }, currentUser);
       setSuccess(`Status pengiriman ${row.deliveryNumber} diperbarui.`);
       await load();
     } catch (e: any) {
       setError(e.message || 'Gagal memperbarui pengiriman');
+    } finally {
+      setProcessing('');
     }
   };
 
   const handleDelete = async (row: DataRow) => {
     if (!window.confirm(`Hapus pengiriman ${row.deliveryNumber}?`)) return;
-    const related = details.filter(item => item.deliveryId === row.id);
-    await Promise.all(related.map(item => deleteRow('delivery_details', item.id, currentUser)));
-    await deleteRow('deliveries', row.id, currentUser);
-    await load();
+    setProcessing('Menghapus pengiriman...');
+    try {
+      await wait(ACTION_DELAY_MS);
+      const related = details.filter(item => item.deliveryId === row.id);
+      await Promise.all(related.map(item => deleteRow('delivery_details', item.id, currentUser)));
+      await deleteRow('deliveries', row.id, currentUser);
+      await load();
+    } finally {
+      setProcessing('');
+    }
   };
 
   return (
@@ -396,7 +429,7 @@ export const DeliveriesPage: React.FC = () => {
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full min-w-[720px] text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase tracking-wider">
                 <th className="p-4 font-semibold">No. Pengiriman</th>
@@ -444,11 +477,11 @@ export const DeliveriesPage: React.FC = () => {
       {form && (
         <div className="fixed inset-0 bg-slate-900/50 z-50 flex items-center justify-center p-4 backdrop-blur-xs">
           <div className="bg-white rounded-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-            <div className="p-6 border-b border-slate-200 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-slate-800">Buat Tugas Pengiriman</h3>
+            <div className="p-4 sm:p-6 border-b border-slate-200 flex items-center justify-between gap-3">
+              <h3 className="text-base sm:text-lg font-bold text-slate-800">Buat Tugas Pengiriman</h3>
               <button onClick={() => setForm(null)} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
             </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 uppercase mb-2">No. Pengiriman</label>
                 <input required value={form.deliveryNumber || ''} onChange={event => setForm({ ...form, deliveryNumber: event.target.value })} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm" />
@@ -494,6 +527,8 @@ export const DeliveriesPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {processing && <LoadingOverlay label={processing} />}
     </div>
   );
 };
@@ -504,10 +539,11 @@ export const DriversPage: React.FC = () => {
   const [deliveries, setDeliveries] = useState<DataRow[]>([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [processing, setProcessing] = useState('');
 
   const load = useCallback(async () => {
     try {
-      const [userRows, deliveryRows] = await Promise.all([getUsers(), getSeededRows('deliveries')]);
+      const [userRows, deliveryRows] = await Promise.all([getUsers(), getRows('deliveries')]);
       setUsers(userRows);
       setDeliveries(deliveryRows);
     } catch (e: any) {
@@ -522,13 +558,17 @@ export const DriversPage: React.FC = () => {
   const assignDriver = async (user: UserProfile) => {
     if (!currentUser || currentUser.role !== 'Super Admin') return;
     setError('');
+    setProcessing('Menetapkan driver...');
     try {
+      await wait(ACTION_DELAY_MS);
       await updateUserRoleAndStatus(user.uid, 'Driver', true, currentUser);
       setSuccess(`${user.displayName} sekarang berperan sebagai Driver.`);
       await refreshUserData();
       await load();
     } catch (e: any) {
       setError(e.message || 'Gagal menetapkan driver');
+    } finally {
+      setProcessing('');
     }
   };
 
@@ -597,6 +637,8 @@ export const DriversPage: React.FC = () => {
           driverName: users.find(user => user.uid === row.driverId)?.displayName || '',
         })}
       />
+
+      {processing && <LoadingOverlay label={processing} />}
     </div>
   );
 };

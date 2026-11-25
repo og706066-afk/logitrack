@@ -64,22 +64,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
 
       {/* Sidebar container */}
       <aside className={`
-        fixed top-0 bottom-0 left-0 z-50 w-72 bg-emerald-950 text-slate-100 flex flex-col transition-transform duration-300 ease-in-out shadow-xl
+        fixed top-0 bottom-0 left-0 z-50 w-72 max-w-[85vw] bg-emerald-950 text-slate-100 flex flex-col transition-transform duration-300 ease-in-out shadow-xl
         ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
         {/* Brand header */}
-        <div className="p-6 border-b border-emerald-900/80 flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center text-white shadow-md">
+        <div className="p-4 sm:p-6 border-b border-emerald-900/80 flex items-center space-x-3 min-w-0">
+          <div className="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center text-white shadow-md shrink-0">
             <Boxes className="w-6 h-6" />
           </div>
-          <div>
-            <h1 className="text-lg font-bold tracking-tight text-white">SILOG PESANTREN</h1>
-            <p className="text-xs text-emerald-300 font-medium">Sistem Informasi Logistik v1.0</p>
+          <div className="min-w-0">
+            <h1 className="text-base sm:text-lg font-bold tracking-tight text-white truncate">SILOG PESANTREN</h1>
+            <p className="text-xs text-emerald-300 font-medium truncate">Sistem Informasi Logistik v1.0</p>
           </div>
         </div>
 
         {/* Navigation list */}
-        <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-1 custom-scrollbar">
+        <nav className="flex-1 overflow-y-auto px-3 sm:px-4 py-4 sm:py-6 space-y-1 custom-scrollbar">
           {filteredMenu.map((item) => {
             const Icon = item.icon;
             return (
@@ -88,14 +88,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
                 to={item.path}
                 onClick={() => setIsOpen(false)}
                 className={({ isActive }) => `
-                  flex items-center space-x-3 px-4 py-3 rounded-xl font-medium text-sm transition-all
+                  flex items-center space-x-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl font-medium text-sm transition-all
                   ${isActive 
                     ? 'bg-emerald-800 text-white shadow-sm font-semibold' 
                     : 'text-emerald-200/80 hover:bg-emerald-900/60 hover:text-white'}
                 `}
               >
-                <Icon className="w-5 h-5 text-emerald-400" />
-                <span>{item.title}</span>
+                <Icon className="w-5 h-5 text-emerald-400 shrink-0" />
+                <span className="truncate">{item.title}</span>
               </NavLink>
             );
           })}
@@ -103,7 +103,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
 
         {/* User Role Badge Footer */}
         {currentUser && (
-          <div className="p-4 m-4 bg-emerald-900/60 rounded-xl border border-emerald-800/60">
+          <div className="p-3 sm:p-4 m-3 sm:m-4 bg-emerald-900/60 rounded-xl border border-emerald-800/60">
             <p className="text-xs text-emerald-300 uppercase tracking-wider font-semibold mb-1">Role Anda</p>
             <p className="text-sm font-bold text-white truncate">{currentUser.role}</p>
             <p className="text-xs text-emerald-200/70 truncate mt-0.5">{currentUser.email}</p>

@@ -2,7 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { ShieldCheck, Plus, Edit2, Trash2, Check, X, AlertCircle } from 'lucide-react';
 import type { Role } from '../types';
-import { getRoles, saveRole, deleteRole, MASTER_PERMISSIONS } from '../services/rbacService';
+import { getRoles, saveRole, deleteRole, MASTER_PERMISSIONS, WAREHOUSE_ROLE_GROUPS } from '../services/rbacService';
+import { LoadingOverlay } from '../components/ui';
+import { ACTION_DELAY_MS, wait } from '../utils/async';
+
+const roleGroupByName = new Map<string, string>(
+  WAREHOUSE_ROLE_GROUPS.flatMap(group => group.roles.map(name => [name, group.name] as [string, string]))
+);
+const roleGroupOrder = [...WAREHOUSE_ROLE_GROUPS.map(group => group.name), 'Lainnya'];
 
 export const Roles: React.FC = () => {
   const { currentUser, hasPermission, refreshUserData } = useAuth();
@@ -17,6 +24,8 @@ export const Roles: React.FC = () => {
   const [roleName, setRoleName] = useState('');
   const [roleDesc, setRoleDesc] = useState('');
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const canManageRoles = currentUser?.role === 'Super Admin' || hasPermission('roles.create');
 
@@ -76,8 +85,10 @@ export const Roles: React.FC = () => {
     if (!currentUser) return;
     setError('');
     setSuccess('');
+    setSaving(true);
 
     try {
+      await wait(ACTION_DELAY_MS);
       await saveRole({
         id: editingRole ? editingRole.id : undefined,
         name: roleName,
@@ -92,6 +103,8 @@ export const Roles: React.FC = () => {
       loadData();
     } catch (err: any) {
       setError(err.message || 'Gagal menyimpan role');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -100,14 +113,18 @@ export const Roles: React.FC = () => {
     if (!window.confirm('Apakah Anda yakin ingin menghapus role ini?')) return;
     setError('');
     setSuccess('');
+    setDeleting(true);
 
     try {
+      await wait(ACTION_DELAY_MS);
       await deleteRole(roleId, currentUser);
       setSuccess('Role berhasil dihapus.');
       await refreshUserData();
       loadData();
     } catch (err: any) {
       setError(err.message || 'Gagal menghapus role');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -119,11 +136,11 @@ export const Roles: React.FC = () => {
   }, {} as Record<string, typeof MASTER_PERMISSIONS>);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-xs">
-        <div>
-          <h1 className="text-xl font-bold text-slate-800 flex items-center">
-            <ShieldCheck className="w-6 h-6 mr-2 text-emerald-600" />
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-xs">
+        <div className="min-w-0">
+          <h1 className="text-lg sm:text-xl font-bold text-slate-800 flex items-center">
+            <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6 mr-2 shrink-0 text-emerald-600" />
             Manajemen Role & Dynamic Permission
           </h1>
           <p className="text-sm text-slate-500 mt-0.5">
@@ -156,61 +173,87 @@ export const Roles: React.FC = () => {
       )}
 
       {loading ? (
-        <div className="text-center py-12 text-slate-500">Memuat data role...</div>
+        <div className="flex flex-col items-center justify-center gap-3 py-12 text-slate-500 text-sm">
+          <div className="w-8 h-8 border-4 border-emerald-100 border-t-emerald-600 rounded-full animate-spin" />
+          Memuat data role...
+        </div>
+      ) : roles.length === 0 ? (
+        <div className="bg-white rounded-2xl p-8 text-center border border-slate-200 shadow-xs">
+          <ShieldCheck className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+          <p className="text-sm font-semibold text-slate-700">Belum ada role terdaftar.</p>
+          <p className="text-xs text-slate-500 mt-1">Buat role pertama melalui tombol "Tambah Role Baru".</p>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {roles.map((role) => (
-            <div key={role.id} className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs flex flex-col justify-between">
-              <div>
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <h3 className="text-base font-bold text-slate-800">{role.name}</h3>
-                    {role.isSystem && (
-                      <span className="inline-block mt-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                        System Role
-                      </span>
-                    )}
-                  </div>
-                  <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${role.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
-                    {role.isActive ? 'Aktif' : 'Nonaktif'}
+        <div className="space-y-6">
+          {roleGroupOrder.map(groupName => {
+            const groupRoles = roles.filter(role => (roleGroupByName.get(role.name) || 'Lainnya') === groupName);
+            if (groupRoles.length === 0) return null;
+
+            return (
+              <section key={groupName}>
+                <div className="flex items-center gap-2 sm:gap-3 mb-3">
+                  <h2 className="text-sm sm:text-base font-bold text-slate-700">{groupName}</h2>
+                  <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px] font-semibold">
+                    {groupRoles.length} role
                   </span>
                 </div>
-                <p className="text-xs text-slate-600 mb-4 min-h-[36px]">{role.description || 'Tidak ada deskripsi.'}</p>
-                
-                <div className="mb-4">
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Hak Akses ({role.permissions.length} Permission)</p>
-                  <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto custom-scrollbar p-1">
-                    {role.permissions.map((pId) => (
-                      <span key={pId} className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-[11px] font-medium">
-                        {pId}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                  {groupRoles.map((role) => (
+                    <div key={role.id} className="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200 shadow-xs flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <h3 className="text-base font-bold text-slate-800">{role.name}</h3>
+                            {role.isSystem && (
+                              <span className="inline-block mt-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                                System Role
+                              </span>
+                            )}
+                          </div>
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${role.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                            {role.isActive ? 'Aktif' : 'Nonaktif'}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-600 mb-4 min-h-[36px]">{role.description || 'Tidak ada deskripsi.'}</p>
 
-              {canManageRoles && (
-                <div className="flex items-center justify-end space-x-2 pt-4 border-t border-slate-100">
-                  <button
-                    onClick={() => handleOpenEdit(role)}
-                    className="p-2 text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition"
-                    title="Edit Role"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                  {!role.isSystem && (
-                    <button
-                      onClick={() => handleDelete(role.id)}
-                      className="p-2 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
-                      title="Hapus Role"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
+                        <div className="mb-4">
+                          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Hak Akses ({role.permissions.length} Permission)</p>
+                          <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto custom-scrollbar p-1">
+                            {role.permissions.map((pId) => (
+                              <span key={pId} className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-[11px] font-medium">
+                                {pId}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {canManageRoles && (
+                        <div className="flex items-center justify-end space-x-2 pt-4 border-t border-slate-100">
+                          <button
+                            onClick={() => handleOpenEdit(role)}
+                            className="p-2 text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition"
+                            title="Edit Role"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          {!role.isSystem && (
+                            <button
+                              onClick={() => handleDelete(role.id)}
+                              className="p-2 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                              title="Hapus Role"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              )}
-            </div>
-          ))}
+              </section>
+            );
+          })}
         </div>
       )}
 
@@ -218,8 +261,8 @@ export const Roles: React.FC = () => {
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-900/50 z-50 flex items-center justify-center p-4 backdrop-blur-xs">
           <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
-            <div className="p-6 border-b border-slate-200 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-slate-800">
+            <div className="p-4 sm:p-6 border-b border-slate-200 flex items-center justify-between gap-3">
+              <h3 className="text-base sm:text-lg font-bold text-slate-800">
                 {editingRole ? `Edit Role: ${editingRole.name}` : 'Buat Role Baru'}
               </h3>
               <button 
@@ -230,7 +273,7 @@ export const Roles: React.FC = () => {
               </button>
             </div>
 
-            <form onSubmit={handleSave} className="flex-1 overflow-y-auto p-6 space-y-6">
+            <form onSubmit={handleSave} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">Nama Role</label>
                 <input
@@ -308,7 +351,8 @@ export const Roles: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-emerald-700 text-white rounded-xl text-sm font-semibold hover:bg-emerald-800 shadow-sm"
+                  disabled={saving}
+                  className="px-5 py-2 bg-emerald-700 text-white rounded-xl text-sm font-semibold hover:bg-emerald-800 shadow-sm disabled:opacity-50"
                 >
                   Simpan Role
                 </button>
@@ -317,6 +361,8 @@ export const Roles: React.FC = () => {
           </div>
         </div>
       )}
+
+      {(saving || deleting) && <LoadingOverlay label={saving ? 'Menyimpan role...' : 'Menghapus role...'} />}
     </div>
   );
 };

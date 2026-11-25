@@ -3,6 +3,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { UsersRound, Shield, Check, X, AlertCircle, Edit2 } from 'lucide-react';
 import type { UserProfile, Role } from '../types';
 import { getUsers, updateUserRoleAndStatus, getRoles } from '../services/rbacService';
+import { LoadingOverlay } from '../components/ui';
+import { ACTION_DELAY_MS, wait } from '../utils/async';
 
 export const Users: React.FC = () => {
   const { currentUser, refreshUserData } = useAuth();
@@ -17,6 +19,7 @@ export const Users: React.FC = () => {
   const [newRole, setNewRole] = useState('');
   const [newIsActive, setNewIsActive] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const canManageUsers = currentUser?.role === 'Super Admin';
 
@@ -54,8 +57,10 @@ export const Users: React.FC = () => {
     if (!currentUser || !selectedUser) return;
     setError('');
     setSuccess('');
+    setSaving(true);
 
     try {
+      await wait(ACTION_DELAY_MS);
       await updateUserRoleAndStatus(selectedUser.uid, newRole, newIsActive, currentUser);
       setSuccess(`Role pengguna ${selectedUser.email} berhasil diperbarui.`);
       setIsModalOpen(false);
@@ -63,15 +68,17 @@ export const Users: React.FC = () => {
       loadData();
     } catch (err: any) {
       setError(err.message || 'Gagal memperbarui pengguna');
+    } finally {
+      setSaving(false);
     }
   };
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-slate-800 flex items-center">
-            <UsersRound className="w-6 h-6 mr-2 text-emerald-600" />
+    <div className="space-y-4 sm:space-y-6">
+      <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-lg sm:text-xl font-bold text-slate-800 flex items-center">
+            <UsersRound className="w-5 h-5 sm:w-6 sm:h-6 mr-2 shrink-0 text-emerald-600" />
             Manajemen Pengguna & Role Assignment
           </h1>
           <p className="text-sm text-slate-500 mt-0.5">
@@ -95,11 +102,14 @@ export const Users: React.FC = () => {
       )}
 
       {loading ? (
-        <div className="text-center py-12 text-slate-500">Memuat data pengguna...</div>
+        <div className="flex flex-col items-center justify-center gap-3 py-12 text-slate-500 text-sm">
+          <div className="w-8 h-8 border-4 border-emerald-100 border-t-emerald-600 rounded-full animate-spin" />
+          Memuat data pengguna...
+        </div>
       ) : (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full min-w-[640px] text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase tracking-wider">
                   <th className="p-4 font-semibold">Pengguna</th>
@@ -158,14 +168,14 @@ export const Users: React.FC = () => {
       {isModalOpen && selectedUser && (
         <div className="fixed inset-0 bg-slate-900/50 z-50 flex items-center justify-center p-4 backdrop-blur-xs">
           <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden">
-            <div className="p-6 border-b border-slate-200 flex items-center justify-between">
+            <div className="p-4 sm:p-6 border-b border-slate-200 flex items-center justify-between gap-3">
               <h3 className="text-lg font-bold text-slate-800">Ubah Role Pengguna</h3>
               <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveUser} className="p-6 space-y-4">
+            <form onSubmit={handleSaveUser} className="p-4 sm:p-6 space-y-4">
               <div>
                 <p className="text-xs text-slate-500 mb-1">Pengguna</p>
                 <p className="text-sm font-bold text-slate-800">{selectedUser.displayName}</p>
@@ -221,7 +231,8 @@ export const Users: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-emerald-700 text-white rounded-xl text-sm font-semibold hover:bg-emerald-800 shadow-sm"
+                  disabled={saving}
+                  className="px-5 py-2 bg-emerald-700 text-white rounded-xl text-sm font-semibold hover:bg-emerald-800 shadow-sm disabled:opacity-50"
                 >
                   Simpan Perubahan
                 </button>
@@ -230,6 +241,8 @@ export const Users: React.FC = () => {
           </div>
         </div>
       )}
+
+      {saving && <LoadingOverlay label="Menyimpan perubahan..." />}
     </div>
   );
 };

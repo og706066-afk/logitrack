@@ -41,7 +41,7 @@ if (isFirebaseConfigured) {
     console.error('Failed to initialize Firebase:', error);
   }
 } else {
-  console.warn('Firebase is not configured. SILOG is running in Demo/Offline mode. Please configure .env file.');
+  console.warn('Firebase belum dikonfigurasi. Login tidak tersedia sampai file .env diisi.');
 }
 
 export { app, auth, db, storage, firebaseConfig };

@@ -3,7 +3,7 @@ import { Package, Tags, Truck, Warehouse } from 'lucide-react';
 import { ResourceManager, type ResourceField } from '../components/ResourceManager';
 import { AlertBox } from '../components/ui';
 import { useAuth } from '../contexts/AuthContext';
-import { asNumber, getSeededRows, today, type DataRow } from '../services/logisticsService';
+import { asNumber, getRows, today, type DataRow } from '../services/logisticsService';
 
 function toOptions(rows: DataRow[], labelKey = 'name'): { value: string; label: string }[] {
   return rows.map(row => ({ value: row.id, label: String(row[labelKey] ?? row.id) }));
@@ -42,7 +42,7 @@ export const ProductsPage: React.FC = () => {
   const [categories, setCategories] = useState<DataRow[]>([]);
 
   useEffect(() => {
-    void getSeededRows('categories').then(setCategories);
+    void getRows('categories').then(setCategories);
   }, []);
 
   const fields: ResourceField[] = [
@@ -129,9 +129,9 @@ export const WarehouseStockPage: React.FC = () => {
 
   useEffect(() => {
     void Promise.all([
-      getSeededRows('products'),
-      getSeededRows('suppliers'),
-      getSeededRows('warehouses'),
+      getRows('products'),
+      getRows('suppliers'),
+      getRows('warehouses'),
     ]).then(([productRows, supplierRows, warehouseRows]) => {
       setProducts(productRows);
       setSuppliers(supplierRows);

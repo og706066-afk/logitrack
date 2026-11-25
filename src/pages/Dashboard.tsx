@@ -10,9 +10,9 @@ import {
   TrendingUp,
   AlertTriangle,
 } from 'lucide-react';
-import { InfoCard } from '../components/ui';
+import { InfoCard, LoadingOverlay } from '../components/ui';
 import { getAuditLogs } from '../services/rbacService';
-import { asNumber, formatDate, getSeededRows, type DataRow } from '../services/logisticsService';
+import { asNumber, formatDate, getRows, type DataRow } from '../services/logisticsService';
 
 interface Activity {
   title: string;
@@ -26,19 +26,20 @@ export const Dashboard: React.FC = () => {
   const [requests, setRequests] = useState<DataRow[]>([]);
   const [deliveries, setDeliveries] = useState<DataRow[]>([]);
   const [logs, setLogs] = useState<DataRow[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     void Promise.all([
-      getSeededRows('products'),
-      getSeededRows('requests'),
-      getSeededRows('deliveries'),
+      getRows('products'),
+      getRows('requests'),
+      getRows('deliveries'),
       getAuditLogs(),
     ]).then(([productRows, requestRows, deliveryRows, logRows]) => {
       setProducts(productRows);
       setRequests(requestRows);
       setDeliveries(deliveryRows);
       setLogs(logRows);
-    });
+    }).finally(() => setLoading(false));
   }, []);
 
   const totalStock = products.reduce((sum, product) => sum + asNumber(product.currentStock), 0);
@@ -53,14 +54,14 @@ export const Dashboard: React.FC = () => {
   }));
 
   return (
-    <div className="space-y-6">
-      <div className="bg-gradient-to-r from-emerald-900 to-emerald-950 rounded-2xl p-6 text-white shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="bg-gradient-to-r from-emerald-900 to-emerald-950 rounded-2xl p-5 sm:p-6 text-white shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between">
         <div>
           <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-800 text-emerald-200 mb-2">
             <CheckCircle2 className="w-3.5 h-3.5 mr-1 text-emerald-400" />
             Sistem Operasional Aktif
           </span>
-          <h1 className="text-2xl font-bold tracking-tight">Selamat Datang, {currentUser?.displayName}!</h1>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight break-words">Selamat Datang, {currentUser?.displayName}!</h1>
           <p className="text-emerald-200 text-sm mt-1">
             Anda masuk sebagai <strong className="text-white">{currentUser?.role}</strong> di Sistem Informasi Logistik Pesantren (SILOG).
           </p>
@@ -83,7 +84,7 @@ export const Dashboard: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white rounded-2xl p-6 border border-slate-200 shadow-xs">
+        <div className="lg:col-span-2 bg-white rounded-2xl p-4 sm:p-6 border border-slate-200 shadow-xs">
           <h3 className="text-base font-bold text-slate-800 mb-4 flex items-center">
             <TrendingUp className="w-5 h-5 mr-2 text-emerald-600" />
             Aktivitas Logistik Terbaru
@@ -112,7 +113,7 @@ export const Dashboard: React.FC = () => {
           )}
         </div>
 
-        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs flex flex-col justify-between">
+        <div className="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200 shadow-xs flex flex-col justify-between">
           <div>
             <h3 className="text-base font-bold text-slate-800 mb-2 flex items-center">
               <ShieldCheck className="w-5 h-5 mr-2 text-emerald-600" />
@@ -144,6 +145,8 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {loading && <LoadingOverlay label="Memuat dashboard..." />}
     </div>
   );
 };

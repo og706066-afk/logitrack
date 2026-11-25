@@ -13,10 +13,10 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     <div className="min-h-screen bg-slate-50 flex">
       <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
       
-      <div className="flex-1 flex flex-col lg:pl-72">
+      <div className="flex-1 min-w-0 flex flex-col lg:pl-72">
         <Topbar setSidebarOpen={setSidebarOpen} />
         
-        <main className="flex-1 p-6 lg:p-8 max-w-7xl w-full mx-auto">
+        <main className="flex-1 min-w-0 p-3 sm:p-5 lg:p-8 max-w-7xl w-full mx-auto">
           {children}
         </main>
       </div>

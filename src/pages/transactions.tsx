@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import {
   asNumber,
   deleteRow,
-  getSeededRows,
+  getRows,
   newId,
   patchRow,
   saveRow,
@@ -29,7 +29,7 @@ export const StockInPage: React.FC = () => {
   const [suppliers, setSuppliers] = useState<DataRow[]>([]);
 
   useEffect(() => {
-    void Promise.all([getSeededRows('products'), getSeededRows('suppliers')]).then(([productRows, supplierRows]) => {
+    void Promise.all([getRows('products'), getRows('suppliers')]).then(([productRows, supplierRows]) => {
       setProducts(productRows);
       setSuppliers(supplierRows);
     });
@@ -70,7 +70,7 @@ export const StockInPage: React.FC = () => {
       return;
     }
 
-    const batches = await getSeededRows('stock_batches');
+    const batches = await getRows('stock_batches');
     const batch = batches.find(item => item.stockInId === row.id);
     if (batch) {
       await patchRow('stock_batches', batch.id, {
@@ -78,7 +78,7 @@ export const StockInPage: React.FC = () => {
         initialQuantity: Math.max(0, asNumber(batch.initialQuantity) + delta),
       }, currentUser);
     }
-    const movements = await getSeededRows('stock_movements');
+    const movements = await getRows('stock_movements');
     const movement = movements.find(item => item.referenceId === row.id && item.type === 'IN');
     if (movement) {
       await patchRow('stock_movements', movement.id, { quantity: asNumber(row.quantity) }, currentUser);
@@ -87,9 +87,9 @@ export const StockInPage: React.FC = () => {
 
   const handleDelete = async (row: DataRow) => {
     await applyStockChange(row, -asNumber(row.quantity), false);
-    const batches = await getSeededRows('stock_batches');
+    const batches = await getRows('stock_batches');
     await Promise.all(batches.filter(item => item.stockInId === row.id).map(item => deleteRow('stock_batches', item.id, currentUser)));
-    const movements = await getSeededRows('stock_movements');
+    const movements = await getRows('stock_movements');
     await Promise.all(movements.filter(item => item.referenceId === row.id).map(item => deleteRow('stock_movements', item.id, currentUser)));
   };
 
@@ -135,11 +135,11 @@ export const StockInPage: React.FC = () => {
         const previous = rows.find(item => item.id === row.id);
         const delta = isNew ? asNumber(row.quantity) : asNumber(row.quantity) - asNumber(previous?.quantity);
         await applyStockChange(row, delta, isNew);
-        setProducts(await getSeededRows('products'));
+        setProducts(await getRows('products'));
       }}
       onDeleted={async row => {
         await handleDelete(row);
-        setProducts(await getSeededRows('products'));
+        setProducts(await getRows('products'));
       }}
     />
   );
@@ -150,7 +150,7 @@ export const StockOutPage: React.FC = () => {
   const [products, setProducts] = useState<DataRow[]>([]);
 
   useEffect(() => {
-    void getSeededRows('products').then(setProducts);
+    void getRows('products').then(setProducts);
   }, []);
 
   const applyOutbound = async (row: DataRow, delta: number, isNew: boolean) => {
@@ -170,7 +170,7 @@ export const StockOutPage: React.FC = () => {
         date: row.date,
         createdAt: new Date(),
       }, currentUser);
-      const batches = await getSeededRows('stock_batches');
+      const batches = await getRows('stock_batches');
       let remaining = asNumber(row.quantity);
       const sorted = [...batches]
         .filter(batch => batch.productId === row.productId && asNumber(batch.quantity) > 0)
@@ -184,14 +184,14 @@ export const StockOutPage: React.FC = () => {
       return;
     }
 
-    const movements = await getSeededRows('stock_movements');
+    const movements = await getRows('stock_movements');
     const movement = movements.find(item => item.referenceId === row.id && item.type === 'OUT');
     if (movement) await patchRow('stock_movements', movement.id, { quantity: asNumber(row.quantity) }, currentUser);
   };
 
   const handleDelete = async (row: DataRow) => {
     await applyOutbound(row, -asNumber(row.quantity), false);
-    const movements = await getSeededRows('stock_movements');
+    const movements = await getRows('stock_movements');
     await Promise.all(movements.filter(item => item.referenceId === row.id).map(item => deleteRow('stock_movements', item.id, currentUser)));
   };
 
@@ -238,11 +238,11 @@ export const StockOutPage: React.FC = () => {
         const previous = rows.find(item => item.id === row.id);
         const delta = isNew ? asNumber(row.quantity) : asNumber(row.quantity) - asNumber(previous?.quantity);
         await applyOutbound(row, delta, isNew);
-        setProducts(await getSeededRows('products'));
+        setProducts(await getRows('products'));
       }}
       onDeleted={async row => {
         await handleDelete(row);
-        setProducts(await getSeededRows('products'));
+        setProducts(await getRows('products'));
       }}
     />
   );

@@ -2,14 +2,14 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Boxes, Lock, Mail, AlertCircle, ArrowRight } from 'lucide-react';
-import type { UserRole } from '../types';
+import { LOGIN_DELAY_MS, wait } from '../utils/async';
 
 export const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login, loginAsDemo } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -17,6 +17,7 @@ export const Login: React.FC = () => {
     setError('');
     setLoading(true);
     try {
+      await wait(LOGIN_DELAY_MS);
       await login(email, password);
       navigate('/');
     } catch (err: any) {
@@ -26,43 +27,37 @@ export const Login: React.FC = () => {
     }
   };
 
-  const handleDemoLogin = (role: UserRole) => {
-    loginAsDemo(role);
-    navigate('/');
-  };
-
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden">
-      {/* Decorative background blur */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-600/10 rounded-full blur-3xl pointer-events-none"></div>
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-emerald-800/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div className="min-h-screen bg-slate-900 flex flex-col justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      <div className="absolute -top-20 left-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-emerald-600/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="absolute -bottom-20 right-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-emerald-800/10 rounded-full blur-3xl pointer-events-none"></div>
 
-      <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10 animate-slide-up">
         <div className="flex justify-center">
-          <div className="w-16 h-16 rounded-2xl bg-emerald-600 flex items-center justify-center text-white shadow-xl shadow-emerald-900/50">
-            <Boxes className="w-9 h-9" />
+          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-emerald-600 flex items-center justify-center text-white shadow-xl shadow-emerald-900/50">
+            <Boxes className="w-8 h-8 sm:w-9 sm:h-9" />
           </div>
         </div>
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-white tracking-tight">
+        <h2 className="mt-5 sm:mt-6 text-center text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
           SILOG PESANTREN
         </h2>
-        <p className="mt-2 text-center text-sm text-slate-400">
+        <p className="mt-2 text-center text-xs sm:text-sm text-slate-400 px-2">
           Sistem Informasi Logistik & Dapur Pesantren
         </p>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md relative z-10 px-4 sm:px-0">
-        <div className="bg-white py-8 px-6 shadow-2xl rounded-2xl sm:px-10 border border-slate-100">
+      <div className="mt-6 sm:mt-8 sm:mx-auto sm:w-full sm:max-w-md relative z-10 animate-slide-up">
+        <div className="bg-white py-7 sm:py-8 px-5 sm:px-10 shadow-2xl rounded-2xl border border-slate-100">
           {error && (
-            <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 flex items-start space-x-3 text-red-700 text-sm">
+            <div className="mb-6 p-3.5 sm:p-4 rounded-xl bg-red-50 border border-red-200 flex items-start space-x-3 text-red-700 text-sm animate-fade-in">
               <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>
           )}
 
-          <form className="space-y-6" onSubmit={handleLogin}>
+          <form className="space-y-5 sm:space-y-6" onSubmit={handleLogin}>
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
+              <label htmlFor="login-email" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
                 Email / Akun
               </label>
               <div className="relative">
@@ -70,18 +65,21 @@ export const Login: React.FC = () => {
                   <Mail className="w-5 h-5" />
                 </div>
                 <input
+                  id="login-email"
                   type="email"
+                  autoComplete="username"
                   required
+                  disabled={loading}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="admin@silog.pesantren.id"
-                  className="block w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 text-sm focus:outline-hidden focus:ring-2 focus:ring-emerald-600 focus:bg-white transition"
+                  className="block w-full pl-11 pr-4 py-2.5 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 text-sm focus:outline-hidden focus:ring-2 focus:ring-emerald-600 focus:bg-white transition disabled:opacity-60"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
+              <label htmlFor="login-password" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
                 Password
               </label>
               <div className="relative">
@@ -89,12 +87,15 @@ export const Login: React.FC = () => {
                   <Lock className="w-5 h-5" />
                 </div>
                 <input
+                  id="login-password"
                   type="password"
+                  autoComplete="current-password"
                   required
+                  disabled={loading}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="block w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 text-sm focus:outline-hidden focus:ring-2 focus:ring-emerald-600 focus:bg-white transition"
+                  className="block w-full pl-11 pr-4 py-2.5 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 text-sm focus:outline-hidden focus:ring-2 focus:ring-emerald-600 focus:bg-white transition disabled:opacity-60"
                 />
               </div>
             </div>
@@ -102,48 +103,36 @@ export const Login: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center py-3 px-4 border border-transparent rounded-xl shadow-md text-sm font-semibold text-white bg-emerald-700 hover:bg-emerald-800 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-emerald-600 transition disabled:opacity-50"
+              className="w-full flex items-center justify-center py-2.5 sm:py-3 px-4 border border-transparent rounded-xl shadow-md text-sm font-semibold text-white bg-emerald-700 hover:bg-emerald-800 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-emerald-600 transition disabled:opacity-60 active:scale-[0.99]"
             >
-              {loading ? 'Memproses...' : 'Masuk ke Sistem'}
-              <ArrowRight className="w-4 h-4 ml-2" />
+              {loading ? (
+                <span className="flex items-center justify-center">
+                  <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin mr-2" />
+                  Memproses...
+                </span>
+              ) : (
+                <span className="flex items-center justify-center">
+                  Masuk ke Sistem
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </span>
+              )}
             </button>
           </form>
-
-          {/* Quick Demo Login Section */}
-          <div className="mt-8 pt-6 border-t border-slate-200">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider text-center mb-4">
-              Akses Cepat Demo (Pilih Role)
-            </p>
-            <div className="grid grid-cols-1 gap-2">
-              {[
-                { role: 'Super Admin', email: 'superadmin@silog.pesantren.id', desc: 'Akses penuh seluruh modul & pengaturan' },
-                { role: 'Manager', email: 'manager@silog.pesantren.id', desc: 'Persetujuan permintaan & laporan' },
-                { role: 'Staf Gudang', email: 'gudang@silog.pesantren.id', desc: 'Barang masuk, keluar & stok' },
-                { role: 'Driver', email: 'driver@silog.pesantren.id', desc: 'Pengiriman & konfirmasi' },
-                { role: 'Viewer', email: 'viewer@silog.pesantren.id', desc: 'Hanya melihat laporan & data' },
-              ].map((item) => (
-                <button
-                  key={item.role}
-                  type="button"
-                  onClick={() => handleDemoLogin(item.role)}
-                  className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 hover:border-emerald-600 hover:bg-emerald-50/50 transition text-left group"
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center text-xs group-hover:bg-emerald-600 group-hover:text-white transition">
-                      {item.role.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-slate-800">{item.role}</p>
-                      <p className="text-[11px] text-slate-500">{item.desc}</p>
-                    </div>
-                  </div>
-                  <span className="text-xs font-semibold text-emerald-700 opacity-0 group-hover:opacity-100 transition">Masuk →</span>
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
+
+      {loading && (
+        <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="w-full max-w-xs bg-white rounded-3xl shadow-2xl px-7 py-9 flex flex-col items-center animate-slide-up">
+            <div className="w-16 h-16 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-lg shadow-emerald-900/20 animate-pulse-soft">
+              <Boxes className="w-9 h-9" />
+            </div>
+            <div className="mt-6 w-11 h-11 border-4 border-emerald-100 border-t-emerald-600 rounded-full animate-spin" />
+            <p className="mt-5 text-sm font-bold text-slate-800 text-center">Sedang masuk ke sistem...</p>
+            <p className="mt-1 text-xs text-slate-500 text-center">Memverifikasi akun Anda, mohon tunggu.</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

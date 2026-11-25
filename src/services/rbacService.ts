@@ -94,46 +94,42 @@ export const MASTER_PERMISSIONS: Permission[] = [
   { id: 'roles.delete', module: 'Role & Permission', action: 'delete', name: 'Hapus Role', description: 'Menghapus role yang tidak terpakai' },
 ];
 
-export const DEFAULT_ROLES: Role[] = [
+const STORAGE_ROLES_KEY = 'silog_roles_data';
+const STORAGE_USERS_KEY = 'silog_users_data';
+const STORAGE_AUDIT_KEY = 'silog_audit_logs';
+
+export const WAREHOUSE_ROLE_GROUPS = [
+  { name: 'Staf Gudang', roles: ['Kepala Gudang'] },
+  { name: 'Sub Gudang', roles: ['Staf Bahan Dapur', 'Staf Konsumsi', 'Staf Sayuran', 'Staf Bumbu Alam', 'Staf Logistik', 'Staf Kebersihan'] },
+] as const;
+
+const WAREHOUSE_VIEW_BASE = [
+  'dashboard.view',
+  'products.view',
+  'categories.view',
+  'warehouses.view',
+  'stock_batches.view',
+  'stock_movements.view',
+];
+
+export const WAREHOUSE_ROLE_PRESETS: Role[] = [
   {
-    id: 'role-super-admin',
-    name: 'Super Admin',
-    description: 'Akses penuh terhadap seluruh modul sistem, pengaturan, dan manajemen pengguna.',
-    permissions: MASTER_PERMISSIONS.map(p => p.id),
-    isSystem: true,
-    isActive: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: 'role-manager',
-    name: 'Manager',
-    description: 'Memantau operasional logistik, menyetujui permintaan dapur, dan melihat laporan.',
+    id: 'role-kepala-gudang',
+    name: 'Kepala Gudang',
+    description: 'Memimpin seluruh operasional gudang, stok, barang masuk/keluar, dan pelaporan.',
     permissions: [
-      'dashboard.view', 'products.view', 'categories.view', 'suppliers.view',
-      'stock_in.view', 'stock_out.view', 'warehouses.view', 'stock_batches.view',
-      'stock_movements.view', 'vehicles.view', 'requests.view', 'requests.approve',
-      'requests.reject', 'deliveries.view', 'reports.view', 'reports.export'
-    ],
-    isSystem: true,
-    isActive: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: 'role-gudang',
-    name: 'Staf Gudang',
-    description: 'Mengelola data bahan makanan, stok, supplier, barang masuk, dan persiapan barang keluar.',
-    permissions: [
-      'dashboard.view', 'products.view', 'products.create', 'products.edit', 'products.delete',
-      'categories.view', 'categories.create', 'categories.edit', 'categories.delete',
+      ...WAREHOUSE_VIEW_BASE,
+      'products.create', 'products.edit', 'products.delete',
+      'categories.create', 'categories.edit', 'categories.delete',
       'suppliers.view', 'suppliers.create', 'suppliers.edit', 'suppliers.delete',
-      'warehouses.view', 'warehouses.create', 'warehouses.edit', 'warehouses.delete',
-      'stock_batches.view', 'stock_batches.create', 'stock_batches.edit', 'stock_batches.delete',
-      'stock_movements.view', 'stock_movements.create', 'vehicles.view',
+      'warehouses.create', 'warehouses.edit', 'warehouses.delete',
+      'stock_batches.create', 'stock_batches.edit', 'stock_batches.delete',
+      'stock_movements.create', 'stock_movements.edit', 'stock_movements.delete',
       'stock_in.view', 'stock_in.create', 'stock_in.edit', 'stock_in.delete',
       'stock_out.view', 'stock_out.create', 'stock_out.edit', 'stock_out.delete',
-      'requests.view', 'requests.create', 'deliveries.view', 'deliveries.create'
+      'requests.view', 'requests.create',
+      'deliveries.view', 'vehicles.view',
+      'reports.view', 'reports.export',
     ],
     isSystem: true,
     isActive: true,
@@ -141,12 +137,17 @@ export const DEFAULT_ROLES: Role[] = [
     updatedAt: new Date(),
   },
   {
-    id: 'role-driver',
-    name: 'Driver',
-    description: 'Melihat tugas pengiriman, rincian barang, memperbarui status pengiriman, dan konfirmasi.',
+    id: 'role-staf-bahan-dapur',
+    name: 'Staf Bahan Dapur',
+    description: 'Mengelola ketersediaan bahan makanan dan batch stok untuk kebutuhan dapur.',
     permissions: [
-      'dashboard.view', 'deliveries.view', 'deliveries.update', 'deliveries.complete',
-      'stock_batches.view', 'vehicles.view'
+      ...WAREHOUSE_VIEW_BASE,
+      'products.create', 'products.edit',
+      'suppliers.view',
+      'stock_batches.create', 'stock_batches.edit',
+      'stock_movements.create',
+      'stock_in.view', 'stock_in.create',
+      'stock_out.view',
     ],
     isSystem: true,
     isActive: true,
@@ -154,13 +155,83 @@ export const DEFAULT_ROLES: Role[] = [
     updatedAt: new Date(),
   },
   {
-    id: 'role-viewer',
-    name: 'Viewer',
-    description: 'Hanya dapat melihat informasi dan laporan tanpa hak ubah data.',
+    id: 'role-staf-konsumsi',
+    name: 'Staf Konsumsi',
+    description: 'Menyiapkan dan mengeluarkan bahan konsumsi untuk dapur pesantren.',
     permissions: [
-      'dashboard.view', 'products.view', 'categories.view', 'suppliers.view',
-      'stock_in.view', 'stock_out.view', 'warehouses.view', 'stock_batches.view',
-      'stock_movements.view', 'vehicles.view', 'requests.view', 'deliveries.view', 'reports.view'
+      ...WAREHOUSE_VIEW_BASE,
+      'requests.view', 'requests.create',
+      'stock_out.view', 'stock_out.create', 'stock_out.edit',
+      'stock_movements.create',
+      'deliveries.view',
+    ],
+    isSystem: true,
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 'role-staf-sayuran',
+    name: 'Staf Sayuran',
+    description: 'Menangani penerimaan, penyimpanan, dan distribusi sayuran segar.',
+    permissions: [
+      ...WAREHOUSE_VIEW_BASE,
+      'products.create', 'products.edit',
+      'suppliers.view',
+      'stock_batches.create', 'stock_batches.edit',
+      'stock_movements.create',
+      'stock_in.view', 'stock_in.create',
+    ],
+    isSystem: true,
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 'role-staf-bumbu-alam',
+    name: 'Staf Bumbu Alam',
+    description: 'Menangani bumbu alam, rempah, dan bahan kering di gudang.',
+    permissions: [
+      ...WAREHOUSE_VIEW_BASE,
+      'products.create', 'products.edit',
+      'categories.create', 'categories.edit',
+      'suppliers.view', 'suppliers.create',
+      'stock_batches.create', 'stock_batches.edit',
+      'stock_movements.create',
+      'stock_in.view', 'stock_in.create',
+    ],
+    isSystem: true,
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 'role-staf-logistik',
+    name: 'Staf Logistik',
+    description: 'Mengatur armada, pengiriman, dan pergerakan barang masuk serta keluar.',
+    permissions: [
+      ...WAREHOUSE_VIEW_BASE,
+      'suppliers.view',
+      'stock_movements.create',
+      'stock_in.view', 'stock_in.create', 'stock_in.edit',
+      'stock_out.view', 'stock_out.create', 'stock_out.edit',
+      'vehicles.view', 'vehicles.create', 'vehicles.edit',
+      'deliveries.view', 'deliveries.create', 'deliveries.update', 'deliveries.complete',
+      'requests.view',
+      'reports.view',
+    ],
+    isSystem: true,
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 'role-staf-kebersihan',
+    name: 'Staf Kebersihan',
+    description: 'Memantau kebersihan dan kerapian area gudang serta kondisi stok.',
+    permissions: [
+      ...WAREHOUSE_VIEW_BASE,
+      'stock_movements.view',
     ],
     isSystem: true,
     isActive: true,
@@ -169,26 +240,45 @@ export const DEFAULT_ROLES: Role[] = [
   },
 ];
 
-const STORAGE_ROLES_KEY = 'silog_roles_data';
-const STORAGE_USERS_KEY = 'silog_users_data';
-const STORAGE_AUDIT_KEY = 'silog_audit_logs';
+async function syncWarehouseRoles(roles: Role[]): Promise<Role[]> {
+  const existingNames = new Set(roles.map(role => role.name));
+  const missing = WAREHOUSE_ROLE_PRESETS.filter(role => !existingNames.has(role.name));
+  if (missing.length === 0) return roles;
+
+  const merged = [...roles, ...missing];
+  localStorage.setItem(STORAGE_ROLES_KEY, JSON.stringify(merged));
+
+  if (isFirebaseConfigured && db) {
+    await Promise.allSettled(missing.map(role => setDoc(doc(db!, 'roles', role.id), {
+      ...role,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    })));
+  }
+
+  return merged;
+}
 
 export async function getRoles(): Promise<Role[]> {
+  let roles: Role[] = [];
+
   if (isFirebaseConfigured && db) {
     try {
       const snap = await getDocs(collection(db, 'roles'));
       if (!snap.empty) {
-        return snap.docs.map(d => ({ id: d.id, ...d.data() } as Role));
+        roles = snap.docs.map(d => ({ id: d.id, ...d.data() } as Role));
       }
     } catch (_e) {}
   }
 
-  const saved = localStorage.getItem(STORAGE_ROLES_KEY);
-  if (saved) {
-    try { return JSON.parse(saved); } catch (_e) {}
+  if (roles.length === 0) {
+    const saved = localStorage.getItem(STORAGE_ROLES_KEY);
+    if (saved) {
+      try { roles = JSON.parse(saved); } catch (_e) {}
+    }
   }
-  localStorage.setItem(STORAGE_ROLES_KEY, JSON.stringify(DEFAULT_ROLES));
-  return DEFAULT_ROLES;
+
+  return syncWarehouseRoles(roles);
 }
 
 async function syncRoleToUsers(savedRole: Role, previousName?: string): Promise<void> {
@@ -312,15 +402,7 @@ export async function getUsers(): Promise<UserProfile[]> {
     try { return JSON.parse(saved); } catch (_e) {}
   }
 
-  const defaultUsers: UserProfile[] = [
-    { uid: 'demo-super-admin', email: 'superadmin@silog.pesantren.id', displayName: 'Ustadz Ahmad (Super Admin)', role: 'Super Admin', permissions: DEFAULT_ROLES[0].permissions, isActive: true, phoneNumber: '081234567890', createdAt: new Date(), updatedAt: new Date() },
-    { uid: 'demo-manager', email: 'manager@silog.pesantren.id', displayName: 'Kiai Hasan (Manager)', role: 'Manager', permissions: DEFAULT_ROLES[1].permissions, isActive: true, phoneNumber: '081234567891', createdAt: new Date(), updatedAt: new Date() },
-    { uid: 'demo-gudang', email: 'gudang@silog.pesantren.id', displayName: 'Ahmad Fauzi (Staf Gudang)', role: 'Staf Gudang', permissions: DEFAULT_ROLES[2].permissions, isActive: true, phoneNumber: '081234567892', createdAt: new Date(), updatedAt: new Date() },
-    { uid: 'demo-driver', email: 'driver@silog.pesantren.id', displayName: 'Pak Joko (Driver)', role: 'Driver', permissions: DEFAULT_ROLES[3].permissions, isActive: true, phoneNumber: '081234567893', createdAt: new Date(), updatedAt: new Date() },
-    { uid: 'demo-viewer', email: 'viewer@silog.pesantren.id', displayName: 'Pengawas Pesantren (Viewer)', role: 'Viewer', permissions: DEFAULT_ROLES[4].permissions, isActive: true, phoneNumber: '081234567894', createdAt: new Date(), updatedAt: new Date() },
-  ];
-  localStorage.setItem(STORAGE_USERS_KEY, JSON.stringify(defaultUsers));
-  return defaultUsers;
+  return [];
 }
 
 export async function updateUserRoleAndStatus(
