@@ -97,6 +97,8 @@ Rute existing (`/products`, `/categories`, `/suppliers`, `/stock-in`, `/stock-ou
 
 Dashboard menampilkan 12 ringkasan, grafik masuk/keluar, stok per kategori, distribusi pengiriman, aktivitas, peringatan stok minimum, filter periode, dan filter kategori. Seluruh angka berasal dari Firestore.
 
+`DataTable` di `src/components/DataViews.tsx` otomatis menyediakan **Filter checkbox** untuk kolom dengan nilai berulang (misalnya status, kategori, gudang, role). Kolom dengan kardinalitas 2–12 dipilih otomatis; gunakan `filterable={true}` / `filterable={false}` atau `filterValue` pada `TableColumn` untuk mengontrolnya. Filter antar kolom bersifat AND, pilihan dalam satu kolom bersifat OR, dan tombol **Reset filter** mengembalikan semua baris.
+
 ## Perubahan utama
 
 - Menambahkan service Firestore bertipe `src/services/logitrackService.ts` dan tipe `src/types/logitrack.ts`.

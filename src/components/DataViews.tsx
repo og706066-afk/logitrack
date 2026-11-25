@@ -1,5 +1,5 @@
-import React from 'react';
-import { Pencil, Trash2, X } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { ListFilter, Pencil, RotateCcw, Trash2, X } from 'lucide-react';
 import { AlertBox } from './ui';
 
 export const inputClass = 'w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-emerald-600';
@@ -10,6 +10,29 @@ export interface TableColumn<T> {
   key: string;
   label: string;
   render?: (row: T) => React.ReactNode;
+  filterable?: boolean;
+  filterValue?: (row: T) => string;
+}
+
+const NON_FILTERABLE_KEY = /(id|number|kode|code|date|tanggal|time|email|phone|telepon|address|alamat|notes?|catatan|description|deskripsi|name|nama|title|url|link)/i;
+
+function filterValueOf<T>(row: T, column: TableColumn<T>): string {
+  const raw = column.filterValue
+    ? column.filterValue(row)
+    : (row as Record<string, unknown>)[column.key];
+
+  if (Array.isArray(raw)) {
+    return raw.map(item => String(item ?? '')).filter(Boolean).join(', ') || '-';
+  }
+  if (raw == null || raw === '') return '-';
+  if (typeof raw === 'boolean') return raw ? 'Aktif' : 'Tidak';
+  if (raw instanceof Date) return raw.toLocaleDateString('id-ID');
+  if (typeof raw === 'object') {
+    const timestamp = raw as { toDate?: () => Date };
+    if (typeof timestamp.toDate === 'function') return timestamp.toDate().toLocaleDateString('id-ID');
+    return '-';
+  }
+  return String(raw);
 }
 
 interface DataTableProps<T> {
@@ -22,44 +45,161 @@ interface DataTableProps<T> {
 }
 
 export function DataTable<T>({ columns, rows, rowKey, onEdit, onDelete, emptyLabel = 'Belum ada data.' }: DataTableProps<T>) {
-  if (rows.length === 0) {
-    return <div className="text-center py-12 text-sm text-slate-500">{emptyLabel}</div>;
-  }
+  const [open, setOpen] = useState(false);
+  const [filters, setFilters] = useState<Record<string, string[]>>({});
+
+  const filterGroups = useMemo(() => columns.flatMap(column => {
+    if (column.filterable === false) return [];
+    if (!column.filterable && NON_FILTERABLE_KEY.test(column.key)) return [];
+
+    const counts = new Map<string, number>();
+    rows.forEach(row => {
+      const value = filterValueOf(row, column);
+      counts.set(value, (counts.get(value) ?? 0) + 1);
+    });
+    if (column.filterable !== true && (counts.size < 2 || counts.size > 12)) return [];
+
+    const options = [...counts.entries()]
+      .map(([value, count]) => ({ value, count }))
+      .sort((a, b) => a.value.localeCompare(b.value, 'id-ID'));
+
+    return [{ column, options }];
+  }), [columns, rows]);
+
+  const isGroupActive = (key: string, optionCount: number) => {
+    const selected = filters[key] ?? [];
+    return selected.length > 0 && selected.length < optionCount;
+  };
+
+  const activeCount = filterGroups.filter(group => isGroupActive(group.column.key, group.options.length)).length;
+
+  const visibleRows = useMemo(() => rows.filter(row => filterGroups.every(group => {
+    const selected = filters[group.column.key] ?? [];
+    if (selected.length === 0 || selected.length === group.options.length) return true;
+    return selected.includes(filterValueOf(row, group.column));
+  })), [rows, filterGroups, filters]);
+
+  const toggleOption = (key: string, value: string) => {
+    setFilters(current => {
+      const selected = current[key] ?? [];
+      return {
+        ...current,
+        [key]: selected.includes(value) ? selected.filter(item => item !== value) : [...selected, value],
+      };
+    });
+  };
+
+  const toggleAll = (key: string, values: string[]) => {
+    setFilters(current => ({ ...current, [key]: (current[key] ?? []).length === values.length ? [] : values }));
+  };
+
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[720px] text-left border-collapse">
-        <thead>
-          <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase tracking-wider">
-            {columns.map(column => <th key={column.key} className="p-4 font-semibold whitespace-nowrap">{column.label}</th>)}
-            {(onEdit || onDelete) && <th className="p-4 font-semibold text-right">Aksi</th>}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-100 text-sm">
-          {rows.map(row => (
-            <tr key={rowKey(row)} className="hover:bg-slate-50/80 transition">
-              {columns.map(column => (
-                <td key={column.key} className="p-4 text-slate-700">
-                  {column.render ? column.render(row) : String((row as Record<string, unknown>)[column.key] ?? '-')}
-                </td>
+    <div>
+      {filterGroups.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 pt-3">
+          <button
+            type="button"
+            onClick={() => setOpen(current => !current)}
+            className="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-emerald-700"
+            aria-expanded={open}
+          >
+            <ListFilter className="w-4 h-4" />
+            Filter checkbox
+            {activeCount > 0 && (
+              <span className="px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">{activeCount}</span>
+            )}
+          </button>
+          {activeCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setFilters({})}
+              className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-red-600"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              Reset filter
+            </button>
+          )}
+        </div>
+      )}
+
+      {open && filterGroups.length > 0 && (
+        <div className="mx-3 sm:mx-4 mt-2 mb-1 p-3 rounded-xl border border-slate-200 bg-slate-50/80 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {filterGroups.map(group => {
+            const selected = filters[group.column.key] ?? [];
+            const allChecked = selected.length === 0 || selected.length === group.options.length;
+            return (
+              <div key={group.column.key} className="min-w-0">
+                <div className="text-xs font-semibold text-slate-700 mb-2">{group.column.label}</div>
+                <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                  <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={allChecked}
+                      onChange={() => toggleAll(group.column.key, group.options.map(option => option.value))}
+                      className="w-3.5 h-3.5 accent-emerald-700"
+                    />
+                    <span className="font-medium">Semua</span>
+                  </label>
+                  {group.options.map(option => (
+                    <label key={option.value} className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={allChecked || selected.includes(option.value)}
+                        onChange={() => toggleOption(group.column.key, option.value)}
+                        className="w-3.5 h-3.5 accent-emerald-700"
+                      />
+                      <span className="truncate" title={option.value}>{option.value}</span>
+                      <span className="ml-auto text-slate-400">({option.count})</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {visibleRows.length === 0 ? (
+        <div className="text-center py-12 text-sm text-slate-500">
+          {rows.length === 0 ? emptyLabel : 'Tidak ada data yang cocok dengan filter.'}
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[720px] text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase tracking-wider">
+                {columns.map(column => <th key={column.key} className="p-4 font-semibold whitespace-nowrap">{column.label}</th>)}
+                {(onEdit || onDelete) && <th className="p-4 font-semibold text-right">Aksi</th>}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 text-sm">
+              {visibleRows.map(row => (
+                <tr key={rowKey(row)} className="hover:bg-slate-50/80 transition">
+                  {columns.map(column => (
+                    <td key={column.key} className="p-4 text-slate-700">
+                      {column.render ? column.render(row) : String((row as Record<string, unknown>)[column.key] ?? '-')}
+                    </td>
+                  ))}
+                  {(onEdit || onDelete) && (
+                    <td className="p-4 text-right whitespace-nowrap">
+                      {onEdit && (
+                        <button onClick={() => onEdit(row)} className="p-2 text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg" title="Ubah">
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                      )}
+                      {onDelete && (
+                        <button onClick={() => onDelete(row)} className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg" title="Hapus">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </td>
+                  )}
+                </tr>
               ))}
-              {(onEdit || onDelete) && (
-                <td className="p-4 text-right whitespace-nowrap">
-                  {onEdit && (
-                    <button onClick={() => onEdit(row)} className="p-2 text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg" title="Ubah">
-                      <Pencil className="w-4 h-4" />
-                    </button>
-                  )}
-                  {onDelete && (
-                    <button onClick={() => onDelete(row)} className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg" title="Hapus">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
-                </td>
-              )}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
