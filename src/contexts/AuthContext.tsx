@@ -1,14 +1,10 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import {
-  signInWithEmailAndPassword,
-  signOut as fbSignOut,
-  onAuthStateChanged
-} from 'firebase/auth';
+import { onAuthStateChanged } from 'firebase/auth';
 import type { User as FirebaseUser } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { auth, isFirebaseConfigured, db } from '../services/firebase';
+import { auth, isFirebaseConfigured } from '../services/firebase';
 import type { UserProfile, Role } from '../types';
-import { getRoles, getUsers } from '../services/rbacService';
+import { getRoles } from '../services/rbacService';
+import { fetchUserProfile, loginUser, logoutUser, registerUser } from '../services/authService';
 
 interface AuthContextType {
   currentUser: UserProfile | null;
@@ -16,6 +12,7 @@ interface AuthContextType {
   loading: boolean;
   rolesList: Role[];
   login: (email: string, pass: string) => Promise<void>;
+  register: (name: string, email: string, pass: string) => Promise<void>;
   logout: () => Promise<void>;
   hasPermission: (permission: string) => boolean;
   refreshUserData: () => Promise<void>;
@@ -30,22 +27,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState<boolean>(true);
 
   const loadRoles = async () => {
-    const roles = await getRoles();
-    setRolesList(roles);
+    try {
+      const roles = await getRoles();
+      setRolesList(roles);
+    } catch (error) {
+      console.error('Error loading roles:', error);
+    }
   };
 
   const refreshUserData = async () => {
     await loadRoles();
-    if (!currentUser) return;
-    const users = await getUsers();
-    const updated = users.find(u => u.uid === currentUser.uid);
-    if (updated) {
-      if (!updated.isActive) {
-        await logout();
-        throw new Error('Akun Anda telah dinonaktifkan oleh Super Admin.');
-      }
-      setCurrentUser(updated);
+    if (!firebaseUser) return;
+    const updated = await fetchUserProfile(firebaseUser);
+    if (!updated.isActive) {
+      await logout();
+      throw new Error('Akun Anda telah dinonaktifkan oleh Super Admin.');
     }
+    setCurrentUser(updated);
   };
 
   useEffect(() => {
@@ -55,39 +53,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
-    const firebaseAuth = auth;
-    const unsubscribe = onAuthStateChanged(firebaseAuth, async (fbUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       setFirebaseUser(fbUser);
-      if (fbUser && db) {
+      if (fbUser) {
         try {
-          const userDocRef = doc(db, 'users', fbUser.uid);
-          const userSnap = await getDoc(userDocRef);
-          if (userSnap.exists()) {
-            const profile = userSnap.data() as UserProfile;
-            if (!profile.isActive) {
-              await fbSignOut(firebaseAuth);
-              setCurrentUser(null);
-              setLoading(false);
-              return;
-            }
-            setCurrentUser(profile);
-          } else {
-            const defaultProfile: UserProfile = {
-              uid: fbUser.uid,
-              email: fbUser.email || '',
-              displayName: fbUser.displayName || 'User SILOG',
-              role: 'Viewer',
-              isActive: true,
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            };
-            await setDoc(userDocRef, defaultProfile);
-            setCurrentUser(defaultProfile);
+          const profile = await fetchUserProfile(fbUser);
+          if (!profile.isActive) {
+            await logoutUser();
+            setCurrentUser(null);
+            setLoading(false);
+            return;
           }
+          setCurrentUser(profile);
         } catch (error) {
           console.error('Error fetching user profile:', error);
+          setCurrentUser(null);
         }
-      } else if (!fbUser) {
+      } else {
         setCurrentUser(null);
       }
       setLoading(false);
@@ -97,43 +79,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, pass: string) => {
-    if (!isFirebaseConfigured || !auth) {
-      throw new Error('Firebase belum dikonfigurasi. Hubungi administrator sistem.');
+    const profile = await loginUser(email, pass);
+    if (!profile.isActive) {
+      await logoutUser();
+      throw new Error('Akun Anda dinonaktifkan.');
     }
+    setCurrentUser(profile);
+  };
 
-    const cred = await signInWithEmailAndPassword(auth, email, pass);
-    if (db) {
-      const userDocRef = doc(db, 'users', cred.user.uid);
-      const userSnap = await getDoc(userDocRef);
-      if (userSnap.exists()) {
-        const profile = userSnap.data() as UserProfile;
-        if (!profile.isActive) {
-          await fbSignOut(auth);
-          throw new Error('Akun Anda dinonaktifkan.');
-        }
-        setCurrentUser(profile);
-      } else {
-        const defaultProfile: UserProfile = {
-          uid: cred.user.uid,
-          email: cred.user.email || '',
-          displayName: cred.user.displayName || 'User SILOG',
-          role: 'Viewer',
-          isActive: true,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
-        await setDoc(userDocRef, defaultProfile);
-        setCurrentUser(defaultProfile);
-      }
+  const register = async (name: string, email: string, pass: string) => {
+    const profile = await registerUser(name, email, pass);
+    if (!profile.isActive) {
+      await logoutUser();
+      throw new Error('Akun Anda dinonaktifkan.');
     }
+    setCurrentUser(profile);
   };
 
   const logout = async () => {
     setCurrentUser(null);
     setFirebaseUser(null);
-    if (auth && isFirebaseConfigured) {
-      await fbSignOut(auth);
-    }
+    await logoutUser();
   };
 
   const hasPermission = (permission: string): boolean => {
@@ -156,6 +122,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       loading,
       rolesList,
       login,
+      register,
       logout,
       hasPermission,
       refreshUserData

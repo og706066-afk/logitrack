@@ -2,6 +2,7 @@ export type UserRole = 'Super Admin' | 'Manager' | 'Staf Gudang' | 'Kepala Gudan
 
 export interface UserProfile {
   uid: string;
+  name?: string;
   email: string;
   displayName: string;
   role: UserRole;

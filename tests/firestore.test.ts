@@ -24,7 +24,7 @@ describe('SILOG Final Patch 3 Security Tests', () => {
   });
 
   afterEach(async () => {
-    await testEnv.cleanup();
+    if (testEnv) await testEnv.cleanup();
   });
 
   // ==========================================
@@ -128,6 +128,7 @@ describe('SILOG Final Patch 3 Security Tests', () => {
     await expect(
       db.doc('users/new-uid').set({
         uid: 'new-uid',
+        name: 'New User',
         email: 'new@silog.pesantren.id',
         displayName: 'New User',
         role: 'Viewer',
@@ -136,6 +137,112 @@ describe('SILOG Final Patch 3 Security Tests', () => {
         updatedAt: new Date()
       })
     ).resolves.toBeDefined();
+  });
+
+  it('6a. New user registration with name field -> ALLOW', async () => {
+    const ctx = testEnv.authenticatedContext('new-named-user', { email: 'named@silog.pesantren.id' });
+    const db = ctx.firestore();
+
+    await expect(
+      db.doc('users/new-named-user').set({
+        uid: 'new-named-user',
+        name: 'Named User',
+        email: 'named@silog.pesantren.id',
+        displayName: 'Named User',
+        role: 'Viewer',
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+    ).resolves.toBeDefined();
+  });
+
+  it('6b. User cannot change own role -> DENY', async () => {
+    const ctx = testEnv.authenticatedContext('self-role-user', { email: 'self@silog.pesantren.id' });
+    const db = ctx.firestore();
+
+    await testEnv.withSecurityRulesDisabled(async (admin) => {
+      await admin.firestore().doc('users/self-role-user').set({
+        uid: 'self-role-user',
+        name: 'Self User',
+        email: 'self@silog.pesantren.id',
+        displayName: 'Self User',
+        role: 'Viewer',
+        isActive: true,
+        permissions: [],
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+    });
+
+    await expect(
+      db.doc('users/self-role-user').update({ role: 'Super Admin' })
+    ).rejects.toThrow();
+  });
+
+  it('6c. User can update own name -> ALLOW', async () => {
+    const ctx = testEnv.authenticatedContext('self-name-user', { email: 'selfname@silog.pesantren.id' });
+    const db = ctx.firestore();
+
+    await testEnv.withSecurityRulesDisabled(async (admin) => {
+      await admin.firestore().doc('users/self-name-user').set({
+        uid: 'self-name-user',
+        name: 'Self Name',
+        email: 'selfname@silog.pesantren.id',
+        displayName: 'Self Name',
+        role: 'Viewer',
+        isActive: true,
+        permissions: [],
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+    });
+
+    await expect(
+      db.doc('users/self-name-user').update({ name: 'Nama Baru', updatedAt: new Date() })
+    ).resolves.toBeDefined();
+  });
+
+  it('6d. Super Admin can change another user role -> ALLOW', async () => {
+    const ctx = testEnv.authenticatedContext('admin-role', { email: 'adminrole@silog.pesantren.id' });
+    const db = ctx.firestore();
+
+    await testEnv.withSecurityRulesDisabled(async (admin) => {
+      await admin.firestore().doc('users/admin-role').set({
+        uid: 'admin-role',
+        name: 'Admin Role',
+        email: 'adminrole@silog.pesantren.id',
+        displayName: 'Admin Role',
+        role: 'Super Admin',
+        isActive: true,
+        permissions: [],
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      await admin.firestore().doc('users/target-role').set({
+        uid: 'target-role',
+        name: 'Target User',
+        email: 'targetrole@silog.pesantren.id',
+        displayName: 'Target User',
+        role: 'Viewer',
+        isActive: true,
+        permissions: [],
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+    });
+
+    await expect(
+      db.doc('users/target-role').update({ role: 'Kepala Gudang' })
+    ).resolves.toBeDefined();
+  });
+
+  it('6e. Legacy auth user without profile can read own missing profile -> ALLOW', async () => {
+    const ctx = testEnv.authenticatedContext('legacy-user', { email: 'legacy@silog.pesantren.id' });
+    const db = ctx.firestore();
+
+    const snapshot = await db.doc('users/legacy-user').get();
+    expect(snapshot.exists).toBe(false);
   });
 
   it('7. Inactive user trying to read roles -> DENY', async () => {

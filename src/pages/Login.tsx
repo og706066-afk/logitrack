@@ -1,30 +1,45 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Boxes, Lock, Mail, AlertCircle, ArrowRight } from 'lucide-react';
+import { Boxes, Lock, Mail, AlertCircle, ArrowRight, UserPlus } from 'lucide-react';
 import { LOGIN_DELAY_MS, wait } from '../utils/async';
 
 export const Login: React.FC = () => {
+  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, register } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const isRegister = mode === 'register';
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
       await wait(LOGIN_DELAY_MS);
-      await login(email, password);
+      if (isRegister) {
+        await register(name, email, password);
+      } else {
+        await login(email, password);
+      }
       navigate('/');
     } catch (err: any) {
-      setError(err.message || 'Gagal masuk. Periksa kembali email dan password Anda.');
+      setError(err.message || (isRegister
+        ? 'Gagal membuat akun. Periksa kembali data registrasi Anda.'
+        : 'Gagal masuk. Periksa kembali email dan password Anda.'));
     } finally {
       setLoading(false);
     }
+  };
+
+  const switchMode = () => {
+    setMode(isRegister ? 'login' : 'register');
+    setError('');
   };
 
   return (
@@ -55,7 +70,31 @@ export const Login: React.FC = () => {
             </div>
           )}
 
-          <form className="space-y-5 sm:space-y-6" onSubmit={handleLogin}>
+          <form className="space-y-5 sm:space-y-6" onSubmit={handleSubmit}>
+            {isRegister && (
+              <div>
+                <label htmlFor="register-name" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
+                  Nama Lengkap
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <UserPlus className="w-5 h-5" />
+                  </div>
+                  <input
+                    id="register-name"
+                    type="text"
+                    autoComplete="name"
+                    required
+                    disabled={loading}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Nama Anda"
+                    className="block w-full pl-11 pr-4 py-2.5 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 text-sm focus:outline-hidden focus:ring-2 focus:ring-emerald-600 focus:bg-white transition disabled:opacity-60"
+                  />
+                </div>
+              </div>
+            )}
+
             <div>
               <label htmlFor="login-email" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
                 Email / Akun
@@ -89,7 +128,7 @@ export const Login: React.FC = () => {
                 <input
                   id="login-password"
                   type="password"
-                  autoComplete="current-password"
+                  autoComplete={isRegister ? 'new-password' : 'current-password'}
                   required
                   disabled={loading}
                   value={password}
@@ -112,11 +151,22 @@ export const Login: React.FC = () => {
                 </span>
               ) : (
                 <span className="flex items-center justify-center">
-                  Masuk ke Sistem
+                  {isRegister ? 'Buat Akun Baru' : 'Masuk ke Sistem'}
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </span>
               )}
             </button>
+
+            <div className="text-center pt-1">
+              <button
+                type="button"
+                onClick={switchMode}
+                disabled={loading}
+                className="text-xs sm:text-sm font-semibold text-emerald-700 hover:text-emerald-900 hover:underline disabled:opacity-60"
+              >
+                {isRegister ? 'Sudah punya akun? Masuk' : 'Belum punya akun? Daftar'}
+              </button>
+            </div>
           </form>
         </div>
       </div>
@@ -128,8 +178,12 @@ export const Login: React.FC = () => {
               <Boxes className="w-9 h-9" />
             </div>
             <div className="mt-6 w-11 h-11 border-4 border-emerald-100 border-t-emerald-600 rounded-full animate-spin" />
-            <p className="mt-5 text-sm font-bold text-slate-800 text-center">Sedang masuk ke sistem...</p>
-            <p className="mt-1 text-xs text-slate-500 text-center">Memverifikasi akun Anda, mohon tunggu.</p>
+            <p className="mt-5 text-sm font-bold text-slate-800 text-center">
+              {isRegister ? 'Sedang membuat akun...' : 'Sedang masuk ke sistem...'}
+            </p>
+            <p className="mt-1 text-xs text-slate-500 text-center">
+              {isRegister ? 'Menyiapkan profil Anda, mohon tunggu.' : 'Memverifikasi akun Anda, mohon tunggu.'}
+            </p>
           </div>
         </div>
       )}
