@@ -133,4 +133,25 @@ describe('Firebase Auth + Firestore profile integration', () => {
     await logoutUser();
     expect(signOut).toHaveBeenCalled();
   });
+
+  it('shows a clear Indonesian error for wrong email or password', async () => {
+    vi.mocked(signInWithEmailAndPassword).mockRejectedValueOnce({
+      code: 'auth/invalid-credential',
+      message: 'Firebase: Error (auth/invalid-credential).',
+    });
+
+    await expect(loginUser('user@silog.test', 'salah'))
+      .rejects.toThrow('Email atau kata sandi salah.');
+    expect(setDoc).not.toHaveBeenCalled();
+  });
+
+  it('shows a clear Indonesian error when registering an existing email', async () => {
+    vi.mocked(createUserWithEmailAndPassword).mockRejectedValueOnce({
+      code: 'auth/email-already-in-use',
+      message: 'Firebase: Error (auth/email-already-in-use).',
+    });
+
+    await expect(registerUser('Nama User', 'user@silog.test', 'secret123'))
+      .rejects.toThrow('Email sudah terdaftar');
+  });
 });

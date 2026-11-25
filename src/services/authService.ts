@@ -22,6 +22,35 @@ function resolveName(user: FirebaseUser, preferredName?: string): string {
   return preferredName?.trim() || user.displayName || 'User SILOG';
 }
 
+function authErrorMessage(error: unknown, fallback: string): string {
+  const code = (error as { code?: string } | null)?.code || '';
+  if ([
+    'auth/invalid-credential',
+    'auth/wrong-password',
+    'auth/user-not-found',
+    'auth/invalid-email',
+    'auth/missing-password',
+  ].includes(code)) {
+    return 'Email atau kata sandi salah.';
+  }
+  if (code === 'auth/too-many-requests') {
+    return 'Terlalu banyak percobaan masuk. Coba lagi nanti.';
+  }
+  if (code === 'auth/user-disabled') {
+    return 'Akun ini telah dinonaktifkan.';
+  }
+  if (code === 'auth/network-request-failed') {
+    return 'Koneksi jaringan gagal. Periksa internet Anda.';
+  }
+  if (code === 'auth/email-already-in-use') {
+    return 'Email sudah terdaftar. Gunakan email lain atau masuk saja.';
+  }
+  if (code === 'auth/weak-password') {
+    return 'Kata sandi terlalu lemah. Gunakan minimal 6 karakter.';
+  }
+  return (error as Error | null)?.message || fallback;
+}
+
 function buildProfile(user: FirebaseUser, preferredName?: string): UserProfile {
   const name = resolveName(user, preferredName);
   return {
@@ -60,7 +89,13 @@ export async function fetchUserProfile(user: FirebaseUser, preferredName?: strin
 
 export async function loginUser(email: string, password: string): Promise<UserProfile> {
   const { auth: firebaseAuth } = getFirebaseContext();
-  const credential = await signInWithEmailAndPassword(firebaseAuth, email.trim(), password);
+
+  let credential;
+  try {
+    credential = await signInWithEmailAndPassword(firebaseAuth, email.trim(), password);
+  } catch (error) {
+    throw new Error(authErrorMessage(error, 'Gagal masuk. Periksa kembali email dan kata sandi Anda.'));
+  }
 
   try {
     return await fetchUserProfile(credential.user);
@@ -73,7 +108,13 @@ export async function loginUser(email: string, password: string): Promise<UserPr
 export async function registerUser(name: string, email: string, password: string): Promise<UserProfile> {
   const { auth: firebaseAuth } = getFirebaseContext();
   const cleanName = name.trim();
-  const credential = await createUserWithEmailAndPassword(firebaseAuth, email.trim(), password);
+
+  let credential;
+  try {
+    credential = await createUserWithEmailAndPassword(firebaseAuth, email.trim(), password);
+  } catch (error) {
+    throw new Error(authErrorMessage(error, 'Gagal membuat akun. Coba lagi.'));
+  }
 
   try {
     await updateProfile(credential.user, { displayName: cleanName });
