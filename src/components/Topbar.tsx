@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
-import { Menu, Bell, LogOut, User as UserIcon, Shield } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Menu, Bell, LogOut, User as UserIcon, Shield, ClipboardList, AlertTriangle, Truck } from 'lucide-react';
+import { getCollection, getShipments } from '../services/logitrackService';
+import type { Item, NeedRequest } from '../types/logitrack';
 import { useAuth } from '../contexts/AuthContext';
 import { ConfirmDialog, LoadingOverlay } from './ui';
 import { ACTION_DELAY_MS, wait } from '../utils/async';
@@ -12,6 +14,31 @@ export const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
   const { currentUser, logout } = useAuth();
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState({ pending: 0, lowStock: 0, issues: 0 });
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      try {
+        const [needs, items, shipments] = await Promise.allSettled([
+          getCollection<NeedRequest>('needsRequests'),
+          getCollection<Item>('products'),
+          getShipments(currentUser),
+        ]);
+        if (!active) return;
+        setNotifications({
+          pending: needs.status === 'fulfilled' ? needs.value.filter(row => row.status === 'Pending').length : 0,
+          lowStock: items.status === 'fulfilled' ? items.value.filter(row => row.itemStatus === 'Aktif' && row.currentStock <= row.minStock).length : 0,
+          issues: shipments.status === 'fulfilled' ? shipments.value.filter(row => row.status === 'Bermasalah').length : 0,
+        });
+      } catch {
+        if (active) setNotifications({ pending: 0, lowStock: 0, issues: 0 });
+      }
+    };
+    void load();
+    return () => { active = false; };
+  }, [currentUser]);
 
   const handleLogout = async () => {
     setConfirmLogout(false);
@@ -46,13 +73,28 @@ export const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
         </div>
 
         <div className="flex items-center space-x-1 sm:space-x-4 shrink-0">
-          <button
-            className="hidden sm:block relative p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition"
-            title="Notifikasi"
-          >
-            <Bell className="w-5 h-5" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-emerald-600 rounded-full"></span>
-          </button>
+          <div className="hidden sm:block relative">
+            <button
+              onClick={() => setShowNotifications(previous => !previous)}
+              className="relative p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition"
+              title="Notifikasi"
+            >
+              <Bell className="w-5 h-5" />
+              {(notifications.pending + notifications.lowStock + notifications.issues) > 0 && (
+                <span className="absolute top-1 right-1 min-w-4 h-4 px-1 bg-red-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                  {notifications.pending + notifications.lowStock + notifications.issues}
+                </span>
+              )}
+            </button>
+            {showNotifications && (
+              <div className="absolute right-0 top-11 z-40 w-72 bg-white border border-slate-200 rounded-2xl shadow-xl p-3 space-y-2">
+                <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Notifikasi</p>
+                <div className="flex items-center gap-3 p-2.5 rounded-xl bg-amber-50 text-amber-800 text-sm"><ClipboardList className="w-4 h-4" /><span>{notifications.pending} kebutuhan menunggu persetujuan</span></div>
+                <div className="flex items-center gap-3 p-2.5 rounded-xl bg-red-50 text-red-700 text-sm"><AlertTriangle className="w-4 h-4" /><span>{notifications.lowStock} barang stok menipis</span></div>
+                <div className="flex items-center gap-3 p-2.5 rounded-xl bg-blue-50 text-blue-700 text-sm"><Truck className="w-4 h-4" /><span>{notifications.issues} pengiriman bermasalah</span></div>
+              </div>
+            )}
+          </div>
 
           {currentUser && (
             <div className="flex items-center space-x-1 sm:space-x-3 sm:pl-3 sm:border-l sm:border-slate-200">

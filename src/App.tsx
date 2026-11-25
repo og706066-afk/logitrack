@@ -12,6 +12,14 @@ import { StockInPage, StockOutPage } from './pages/transactions';
 import { DeliveriesPage, DriversPage, KitchenRequestsPage } from './pages/operations';
 import { ReportsPage } from './pages/Reports';
 import { SettingsPage } from './pages/Settings';
+import { NeedsPage } from './pages/needs';
+import { ShipmentsPage } from './pages/shipments';
+import { StockControlPage } from './pages/stockControl';
+import { MasterDataPage } from './pages/masterData';
+import { ImportExcelPage } from './pages/importExcel';
+import { FinancePage } from './pages/finance';
+import { RegionsPage } from './pages/regions';
+import { ReportsAdvancedPage } from './pages/reportsAdvanced';
 
 export function App() {
   return (
@@ -26,7 +34,7 @@ export function App() {
               <ProtectedRoute>
                 <Layout>
                   <Routes>
-                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/" element={<ProtectedRoute requiredPermission="dashboard.view"><Dashboard /></ProtectedRoute>} />
                     <Route path="/products" element={<ProtectedRoute requiredPermission="products.view"><ProductsPage /></ProtectedRoute>} />
                     <Route path="/categories" element={<ProtectedRoute requiredPermission="categories.view"><CategoriesPage /></ProtectedRoute>} />
                     <Route path="/suppliers" element={<ProtectedRoute requiredPermission="suppliers.view"><SuppliersPage /></ProtectedRoute>} />
@@ -41,6 +49,14 @@ export function App() {
                     <Route path="/roles" element={<ProtectedRoute requiredPermission="roles.view"><Roles /></ProtectedRoute>} />
                     <Route path="/settings" element={<ProtectedRoute requiredPermission="users.view"><SettingsPage /></ProtectedRoute>} />
                     <Route path="/audit-logs" element={<ProtectedRoute requiredPermission="users.view"><AuditLogs /></ProtectedRoute>} />
+                    <Route path="/needs" element={<ProtectedRoute requiredPermission="needsRequests.view"><NeedsPage /></ProtectedRoute>} />
+                    <Route path="/shipments" element={<ProtectedRoute requiredPermission="shipments.view"><ShipmentsPage /></ProtectedRoute>} />
+                    <Route path="/stock-control" element={<ProtectedRoute requiredPermission="stockTransactions.view"><StockControlPage /></ProtectedRoute>} />
+                    <Route path="/master-data" element={<ProtectedRoute requiredPermission="kordas.view"><MasterDataPage /></ProtectedRoute>} />
+                    <Route path="/import-excel" element={<ProtectedRoute requiredPermission="imports.view"><ImportExcelPage /></ProtectedRoute>} />
+                    <Route path="/finance" element={<ProtectedRoute requiredPermission="finance.view"><FinancePage /></ProtectedRoute>} />
+                    <Route path="/regions" element={<ProtectedRoute requiredPermission="regions.view"><RegionsPage /></ProtectedRoute>} />
+                    <Route path="/reports-advanced" element={<ProtectedRoute requiredPermission="reports.view"><ReportsAdvancedPage /></ProtectedRoute>} />
                   </Routes>
                 </Layout>
               </ProtectedRoute>

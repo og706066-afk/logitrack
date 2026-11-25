@@ -38,7 +38,7 @@ async function main() {
   const resolvedName = displayName || user.displayName || 'Super Admin';
   const userRef = adminDb.collection('users').doc(user.uid);
   const snapshot = await userRef.get();
-  const createdAt = snapshot.exists ? snapshot.data().createdAt : new Date();
+  const createdAt = snapshot.data()?.createdAt ?? new Date();
 
   await userRef.set({
     uid: user.uid,

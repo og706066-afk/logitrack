@@ -12,6 +12,8 @@ import {
   today,
   type DataRow,
 } from '../services/logisticsService';
+import { createStockTransaction, getDocument, toNumber } from '../services/logitrackService';
+import type { Item } from '../types/logitrack';
 
 function toOptions(rows: DataRow[]): { value: string; label: string }[] {
   return rows.map(row => ({ value: row.id, label: String(row.name ?? row.id) }));
@@ -35,11 +37,48 @@ export const StockInPage: React.FC = () => {
     });
   }, []);
 
-  const applyStockChange = async (row: DataRow, delta: number, isNew: boolean) => {
+  const recordStockChange = async (row: DataRow, delta: number, isNew: boolean) => {
     if (delta === 0 && !isNew) return;
-    const product = products.find(item => item.id === row.productId);
-    if (product) {
-      await patchRow('products', product.id, { currentStock: Math.max(0, asNumber(product.currentStock) + delta), updatedAt: new Date() }, currentUser);
+    const item = await getDocument<Item>('products', String(row.productId));
+    if (isNew && delta > 0) {
+      await createStockTransaction({
+        type: 'IN',
+        date: row.date,
+        itemId: row.productId,
+        itemName: row.productName,
+        categoryId: item?.categoryId || '',
+        categoryName: item?.categoryName || '',
+        quantity: delta,
+        unit: item?.unit || row.unit || 'Pcs',
+        source: row.supplierName || '',
+        senderName: row.supplierName || '',
+        receiverName: currentUser?.displayName || '',
+        warehouseId: 'wh-1',
+        storageLocation: row.storageLocation || '',
+        referenceType: 'stock_in',
+        referenceId: row.id,
+        notes: row.notes || '',
+        status: 'Confirmed',
+      }, currentUser);
+    } else if (item && delta !== 0) {
+      await createStockTransaction({
+        type: 'ADJUSTMENT',
+        date: row.date,
+        itemId: item.id,
+        itemName: item.name,
+        categoryId: item.categoryId,
+        categoryName: item.categoryName,
+        quantity: toNumber(item.currentStock) + delta,
+        unit: item.unit,
+        source: 'Penyesuaian transaksi barang masuk',
+        receiverName: currentUser?.displayName || '',
+        warehouseId: 'wh-1',
+        storageLocation: row.storageLocation || '',
+        referenceType: 'stock_in',
+        referenceId: row.id,
+        notes: row.notes || '',
+        status: 'Confirmed',
+      }, currentUser);
     }
 
     if (isNew) {
@@ -86,7 +125,7 @@ export const StockInPage: React.FC = () => {
   };
 
   const handleDelete = async (row: DataRow) => {
-    await applyStockChange(row, -asNumber(row.quantity), false);
+    await recordStockChange(row, -asNumber(row.quantity), false);
     const batches = await getRows('stock_batches');
     await Promise.all(batches.filter(item => item.stockInId === row.id).map(item => deleteRow('stock_batches', item.id, currentUser)));
     const movements = await getRows('stock_movements');
@@ -134,7 +173,7 @@ export const StockInPage: React.FC = () => {
       onSaved={async (row, rows, isNew) => {
         const previous = rows.find(item => item.id === row.id);
         const delta = isNew ? asNumber(row.quantity) : asNumber(row.quantity) - asNumber(previous?.quantity);
-        await applyStockChange(row, delta, isNew);
+        await recordStockChange(row, delta, isNew);
         setProducts(await getRows('products'));
       }}
       onDeleted={async row => {
@@ -153,10 +192,47 @@ export const StockOutPage: React.FC = () => {
     void getRows('products').then(setProducts);
   }, []);
 
-  const applyOutbound = async (row: DataRow, delta: number, isNew: boolean) => {
-    const product = products.find(item => item.id === row.productId);
-    if (product) {
-      await patchRow('products', product.id, { currentStock: Math.max(0, asNumber(product.currentStock) - delta), updatedAt: new Date() }, currentUser);
+  const recordOutbound = async (row: DataRow, delta: number, isNew: boolean) => {
+    const item = await getDocument<Item>('products', String(row.productId));
+    if (item && delta > 0) {
+      await createStockTransaction({
+        type: 'OUT',
+        date: row.date,
+        itemId: item.id,
+        itemName: item.name,
+        categoryId: item.categoryId,
+        categoryName: item.categoryName,
+        quantity: delta,
+        unit: item.unit,
+        source: row.destination || '',
+        receiverName: row.requesterName || row.destination || '',
+        senderName: currentUser?.displayName || '',
+        warehouseId: item.warehouseId || 'wh-1',
+        storageLocation: item.warehouseName || '',
+        referenceType: 'stock_out',
+        referenceId: row.id,
+        notes: row.notes || '',
+        status: 'Confirmed',
+      }, currentUser);
+    } else if (item && delta < 0) {
+      await createStockTransaction({
+        type: 'ADJUSTMENT',
+        date: row.date,
+        itemId: item.id,
+        itemName: item.name,
+        categoryId: item.categoryId,
+        categoryName: item.categoryName,
+        quantity: toNumber(item.currentStock) - delta,
+        unit: item.unit,
+        source: 'Penyesuaian transaksi barang keluar',
+        receiverName: currentUser?.displayName || '',
+        warehouseId: item.warehouseId || 'wh-1',
+        storageLocation: item.warehouseName || '',
+        referenceType: 'stock_out',
+        referenceId: row.id,
+        notes: row.notes || '',
+        status: 'Confirmed',
+      }, currentUser);
     }
 
     if (isNew) {
@@ -190,7 +266,7 @@ export const StockOutPage: React.FC = () => {
   };
 
   const handleDelete = async (row: DataRow) => {
-    await applyOutbound(row, -asNumber(row.quantity), false);
+    await recordOutbound(row, -asNumber(row.quantity), false);
     const movements = await getRows('stock_movements');
     await Promise.all(movements.filter(item => item.referenceId === row.id).map(item => deleteRow('stock_movements', item.id, currentUser)));
   };
@@ -237,7 +313,7 @@ export const StockOutPage: React.FC = () => {
       onSaved={async (row, rows, isNew) => {
         const previous = rows.find(item => item.id === row.id);
         const delta = isNew ? asNumber(row.quantity) : asNumber(row.quantity) - asNumber(previous?.quantity);
-        await applyOutbound(row, delta, isNew);
+        await recordOutbound(row, delta, isNew);
         setProducts(await getRows('products'));
       }}
       onDeleted={async row => {

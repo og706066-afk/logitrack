@@ -20,6 +20,20 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const ROLE_FALLBACK_PERMISSIONS: Record<string, string[]> = {
+  Manager: [
+    'dashboard.view', 'items.view', 'needsRequests.view', 'needsRequests.approve', 'needsRequests.reject',
+    'shipments.view', 'shipments.edit', 'stockTransactions.view', 'stockTransactions.confirm',
+    'distributions.view', 'kordas.view', 'departments.view', 'reports.view', 'reports.export',
+  ],
+  Driver: ['dashboard.view', 'shipments.view', 'shipments.edit', 'shipments.confirm', 'shipments.upload'],
+  'Staf Gudang': [
+    'dashboard.view', 'items.view', 'items.create', 'items.edit', 'needsRequests.view', 'needsRequests.create',
+    'shipments.view', 'stockTransactions.view', 'stockTransactions.create', 'stockTransactions.confirm',
+    'distributions.view', 'distributions.create', 'kordas.view', 'departments.view', 'reports.view',
+  ],
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
@@ -106,13 +120,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!currentUser) return false;
     if (!currentUser.isActive) return false;
     if (currentUser.role === 'Super Admin') return true;
-    if (Array.isArray(currentUser.permissions) && currentUser.permissions.length > 0) {
-      return currentUser.permissions.includes(permission) || currentUser.permissions.includes('*');
-    }
 
-    const roleDef = rolesList.find(r => r.name === currentUser.role);
-    if (!roleDef || !roleDef.isActive) return false;
-    return roleDef.permissions.includes(permission) || roleDef.permissions.includes('*');
+    const sources = [
+      Array.isArray(currentUser.permissions) ? currentUser.permissions : [],
+      rolesList.find(r => r.name === currentUser.role && r.isActive)?.permissions ?? [],
+      ROLE_FALLBACK_PERMISSIONS[currentUser.role] ?? [],
+    ];
+    return sources.some(list => list.includes(permission) || list.includes('*'));
   };
 
   return (

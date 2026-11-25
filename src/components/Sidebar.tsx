@@ -16,7 +16,11 @@ import {
   ShieldCheck, 
   Settings, 
   ScrollText,
-  Boxes
+  Boxes,
+  Upload,
+  Wallet,
+  MapPin,
+  Building2
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -30,7 +34,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
 
   const menuItems = [
     { title: 'Dashboard', path: '/', icon: LayoutDashboard, permission: 'dashboard.view' },
-    { title: 'Bahan Makanan', path: '/products', icon: Package, permission: 'products.view' },
+    { title: 'Master Barang', path: '/products', icon: Package, permission: 'products.view' },
     { title: 'Kategori', path: '/categories', icon: Tags, permission: 'categories.view' },
     { title: 'Supplier', path: '/suppliers', icon: Truck, permission: 'suppliers.view' },
     { title: 'Barang Masuk', path: '/stock-in', icon: ArrowDown, permission: 'stock_in.view' },
@@ -44,6 +48,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
     { title: 'Manajemen Role', path: '/roles', icon: ShieldCheck, permission: 'roles.view' },
     { title: 'Pengaturan Sistem', path: '/settings', icon: Settings, permission: 'users.view' },
     { title: 'Audit Log', path: '/audit-logs', icon: ScrollText, permission: 'users.view' },
+    { title: 'Kebutuhan Barang', path: '/needs', icon: ClipboardList, permission: 'needsRequests.view' },
+    { title: 'Pengiriman Terpadu', path: '/shipments', icon: Send, permission: 'shipments.view' },
+    { title: 'Kontrol Stok', path: '/stock-control', icon: Warehouse, permission: 'stockTransactions.view' },
+    { title: 'Master KORDA & Bagian', path: '/master-data', icon: Building2, permission: 'kordas.view' },
+    { title: 'Import Excel', path: '/import-excel', icon: Upload, permission: 'imports.view' },
+    { title: 'Laporan Lengkap', path: '/reports-advanced', icon: BarChart3, permission: 'reports.view' },
+    { title: 'Keuangan', path: '/finance', icon: Wallet, permission: 'finance.view' },
+    { title: 'Wilayah & Penerima', path: '/regions', icon: MapPin, permission: 'regions.view' },
   ];
 
   // Filter items based on permission

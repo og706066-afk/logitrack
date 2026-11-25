@@ -31,6 +31,38 @@ service cloud.firestore {
       );
     }
 
+    function roleHasPermission(perm) {
+      return isUserActive() && (
+        (getUserRole() == 'Manager' && [
+          'dashboard.view', 'items.view', 'needsRequests.view', 'needsRequests.approve',
+          'needsRequests.reject', 'shipments.view', 'shipments.edit', 'stockTransactions.view',
+          'stockTransactions.confirm', 'distributions.view', 'kordas.view', 'departments.view',
+          'reports.view', 'reports.export'
+        ].hasAll([perm])) ||
+        (getUserRole() == 'Driver' && [
+          'dashboard.view', 'shipments.view', 'shipments.edit', 'shipments.confirm', 'shipments.upload'
+        ].hasAll([perm])) ||
+        (getUserRole() == 'Staf Gudang' && [
+          'dashboard.view', 'items.view', 'items.create', 'items.edit', 'needsRequests.view',
+          'needsRequests.create', 'shipments.view', 'stockTransactions.view',
+          'stockTransactions.create', 'stockTransactions.confirm', 'distributions.view',
+          'distributions.create', 'kordas.view', 'departments.view', 'reports.view'
+        ].hasAll([perm]))
+      );
+    }
+
+    function can(perm) {
+      return hasPermission(perm) || roleHasPermission(perm);
+    }
+
+    function isCreatedBy(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+
+    function isAssignedDriver(data) {
+      return getUserRole() == 'Driver' && data.driverId == request.auth.uid;
+    }
+
     // ==========================================
     // 1. USERS COLLECTION
     // ==========================================
@@ -38,7 +70,7 @@ service cloud.firestore {
       allow read: if isAuthenticated() && (
         request.auth.uid == userId ||
         getUserRole() == 'Super Admin' ||
-        isUserActive()
+        getUserRole() in ['Manager', 'Staf Gudang', 'Staf Logistik', 'Kepala Gudang']
       );
 
       allow create: if isAuthenticated() && 
@@ -98,9 +130,9 @@ service cloud.firestore {
     // ==========================================
     match /products/{id} {
       allow read: if isUserActive();
-      allow create: if hasPermission('products.create');
-      allow update: if hasPermission('products.edit');
-      allow delete: if hasPermission('products.delete');
+      allow create: if can('products.create') || can('items.create');
+      allow update: if can('products.edit') || can('items.edit');
+      allow delete: if can('products.delete') || can('items.delete') || can('items.create');
     }
 
     match /categories/{id} {
@@ -177,15 +209,14 @@ service cloud.firestore {
         getUserRole() == 'Super Admin' || 
         getUserRole() == 'Staf Gudang' || 
         getUserRole() == 'Manager' || 
-        hasPermission('requests.create')
+        can('requests.create')
       ) && 
       request.resource.data.requestId == get(/databases/$(database)/documents/requests/$(request.resource.data.requestId)).data.id;
       
       allow update: if isUserActive() && (
         getUserRole() == 'Super Admin' || 
-        getUserRole() == 'Staf Gudang' || 
-        getUserRole() == 'Manager' || 
-        hasPermission('requests.create')
+        can('requests.approve') ||
+        can('requests.create')
       ) && 
       request.resource.data.requestId == resource.data.requestId &&
       request.resource.data.requestId == get(/databases/$(database)/documents/requests/$(request.resource.data.requestId)).data.id;
@@ -203,7 +234,8 @@ service cloud.firestore {
       
       allow update: if isUserActive() && (
         getUserRole() == 'Super Admin' || 
-        hasPermission('deliveries.edit') || 
+        can('deliveries.edit') ||
+        can('deliveries.update') ||
         (
           getUserRole() == 'Driver' && 
           resource.data.driverId == request.auth.uid &&
@@ -224,8 +256,11 @@ service cloud.firestore {
       allow create: if isUserActive() && (getUserRole() == 'Super Admin' || hasPermission('deliveries.create'));
       allow update: if isUserActive() && (
         getUserRole() == 'Super Admin' || 
-        hasPermission('deliveries.edit') ||
-        request.resource.data.deliveryId == resource.data.deliveryId
+        can('deliveries.edit') ||
+        (
+          isAssignedDriver(get(/databases/$(database)/documents/deliveries/$(resource.data.deliveryId)).data) &&
+          request.resource.data.deliveryId == resource.data.deliveryId
+        )
       );
       allow delete: if hasPermission('deliveries.delete');
     }
@@ -245,6 +280,107 @@ service cloud.firestore {
       allow create: if hasPermission('stock_movements.create');
       allow update: if hasPermission('stock_movements.edit');
       allow delete: if hasPermission('stock_movements.delete');
+    }
+
+    // ==========================================
+    // 10. INTEGRATED LOGISTICS MODULES
+    // ==========================================
+
+    match /kordas/{id} {
+      allow read: if isUserActive();
+      allow create, update, delete: if can('kordas.manage');
+    }
+
+    match /departments/{id} {
+      allow read: if isUserActive();
+      allow create, update, delete: if can('departments.manage');
+    }
+
+    match /needsRequests/{id} {
+      allow read: if isUserActive();
+      allow create: if can('needsRequests.create') &&
+                    isCreatedBy(request.resource.data.createdBy) &&
+                    request.resource.data.status == 'Pending';
+      allow update: if isUserActive() && (
+        (can('needsRequests.approve') &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+           'status', 'approvedBy', 'approvedAt', 'rejectedReason', 'updatedAt', 'updatedBy'
+         ])) ||
+        (can('needsRequests.edit') &&
+         resource.data.status == 'Pending' &&
+         isCreatedBy(resource.data.createdBy) &&
+         request.resource.data.status == 'Pending' &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+           'date', 'requesterName', 'categoryId', 'categoryName', 'itemId', 'itemName',
+           'quantity', 'unit', 'kordaId', 'kordaName', 'departmentId', 'departmentName',
+           'notes', 'updatedAt', 'updatedBy'
+         ]))
+      );
+      allow delete: if getUserRole() == 'Super Admin';
+    }
+
+    match /shipments/{id} {
+      allow read: if isUserActive() && (getUserRole() != 'Driver' || isAssignedDriver(resource.data));
+      allow create: if can('shipments.create') && isCreatedBy(request.resource.data.createdBy);
+      allow update: if isUserActive() && (
+        can('shipments.edit') ||
+        can('shipments.confirm') ||
+        (isAssignedDriver(resource.data) &&
+         request.resource.data.driverId == resource.data.driverId &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+           'status', 'receivedQuantity', 'shortageNote', 'damageNote', 'proofPhotos',
+           'notes', 'storageLocation', 'deliveredAt', 'updatedAt', 'updatedBy'
+         ]))
+      );
+      allow delete: if getUserRole() == 'Super Admin';
+    }
+
+    match /stockTransactions/{id} {
+      allow read: if can('stockTransactions.view');
+      allow create: if (can('stockTransactions.create') || can('stock_in.create') || can('stock_out.create')) &&
+                    isCreatedBy(request.resource.data.createdBy) &&
+                    request.resource.data.status in ['Draft', 'Confirmed'];
+      allow update: if (can('stockTransactions.confirm') || can('stock_in.edit') || can('stock_out.edit') || can('stock_in.create') || can('stock_out.create')) &&
+                    request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                      'status', 'previousStock', 'newStock', 'approvedBy', 'approvedAt',
+                      'updatedAt', 'updatedBy'
+                    ]);
+      allow delete: if false;
+    }
+
+    match /distributions/{id} {
+      allow read: if can('distributions.view');
+      allow create: if can('distributions.create') && isCreatedBy(request.resource.data.createdBy);
+      allow update: if can('distributions.create');
+      allow delete: if getUserRole() == 'Super Admin';
+    }
+
+    match /financeTransactions/{id} {
+      allow read: if can('finance.view');
+      allow create: if can('finance.create') && isCreatedBy(request.resource.data.createdBy);
+      allow update: if can('finance.edit');
+      allow delete: if getUserRole() == 'Super Admin';
+    }
+
+    match /regions/{id} {
+      allow read: if can('regions.view');
+      allow create, update, delete: if can('regions.manage');
+    }
+
+    match /recipients/{id} {
+      allow read: if can('regions.view');
+      allow create, update, delete: if can('regions.manage');
+    }
+
+    match /activityLogs/{id} {
+      allow read: if isUserActive();
+      allow create: if isCreatedBy(request.resource.data.userId);
+      allow update, delete: if false;
+    }
+
+    match /notifications/{id} {
+      allow read: if isUserActive() && resource.data.userId == request.auth.uid;
+      allow create, update, delete: if getUserRole() == 'Super Admin';
     }
   }
 }

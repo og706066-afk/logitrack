@@ -26,6 +26,7 @@ import {
 } from '../services/logisticsService';
 import type { UserProfile } from '../types';
 import { ACTION_DELAY_MS, wait } from '../utils/async';
+import { createStockTransaction } from '../services/logitrackService';
 
 function parseItems(text: string, products: DataRow[]): { productId: string; productName: string; requestedQty: number; unit: string }[] {
   const result: { productId: string; productName: string; requestedQty: number; unit: string }[] = [];
@@ -77,7 +78,23 @@ export const KitchenRequestsPage: React.FC = () => {
       const quantity = asNumber(item.approvedQty ?? item.requestedQty);
       const product = products.find(productRow => productRow.id === item.productId);
       if (product) {
-        await patchRow('products', product.id, { currentStock: Math.max(0, asNumber(product.currentStock) - quantity), updatedAt: new Date() }, currentUser);
+        await createStockTransaction({
+          type: 'OUT',
+          date: today(),
+          itemId: product.id,
+          itemName: product.name,
+          categoryId: product.categoryId || '',
+          categoryName: product.categoryName || '',
+          quantity,
+          unit: product.unit,
+          source: request.requesterDepartment || 'Dapur',
+          receiverName: request.requesterName || request.requesterDepartment || '',
+          senderName: currentUser?.displayName || '',
+          referenceType: 'kitchen_request',
+          referenceId: request.id,
+          notes: `Permintaan ${request.requestNumber}`,
+          status: 'Confirmed',
+        }, currentUser);
       }
       const batches = await getRows('stock_batches');
       let remaining = quantity;

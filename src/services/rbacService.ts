@@ -92,6 +92,46 @@ export const MASTER_PERMISSIONS: Permission[] = [
   { id: 'roles.create', module: 'Role & Permission', action: 'create', name: 'Buat Role', description: 'Membuat role baru' },
   { id: 'roles.edit', module: 'Role & Permission', action: 'edit', name: 'Edit Role', description: 'Mengubah nama, deskripsi, dan permission role' },
   { id: 'roles.delete', module: 'Role & Permission', action: 'delete', name: 'Hapus Role', description: 'Menghapus role yang tidak terpakai' },
+
+  { id: 'items.view', module: 'Master Barang', action: 'view', name: 'Lihat Master Barang', description: 'Melihat inventaris barang terpusat' },
+  { id: 'items.create', module: 'Master Barang', action: 'create', name: 'Tambah Barang', description: 'Menambahkan barang ke inventaris' },
+  { id: 'items.edit', module: 'Master Barang', action: 'edit', name: 'Edit Barang', description: 'Mengubah data master barang' },
+  { id: 'items.delete', module: 'Master Barang', action: 'delete', name: 'Hapus Barang', description: 'Menonaktifkan atau menghapus barang' },
+
+  { id: 'needsRequests.view', module: 'Kebutuhan Barang', action: 'view', name: 'Lihat Kebutuhan Barang', description: 'Melihat pengajuan kebutuhan barang' },
+  { id: 'needsRequests.create', module: 'Kebutuhan Barang', action: 'create', name: 'Ajukan Kebutuhan', description: 'Membuat pengajuan kebutuhan barang' },
+  { id: 'needsRequests.edit', module: 'Kebutuhan Barang', action: 'edit', name: 'Edit Kebutuhan', description: 'Mengubah pengajuan sebelum disetujui' },
+  { id: 'needsRequests.approve', module: 'Kebutuhan Barang', action: 'approve', name: 'Setujui Kebutuhan', description: 'Menyetujui pengajuan kebutuhan barang' },
+  { id: 'needsRequests.reject', module: 'Kebutuhan Barang', action: 'reject', name: 'Tolak Kebutuhan', description: 'Menolak pengajuan kebutuhan barang' },
+
+  { id: 'shipments.view', module: 'Pengiriman Terintegrasi', action: 'view', name: 'Lihat Pengiriman', description: 'Melihat monitoring pengiriman barang' },
+  { id: 'shipments.create', module: 'Pengiriman Terintegrasi', action: 'create', name: 'Buat Pengiriman', description: 'Membuat pengiriman barang' },
+  { id: 'shipments.edit', module: 'Pengiriman Terintegrasi', action: 'edit', name: 'Ubah Pengiriman', description: 'Mengubah data dan status pengiriman' },
+  { id: 'shipments.confirm', module: 'Pengiriman Terintegrasi', action: 'confirm', name: 'Konfirmasi Penerimaan', description: 'Menerima barang kiriman' },
+  { id: 'shipments.upload', module: 'Pengiriman Terintegrasi', action: 'upload', name: 'Unggah Bukti', description: 'Mengunggah bukti foto penerimaan' },
+
+  { id: 'stockTransactions.view', module: 'Transaksi Stok', action: 'view', name: 'Lihat Transaksi Stok', description: 'Melihat mutasi dan kartu stok' },
+  { id: 'stockTransactions.create', module: 'Transaksi Stok', action: 'create', name: 'Catat Transaksi Stok', description: 'Mencatat barang masuk, keluar, dan penyesuaian' },
+  { id: 'stockTransactions.confirm', module: 'Transaksi Stok', action: 'confirm', name: 'Konfirmasi Transaksi Stok', description: 'Mengonfirmasi mutasi stok' },
+
+  { id: 'distributions.view', module: 'Distribusi', action: 'view', name: 'Lihat Distribusi', description: 'Melihat rekap distribusi barang' },
+  { id: 'distributions.create', module: 'Distribusi', action: 'create', name: 'Catat Distribusi', description: 'Mencatat penyerahan barang ke bagian' },
+
+  { id: 'kordas.view', module: 'Master KORDA', action: 'view', name: 'Lihat KORDA', description: 'Melihat daftar KORDA' },
+  { id: 'kordas.manage', module: 'Master KORDA', action: 'manage', name: 'Kelola KORDA', description: 'Menambah, mengubah, dan menonaktifkan KORDA' },
+  { id: 'departments.view', module: 'Master Bagian', action: 'view', name: 'Lihat Bagian', description: 'Melihat daftar bagian/peruntukan' },
+  { id: 'departments.manage', module: 'Master Bagian', action: 'manage', name: 'Kelola Bagian', description: 'Menambah, mengubah, dan menonaktifkan bagian' },
+
+  { id: 'finance.view', module: 'Keuangan', action: 'view', name: 'Lihat Keuangan', description: 'Melihat buku kas dan saldo' },
+  { id: 'finance.create', module: 'Keuangan', action: 'create', name: 'Catat Keuangan', description: 'Mencatat pemasukan dan pengeluaran' },
+  { id: 'finance.edit', module: 'Keuangan', action: 'edit', name: 'Ubah Keuangan', description: 'Mengubah transaksi keuangan' },
+  { id: 'finance.export', module: 'Keuangan', action: 'export', name: 'Ekspor Keuangan', description: 'Mengekspor laporan keuangan' },
+
+  { id: 'regions.view', module: 'Wilayah & Penerima', action: 'view', name: 'Lihat Wilayah', description: 'Melihat data wilayah dan penerima distribusi' },
+  { id: 'regions.manage', module: 'Wilayah & Penerima', action: 'manage', name: 'Kelola Wilayah', description: 'Mengelola data wilayah dan penerima' },
+
+  { id: 'imports.view', module: 'Import Excel', action: 'view', name: 'Buka Import Excel', description: 'Mengakses halaman import data Excel' },
+  { id: 'imports.execute', module: 'Import Excel', action: 'execute', name: 'Jalankan Import', description: 'Mengimpor data Excel yang telah divalidasi' },
 ];
 
 const STORAGE_ROLES_KEY = 'silog_roles_data';
@@ -240,23 +280,119 @@ export const WAREHOUSE_ROLE_PRESETS: Role[] = [
   },
 ];
 
-async function syncWarehouseRoles(roles: Role[]): Promise<Role[]> {
-  const existingNames = new Set(roles.map(role => role.name));
-  const missing = WAREHOUSE_ROLE_PRESETS.filter(role => !existingNames.has(role.name));
-  if (missing.length === 0) return roles;
+const STOCK_OPERATION_PERMISSIONS = [
+  'items.view', 'items.create', 'items.edit',
+  'stockTransactions.view', 'stockTransactions.create', 'stockTransactions.confirm',
+  'distributions.view', 'distributions.create',
+  'shipments.view',
+  'needsRequests.view', 'needsRequests.create',
+];
 
-  const merged = [...roles, ...missing];
-  localStorage.setItem(STORAGE_ROLES_KEY, JSON.stringify(merged));
+export const ADDITIONAL_ROLE_PRESETS: Role[] = [
+  {
+    id: 'role-staf-gudang',
+    name: 'Staf Gudang',
+    description: 'Mengelola master barang, transaksi stok, barang masuk/keluar, dan stock opname.',
+    permissions: [
+      ...WAREHOUSE_VIEW_BASE,
+      ...STOCK_OPERATION_PERMISSIONS,
+      'products.create', 'products.edit',
+      'categories.create', 'categories.edit',
+      'suppliers.view',
+      'warehouses.create', 'warehouses.edit',
+      'stock_batches.create', 'stock_batches.edit',
+      'stock_movements.create',
+      'stock_in.view', 'stock_in.create', 'stock_in.edit',
+      'stock_out.view', 'stock_out.create', 'stock_out.edit',
+      'requests.view', 'requests.create',
+      'kordas.view', 'departments.view',
+      'reports.view',
+    ],
+    isSystem: true,
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 'role-manager',
+    name: 'Manager',
+    description: 'Menyetujui kebutuhan dan transaksi, memantau pengiriman, serta melihat laporan.',
+    permissions: [
+      'dashboard.view', 'items.view',
+      'needsRequests.view', 'needsRequests.approve', 'needsRequests.reject',
+      'shipments.view', 'shipments.edit',
+      'stockTransactions.view', 'stockTransactions.confirm',
+      'distributions.view',
+      'kordas.view', 'departments.view',
+      'reports.view', 'reports.export',
+    ],
+    isSystem: true,
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 'role-driver',
+    name: 'Driver',
+    description: 'Melihat tugas pengiriman, memperbarui status, dan mengunggah bukti penerimaan.',
+    permissions: [
+      'dashboard.view',
+      'shipments.view', 'shipments.edit', 'shipments.confirm', 'shipments.upload',
+    ],
+    isSystem: true,
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+];
+
+const SYSTEM_ROLE_PRESETS = [...WAREHOUSE_ROLE_PRESETS, ...ADDITIONAL_ROLE_PRESETS];
+
+async function syncWarehouseRoles(roles: Role[]): Promise<Role[]> {
+  const presetsByName = new Map(SYSTEM_ROLE_PRESETS.map(role => [role.name, role]));
+  const updated: Role[] = [];
+
+  const merged = roles.map(role => {
+    const preset = presetsByName.get(role.name);
+    if (!preset || role.isSystem === false) return role;
+    const canonical: Role = {
+      ...role,
+      permissions: preset.permissions,
+      description: preset.description,
+      isSystem: true,
+      isActive: true,
+      updatedAt: new Date(),
+    };
+    updated.push(canonical);
+    return canonical;
+  });
+
+  const existingNames = new Set(merged.map(role => role.name));
+  const missing = SYSTEM_ROLE_PRESETS.filter(role => !existingNames.has(role.name));
+  const finalRoles = [...merged, ...missing];
+
+  if (updated.length === 0 && missing.length === 0) return roles;
+
+  localStorage.setItem(STORAGE_ROLES_KEY, JSON.stringify(finalRoles));
 
   if (isFirebaseConfigured && db) {
-    await Promise.allSettled(missing.map(role => setDoc(doc(db!, 'roles', role.id), {
-      ...role,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    })));
+    await Promise.allSettled([
+      ...updated.map(role => updateDoc(doc(db!, 'roles', role.id), {
+        permissions: role.permissions,
+        description: role.description,
+        isSystem: true,
+        isActive: true,
+        updatedAt: serverTimestamp(),
+      })),
+      ...missing.map(role => setDoc(doc(db!, 'roles', role.id), {
+        ...role,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      })),
+    ]);
   }
 
-  return merged;
+  return finalRoles;
 }
 
 export async function getRoles(): Promise<Role[]> {
