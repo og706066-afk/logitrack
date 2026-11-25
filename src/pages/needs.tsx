@@ -21,6 +21,7 @@ import {
   secondaryButtonClass,
   type TableColumn,
 } from '../components/DataViews';
+import { ExcelImportButton, type ExcelImportField } from '../components/ExcelImport';
 import { AlertBox, InfoCard, LoadingOverlay, PageHeader, StatusBadge } from '../components/ui';
 import { useAuth } from '../contexts/AuthContext';
 import {
@@ -61,6 +62,19 @@ interface ToastState {
   message: string;
   kind: 'error' | 'success';
 }
+
+const needImportFields: ExcelImportField[] = [
+  { key: 'requestNumber', label: 'Nomor Pengajuan', aliases: ['nomor pengajuan', 'no pengajuan', 'request number', 'nomor', 'no'] },
+  { key: 'date', label: 'Tanggal', required: true, aliases: ['date', 'tanggal', 'tgl'] },
+  { key: 'requesterName', label: 'Pemohon', required: true, aliases: ['requester', 'pemohon', 'nama pemohon', 'requester name'] },
+  { key: 'category', label: 'Kategori', required: true, aliases: ['category', 'kategori', 'nama kategori'] },
+  { key: 'item', label: 'Barang', required: true, aliases: ['item', 'barang', 'nama barang', 'item name'] },
+  { key: 'quantity', label: 'Jumlah', required: true, aliases: ['quantity', 'jumlah', 'qty'] },
+  { key: 'unit', label: 'Satuan', required: true, aliases: ['unit', 'satuan'] },
+  { key: 'korda', label: 'KORDA', required: true, aliases: ['korda', 'nama korda', 'koordinator'] },
+  { key: 'department', label: 'Bagian', required: true, aliases: ['department', 'bagian', 'nama bagian', 'unit kerja'] },
+  { key: 'notes', label: 'Catatan', aliases: ['notes', 'catatan', 'keterangan'] },
+];
 
 function toOptions(rows: { id: string; name: string }[]): { value: string; label: string }[] {
   return rows.map(row => ({ value: row.id, label: row.name || row.id }));
@@ -357,6 +371,40 @@ export const NeedsPage: React.FC = () => {
     },
   ];
 
+  const handleImportExcel = async (records: Record<string, string>[]) => {
+    const byName = <T extends MasterData>(rows: T[], value: string) =>
+      rows.find(row => row.name.trim().toLowerCase() === value.trim().toLowerCase());
+    for (const record of records) {
+      const category = byName(categories, record.category);
+      const item = products.find(product =>
+        product.name.trim().toLowerCase() === record.item.trim().toLowerCase()
+        || String(product.code || '').trim().toLowerCase() === record.item.trim().toLowerCase());
+      const korda = byName(kordas, record.korda);
+      const department = byName(departments, record.department);
+      if (!category || !item || !korda || !department) {
+        throw new Error(`Baris ${records.indexOf(record) + 1}: kategori/barang/KORDA/bagian tidak ditemukan.`);
+      }
+      await createNeedRequest({
+        requestNumber: record.requestNumber || undefined,
+        date: record.date,
+        requesterName: record.requesterName,
+        categoryId: category.id,
+        categoryName: category.name,
+        itemId: item.id,
+        itemName: item.name,
+        quantity: toNumber(record.quantity),
+        unit: record.unit,
+        kordaId: korda.id,
+        kordaName: korda.name,
+        departmentId: department.id,
+        departmentName: department.name,
+        notes: record.notes,
+      }, currentUser);
+    }
+    await load();
+    return records.length;
+  };
+
   if (!canView) {
     return <AlertBox message="Anda tidak memiliki izin untuk melihat pengajuan kebutuhan." />;
   }
@@ -368,9 +416,20 @@ export const NeedsPage: React.FC = () => {
         description="Ajukan kebutuhan barang, pantau stok tersedia, dan setujui atau tolak pengajuan."
         icon={ClipboardList}
         action={canCreate ? (
-          <button onClick={() => void openForm()} className={primaryButtonClass}>
-            <Plus className="w-4 h-4 mr-2" /> Ajukan Kebutuhan
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button onClick={() => void openForm()} className={primaryButtonClass}>
+              <Plus className="w-4 h-4 mr-2" /> Ajukan Kebutuhan
+            </button>
+            <ExcelImportButton
+              fields={needImportFields}
+              permission="imports.execute"
+              existingRows={needs}
+              uniqueFields={['requestNumber']}
+              onImport={handleImportExcel}
+              label="Impor Excel"
+              title="Impor Kebutuhan Barang dari Excel/CSV"
+            />
+          </div>
         ) : undefined}
       />
       <AlertBox message={loadError} onClose={() => setLoadError('')} />

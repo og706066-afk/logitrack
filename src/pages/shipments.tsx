@@ -22,6 +22,7 @@ import {
   secondaryButtonClass,
   type TableColumn,
 } from '../components/DataViews';
+import { ExcelImportButton, type ExcelImportField } from '../components/ExcelImport';
 import { AlertBox, ConfirmDialog, InfoCard, LoadingOverlay, PageHeader, StatusBadge } from '../components/ui';
 import { useAuth } from '../contexts/AuthContext';
 import {
@@ -82,6 +83,23 @@ interface ToastState {
   message: string;
   kind: 'error' | 'success';
 }
+
+const shipmentImportFields: ExcelImportField[] = [
+  { key: 'shipmentNumber', label: 'Nomor Pengiriman', aliases: ['nomor pengiriman', 'no pengiriman', 'shipment number', 'nomor', 'no'] },
+  { key: 'item', label: 'Barang', required: true, aliases: ['item', 'barang', 'nama barang', 'item name'] },
+  { key: 'quantity', label: 'Volume', required: true, aliases: ['quantity', 'volume', 'jumlah', 'qty'] },
+  { key: 'unit', label: 'Satuan', required: true, aliases: ['unit', 'satuan'] },
+  { key: 'senderFromRegion', label: 'Daerah Pengirim', required: true, aliases: ['sender from region', 'daerah pengirim', 'lokasi pengirim', 'asal'] },
+  { key: 'korda', label: 'KORDA', required: true, aliases: ['korda', 'nama korda', 'tujuan'] },
+  { key: 'plannedQuantity', label: 'Rencana Kirim', aliases: ['planned quantity', 'rencana kirim', 'rencana'] },
+  { key: 'status', label: 'Status', aliases: ['status'] },
+  { key: 'shipmentDate', label: 'Tanggal', required: true, aliases: ['shipment date', 'tanggal', 'tgl'] },
+  { key: 'driver', label: 'Driver', required: true, aliases: ['driver', 'nama driver', 'driver name'] },
+  { key: 'senderName', label: 'Pengirim', aliases: ['sender', 'pengirim', 'nama pengirim'] },
+  { key: 'receiverName', label: 'Penerima', aliases: ['receiver', 'penerima', 'nama penerima'] },
+  { key: 'storageLocation', label: 'Tempat Penyimpanan', aliases: ['storage location', 'tempat penyimpanan', 'gudang'] },
+  { key: 'notes', label: 'Catatan', aliases: ['notes', 'catatan', 'keterangan'] },
+];
 
 const RECEIPT_STATUSES: ReceiptForm['status'][] = ['Selesai', 'Diterima sebagian'];
 
@@ -515,6 +533,39 @@ export const ShipmentsPage: React.FC = () => {
     },
   ];
 
+  const handleImportExcel = async (records: Record<string, string>[]) => {
+    for (const [index, record] of records.entries()) {
+      const korda = kordas.find(row => row.name.trim().toLowerCase() === record.korda.trim().toLowerCase());
+      const driver = users.find(user =>
+        user.displayName.trim().toLowerCase() === record.driver.trim().toLowerCase()
+        || user.email.trim().toLowerCase() === record.driver.trim().toLowerCase());
+      if (!korda || !driver) {
+        throw new Error(`Baris ${index + 1}: KORDA atau driver tidak ditemukan.`);
+      }
+      const status = SHIPMENT_STATUSES.find(item => item.toLowerCase() === record.status.trim().toLowerCase()) || 'Belum dikirim';
+      await createShipment({
+        shipmentNumber: record.shipmentNumber || undefined,
+        itemName: record.item,
+        quantity: toNumber(record.quantity),
+        unit: record.unit,
+        senderFromRegion: record.senderFromRegion,
+        kordaId: korda.id,
+        kordaName: korda.name,
+        plannedQuantity: toNumber(record.plannedQuantity || record.quantity),
+        status,
+        shipmentDate: record.shipmentDate,
+        driverId: driver.uid,
+        driverName: driver.displayName,
+        senderName: record.senderName,
+        receiverName: record.receiverName,
+        storageLocation: record.storageLocation,
+        notes: record.notes,
+      }, currentUser);
+    }
+    await load();
+    return records.length;
+  };
+
   if (!canView) {
     return <AlertBox message="Anda tidak memiliki izin untuk melihat data pengiriman." />;
   }
@@ -526,9 +577,20 @@ export const ShipmentsPage: React.FC = () => {
         description={isDriver ? 'Lihat tugas pengiriman Anda, perbarui status, dan unggah bukti foto.' : 'Kelola pengiriman barang, konfirmasi penerimaan, dan arsipkan bukti foto.'}
         icon={Truck}
         action={canCreate ? (
-          <button onClick={() => void openForm()} className={primaryButtonClass}>
-            <Plus className="w-4 h-4 mr-2" /> Buat Pengiriman
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button onClick={() => void openForm()} className={primaryButtonClass}>
+              <Plus className="w-4 h-4 mr-2" /> Buat Pengiriman
+            </button>
+            <ExcelImportButton
+              fields={shipmentImportFields}
+              permission="imports.execute"
+              existingRows={shipments}
+              uniqueFields={['shipmentNumber']}
+              onImport={handleImportExcel}
+              label="Impor Excel"
+              title="Impor Pengiriman dari Excel/CSV"
+            />
+          </div>
         ) : undefined}
       />
       <AlertBox message={loadError} onClose={() => setLoadError('')} />

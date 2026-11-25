@@ -82,7 +82,7 @@ Rules juga membatasi `users` hanya bisa dibaca oleh pemilik akun, Super Admin, d
 
 ## Modul yang tersedia
 
-Rute existing (`/products`, `/categories`, `/suppliers`, `/stock-in`, `/stock-out`, `/warehouse-stock`, `/kitchen-requests`, `/deliveries`, `/drivers`, `/reports`, `/users`, `/roles`, `/settings`, `/audit-logs`) tetap berjalan. Rute baru:
+Rute existing (`/products`, `/categories`, `/suppliers`, `/stock-in`, `/stock-out`, `/warehouse-stock`, `/kitchen-requests`, `/deliveries`, `/drivers`, `/reports`, `/users`, `/roles`, `/settings`, `/audit-logs`) tetap berjalan. Rute baru (halaman import Excel terpisah sudah dihapus):
 
 | Rute | Modul |
 | --- | --- |
@@ -90,7 +90,6 @@ Rute existing (`/products`, `/categories`, `/suppliers`, `/stock-in`, `/stock-ou
 | `/shipments` | Pengiriman terintegrasi + bukti foto |
 | `/stock-control` | Transaksi stok, kartu stok, stock opname, penyesuaian |
 | `/master-data` | Master KORDA & bagian |
-| `/import-excel` | Import Excel dengan preview, mapping, validasi, duplikat |
 | `/finance` | Pemasukan, pengeluaran, buku kas, saldo, ekspor |
 | `/regions` | Wilayah, RT, penerima, riwayat penyaluran |
 | `/reports-advanced` | 12 jenis laporan + Excel/PDF/cetak |
@@ -98,6 +97,8 @@ Rute existing (`/products`, `/categories`, `/suppliers`, `/stock-in`, `/stock-ou
 Dashboard menampilkan 12 ringkasan, grafik masuk/keluar, stok per kategori, distribusi pengiriman, aktivitas, peringatan stok minimum, filter periode, dan filter kategori. Seluruh angka berasal dari Firestore.
 
 `DataTable` di `src/components/DataViews.tsx` otomatis menyediakan **Filter checkbox** untuk kolom dengan nilai berulang (misalnya status, kategori, gudang, role). Kolom dengan kardinalitas 2–12 dipilih otomatis; gunakan `filterable={true}` / `filterable={false}` atau `filterValue` pada `TableColumn` untuk mengontrolnya. Filter antar kolom bersifat AND, pilihan dalam satu kolom bersifat OR, dan tombol **Reset filter** mengembalikan semua baris.
+
+Fitur **Impor Excel** kini tersemat di setiap halaman tabel data yang dapat ditambah/edit (komponen `src/components/ExcelImport.tsx` dan otomatis pada `ResourceManager`), lengkap dengan pemetaan kolom, preview, validasi required/duplikat, dan permission `imports.execute`.
 
 `DataTable` juga menyediakan checkbox baris + **Pilih semua**. Jika `onDelete`/`onBulkDelete` tersedia, muncul aksi hapus/nonaktifkan massal untuk semua baris yang dicentang (hanya baris pada halaman/filter aktif). Master Barang (`inventory.tsx`) menghapus permanen; Wilayah & Penerima (`regions.tsx`) menonaktifkan massal.
 

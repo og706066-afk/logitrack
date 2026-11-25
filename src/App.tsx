@@ -16,7 +16,6 @@ import { NeedsPage } from './pages/needs';
 import { ShipmentsPage } from './pages/shipments';
 import { StockControlPage } from './pages/stockControl';
 import { MasterDataPage } from './pages/masterData';
-import { ImportExcelPage } from './pages/importExcel';
 import { FinancePage } from './pages/finance';
 import { RegionsPage } from './pages/regions';
 import { ReportsAdvancedPage } from './pages/reportsAdvanced';
@@ -53,7 +52,6 @@ export function App() {
                     <Route path="/shipments" element={<ProtectedRoute requiredPermission="shipments.view"><ShipmentsPage /></ProtectedRoute>} />
                     <Route path="/stock-control" element={<ProtectedRoute requiredPermission="stockTransactions.view"><StockControlPage /></ProtectedRoute>} />
                     <Route path="/master-data" element={<ProtectedRoute requiredPermission="kordas.view"><MasterDataPage /></ProtectedRoute>} />
-                    <Route path="/import-excel" element={<ProtectedRoute requiredPermission="imports.view"><ImportExcelPage /></ProtectedRoute>} />
                     <Route path="/finance" element={<ProtectedRoute requiredPermission="finance.view"><FinancePage /></ProtectedRoute>} />
                     <Route path="/regions" element={<ProtectedRoute requiredPermission="regions.view"><RegionsPage /></ProtectedRoute>} />
                     <Route path="/reports-advanced" element={<ProtectedRoute requiredPermission="reports.view"><ReportsAdvancedPage /></ProtectedRoute>} />

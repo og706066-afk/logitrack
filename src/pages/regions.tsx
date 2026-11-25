@@ -12,6 +12,7 @@ import {
   secondaryButtonClass,
   type TableColumn,
 } from '../components/DataViews';
+import { ExcelImportButton, type ExcelImportField } from '../components/ExcelImport';
 import {
   createMasterData,
   dateString,
@@ -38,6 +39,19 @@ interface RecipientDraft {
   regionName: string;
   notes: string;
 }
+
+const regionImportFields: ExcelImportField[] = [
+  { key: 'name', label: 'Nama Wilayah', required: true, aliases: ['nama wilayah', 'wilayah', 'name', 'nama', 'korda'] },
+  { key: 'rtNumber', label: 'Nomor RT', required: true, aliases: ['nomor rt', 'no rt', 'rt', 'rt number'] },
+  { key: 'population', label: 'Jumlah Warga', aliases: ['jumlah warga', 'populasi', 'population'] },
+  { key: 'headName', label: 'Ketua RT', aliases: ['ketua rt', 'nama ketua', 'head name'] },
+];
+
+const recipientImportFields: ExcelImportField[] = [
+  { key: 'name', label: 'Nama Penerima', required: true, aliases: ['nama penerima', 'penerima', 'name', 'nama'] },
+  { key: 'region', label: 'Wilayah', required: true, aliases: ['wilayah', 'region', 'nama wilayah', 'rt'] },
+  { key: 'notes', label: 'Catatan', aliases: ['catatan', 'notes', 'keterangan'] },
+];
 
 interface DeletionTarget {
   kind: 'region' | 'recipient';
@@ -252,6 +266,40 @@ export const RegionsPage: React.FC = () => {
     }
   };
 
+  const handleImportRegions = async (records: Record<string, string>[]) => {
+    for (const record of records) {
+      await createMasterData('regions', {
+        name: record.name,
+        rtNumber: record.rtNumber,
+        population: toNumber(record.population),
+        headName: record.headName,
+        status: 'Aktif',
+        isActive: true,
+      }, currentUser);
+    }
+    setRegions(await getCollection<Region>('regions'));
+    return records.length;
+  };
+
+  const handleImportRecipients = async (records: Record<string, string>[]) => {
+    for (const [index, record] of records.entries()) {
+      const region = regions.find(item =>
+        item.name.trim().toLowerCase() === record.region.trim().toLowerCase()
+        || item.rtNumber.trim().toLowerCase() === record.region.trim().toLowerCase());
+      if (!region) throw new Error(`Baris ${index + 1}: wilayah "${record.region}" tidak ditemukan.`);
+      await createMasterData('recipients', {
+        name: record.name,
+        regionId: region.id,
+        regionName: region.name,
+        notes: record.notes,
+        status: 'Aktif',
+        isActive: true,
+      }, currentUser);
+    }
+    setRecipients(await getCollection<Recipient>('recipients'));
+    return records.length;
+  };
+
   if (!canView) {
     return <AlertBox message="Anda tidak memiliki izin untuk melihat data wilayah dan penerima." />;
   }
@@ -283,8 +331,19 @@ export const RegionsPage: React.FC = () => {
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="p-5 border-b border-slate-200">
+        <div className="p-5 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
           <h3 className="font-bold text-slate-800 text-sm flex items-center"><MapPin className="w-4 h-4 mr-2 text-emerald-600" /> Data Wilayah</h3>
+          {canManage && (
+            <ExcelImportButton
+              fields={regionImportFields}
+              permission="imports.execute"
+              existingRows={regions}
+              uniqueFields={['name', 'rtNumber']}
+              onImport={handleImportRegions}
+              label="Impor Excel"
+              title="Impor Wilayah dari Excel/CSV"
+            />
+          )}
         </div>
         <FilterBar search={search} onSearch={setSearch} />
         <DataTable
@@ -308,8 +367,19 @@ export const RegionsPage: React.FC = () => {
 
       {canSeePersonal ? (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-          <div className="p-5 border-b border-slate-200">
+          <div className="p-5 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
             <h3 className="font-bold text-slate-800 text-sm flex items-center"><Users className="w-4 h-4 mr-2 text-emerald-600" /> Data Penerima Distribusi</h3>
+            {canManage && (
+              <ExcelImportButton
+                fields={recipientImportFields}
+                permission="imports.execute"
+                existingRows={recipients}
+                uniqueFields={['name']}
+                onImport={handleImportRecipients}
+                label="Impor Excel"
+                title="Impor Penerima dari Excel/CSV"
+              />
+            )}
           </div>
           <DataTable
             columns={recipientColumns}

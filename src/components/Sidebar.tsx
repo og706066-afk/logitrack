@@ -17,7 +17,6 @@ import {
   Settings, 
   ScrollText,
   Boxes,
-  Upload,
   Wallet,
   MapPin,
   Building2
@@ -52,7 +51,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
     { title: 'Pengiriman Terpadu', path: '/shipments', icon: Send, permission: 'shipments.view' },
     { title: 'Kontrol Stok', path: '/stock-control', icon: Warehouse, permission: 'stockTransactions.view' },
     { title: 'Master KORDA & Bagian', path: '/master-data', icon: Building2, permission: 'kordas.view' },
-    { title: 'Import Excel', path: '/import-excel', icon: Upload, permission: 'imports.view' },
     { title: 'Laporan Lengkap', path: '/reports-advanced', icon: BarChart3, permission: 'reports.view' },
     { title: 'Keuangan', path: '/finance', icon: Wallet, permission: 'finance.view' },
     { title: 'Wilayah & Penerima', path: '/regions', icon: MapPin, permission: 'regions.view' },

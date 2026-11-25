@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Database, Layers, Network, Plus } from 'lucide-react';
 import { DataTable, Toast, inputClass, primaryButtonClass, secondaryButtonClass, type TableColumn } from '../components/DataViews';
+import { ExcelImportButton, type ExcelImportField } from '../components/ExcelImport';
 import { AlertBox, ConfirmDialog, LoadingOverlay, PageHeader, StatusBadge } from '../components/ui';
 import { useAuth } from '../contexts/AuthContext';
 import { createMasterData, getCollection, updateMasterData } from '../services/logitrackService';
@@ -48,6 +49,12 @@ const SECTIONS: SectionState[] = [
     emptyLabel: 'Belum ada data Bagian.',
     addLabel: 'Tambah Bagian',
   },
+];
+
+const masterImportFields: ExcelImportField[] = [
+  { key: 'name', label: 'Nama', required: true, aliases: ['name', 'nama', 'nama korda', 'nama bagian', 'nama wilayah', 'nama penerima'] },
+  { key: 'code', label: 'Kode', aliases: ['code', 'kode'] },
+  { key: 'description', label: 'Keterangan', aliases: ['description', 'deskripsi', 'keterangan', 'catatan'] },
 ];
 
 const labelClass = 'block text-xs font-semibold text-slate-700 uppercase mb-2';
@@ -153,6 +160,20 @@ export const MasterDataPage: React.FC = () => {
     return <AlertBox message="Anda tidak memiliki izin untuk melihat data master KORDA dan Bagian." />;
   }
 
+  const handleImportExcel = async (section: SectionKey, records: Record<string, string>[]) => {
+    for (const record of records) {
+      await createMasterData(section, {
+        name: record.name,
+        code: record.code || '',
+        description: record.description || '',
+        status: 'Aktif',
+        isActive: true,
+      }, currentUser);
+    }
+    await load();
+    return records.length;
+  };
+
   const buildColumns = (section: SectionState): TableColumn<MasterData>[] => {
     const canManage = hasPermission(section.managePermission);
     return [
@@ -208,9 +229,20 @@ export const MasterDataPage: React.FC = () => {
                 </div>
               </div>
               {canManage && (
-                <button onClick={() => openForm(section.key)} className={primaryButtonClass}>
-                  <Plus className="w-4 h-4 mr-2" /> {section.addLabel}
-                </button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button onClick={() => openForm(section.key)} className={primaryButtonClass}>
+                    <Plus className="w-4 h-4 mr-2" /> {section.addLabel}
+                  </button>
+                  <ExcelImportButton
+                    fields={masterImportFields}
+                    permission="imports.execute"
+                    existingRows={data}
+                    uniqueFields={['name', 'code']}
+                    onImport={records => handleImportExcel(section.key, records)}
+                    label="Impor Excel"
+                    title={`Impor ${section.title} dari Excel/CSV`}
+                  />
+                </div>
               )}
             </div>
             {loading ? (

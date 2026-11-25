@@ -130,7 +130,7 @@ export const MASTER_PERMISSIONS: Permission[] = [
   { id: 'regions.view', module: 'Wilayah & Penerima', action: 'view', name: 'Lihat Wilayah', description: 'Melihat data wilayah dan penerima distribusi' },
   { id: 'regions.manage', module: 'Wilayah & Penerima', action: 'manage', name: 'Kelola Wilayah', description: 'Mengelola data wilayah dan penerima' },
 
-  { id: 'imports.view', module: 'Import Excel', action: 'view', name: 'Buka Import Excel', description: 'Mengakses halaman import data Excel' },
+  { id: 'imports.view', module: 'Import Excel', action: 'view', name: 'Buka Import Excel', description: 'Mengakses fitur impor data Excel pada modul' },
   { id: 'imports.execute', module: 'Import Excel', action: 'execute', name: 'Jalankan Import', description: 'Mengimpor data Excel yang telah divalidasi' },
 ];
 

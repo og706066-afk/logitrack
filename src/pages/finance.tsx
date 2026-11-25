@@ -12,6 +12,7 @@ import {
   secondaryButtonClass,
   type TableColumn,
 } from '../components/DataViews';
+import { ExcelImportButton, type ExcelImportField } from '../components/ExcelImport';
 import {
   createFinanceTransaction,
   dateString,
@@ -51,6 +52,17 @@ interface ReportRow {
   saldo: number;
   keterangan: string;
 }
+
+const financeImportFields: ExcelImportField[] = [
+  { key: 'transactionNumber', label: 'Nomor Transaksi', aliases: ['nomor transaksi', 'no transaksi', 'transaction number', 'nomor', 'no'] },
+  { key: 'date', label: 'Tanggal', required: true, aliases: ['date', 'tanggal', 'tgl'] },
+  { key: 'type', label: 'Jenis', required: true, aliases: ['type', 'jenis', 'tipe'] },
+  { key: 'amount', label: 'Jumlah', required: true, aliases: ['amount', 'jumlah', 'nominal', 'value'] },
+  { key: 'source', label: 'Sumber', aliases: ['source', 'sumber'] },
+  { key: 'donorName', label: 'Nama Donor', aliases: ['donor', 'donor name', 'nama donor', 'pemberi'] },
+  { key: 'description', label: 'Keterangan', aliases: ['description', 'keterangan', 'deskripsi'] },
+  { key: 'paymentMethod', label: 'Metode Bayar', aliases: ['payment method', 'metode bayar', 'pembayaran'] },
+];
 
 const REPORT_COLUMNS: ExportColumn<ReportRow>[] = [
   { key: 'tanggal', label: 'Tanggal' },
@@ -294,6 +306,25 @@ export const FinancePage: React.FC = () => {
     }
   };
 
+  const handleImportExcel = async (records: Record<string, string>[]) => {
+    for (const record of records) {
+      const type = record.type.toLowerCase().includes('keluar') ? 'Pengeluaran' : 'Pemasukan';
+      const paymentMethod = record.paymentMethod.toLowerCase().includes('transfer') ? 'Transfer' : 'Cash';
+      await createFinanceTransaction({
+        transactionNumber: record.transactionNumber || undefined,
+        date: record.date,
+        type,
+        amount: toNumber(record.amount),
+        source: record.source,
+        donorName: record.donorName,
+        description: record.description,
+        paymentMethod,
+      }, currentUser);
+    }
+    setTransactions(await fetchFinanceTransactions());
+    return records.length;
+  };
+
   if (!canView) {
     return <AlertBox message="Anda tidak memiliki izin untuk melihat data keuangan." />;
   }
@@ -312,9 +343,20 @@ export const FinancePage: React.FC = () => {
         </div>
         <div className="flex flex-wrap gap-2">
           {canCreate && (
-            <button onClick={() => void openCreate()} className={primaryButtonClass}>
-              <Plus className="w-4 h-4 mr-2" /> Catat Transaksi
-            </button>
+            <>
+              <button onClick={() => void openCreate()} className={primaryButtonClass}>
+                <Plus className="w-4 h-4 mr-2" /> Catat Transaksi
+              </button>
+              <ExcelImportButton
+                fields={financeImportFields}
+                permission="imports.execute"
+                existingRows={transactions}
+                uniqueFields={['transactionNumber']}
+                onImport={handleImportExcel}
+                label="Impor Excel"
+                title="Impor Transaksi Kas dari Excel/CSV"
+              />
+            </>
           )}
           {canExport && (
             <>

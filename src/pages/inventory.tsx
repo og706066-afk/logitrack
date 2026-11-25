@@ -3,6 +3,7 @@ import { Package, Tags, Truck, Warehouse, Plus } from 'lucide-react';
 import { ResourceManager, type ResourceField } from '../components/ResourceManager';
 import { AlertBox, ConfirmDialog, LoadingOverlay, PageHeader, StatusBadge } from '../components/ui';
 import { DataTable, FilterBar, Modal, Toast, inputClass, primaryButtonClass, secondaryButtonClass } from '../components/DataViews';
+import { ExcelImportButton, type ExcelImportField } from '../components/ExcelImport';
 import { useAuth } from '../contexts/AuthContext';
 import { getRows, today, type DataRow } from '../services/logisticsService';
 import { createItem, getCollection, nextNumber, removeDocument, toNumber, updateItem } from '../services/logitrackService';
@@ -11,6 +12,17 @@ import type { Item } from '../types/logitrack';
 function toOptions(rows: DataRow[], labelKey = 'name'): { value: string; label: string }[] {
   return rows.map(row => ({ value: row.id, label: String(row[labelKey] ?? row.id) }));
 }
+
+const productImportFields: ExcelImportField[] = [
+  { key: 'code', label: 'Kode Barang', aliases: ['code', 'kode', 'kode barang', 'sku'] },
+  { key: 'name', label: 'Nama Barang', required: true, aliases: ['name', 'nama', 'nama barang', 'nama bahan'] },
+  { key: 'category', label: 'Kategori', aliases: ['category', 'kategori', 'nama kategori'] },
+  { key: 'unit', label: 'Satuan', required: true, aliases: ['unit', 'satuan'] },
+  { key: 'initialStock', label: 'Stok Awal', aliases: ['initial stock', 'stok awal', 'stok saat ini', 'qty', 'jumlah'] },
+  { key: 'minStock', label: 'Stok Minimum', aliases: ['min stock', 'stok minimum', 'min'] },
+  { key: 'warehouse', label: 'Gudang', aliases: ['warehouse', 'gudang', 'lokasi'] },
+  { key: 'description', label: 'Deskripsi', aliases: ['description', 'deskripsi', 'keterangan'] },
+];
 
 export const CategoriesPage: React.FC = () => {
   const fields: ResourceField[] = [
@@ -164,13 +176,51 @@ export const ProductsPage: React.FC = () => {
     }
   };
 
+  const handleImportExcel = async (records: Record<string, string>[]) => {
+    for (const record of records) {
+      const category = categories.find(item => item.name.trim().toLowerCase() === record.category.trim().toLowerCase())
+        || categories[0];
+      const warehouseValue = record.warehouse.trim().toLowerCase();
+      const warehouse = warehouses.find(item =>
+        String(item.name).trim().toLowerCase() === warehouseValue || String(item.id).trim().toLowerCase() === warehouseValue);
+      await createItem({
+        code: record.code || undefined,
+        name: record.name,
+        categoryId: category?.id || '',
+        categoryName: category?.name || record.category,
+        unit: record.unit,
+        initialStock: toNumber(record.initialStock),
+        currentStock: toNumber(record.initialStock),
+        minStock: toNumber(record.minStock),
+        warehouseId: warehouse?.id || '',
+        warehouseName: warehouse?.name || record.warehouse,
+        description: record.description,
+      }, currentUser);
+    }
+    await load();
+    return records.length;
+  };
+
   return (
     <div className="space-y-4 sm:space-y-6">
       <PageHeader
         title="Master Data Barang"
         description="Satu inventaris terpusat dengan kode otomatis, kategori, satuan fleksibel, dan stok minimum."
         icon={Package}
-        action={canCreate ? <button onClick={() => void openCreate()} className={primaryButtonClass}><Plus className="w-4 h-4 mr-2" />Tambah Barang</button> : undefined}
+        action={canCreate ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <button onClick={() => void openCreate()} className={primaryButtonClass}><Plus className="w-4 h-4 mr-2" />Tambah Barang</button>
+            <ExcelImportButton
+              fields={productImportFields}
+              permission="imports.execute"
+              existingRows={items}
+              uniqueFields={['code', 'name']}
+              onImport={handleImportExcel}
+              label="Impor Excel"
+              title="Impor Barang dari Excel/CSV"
+            />
+          </div>
+        ) : undefined}
       />
       <AlertBox message={error} onClose={() => setError('')} />
       <AlertBox message={success} kind="success" onClose={() => setSuccess('')} />

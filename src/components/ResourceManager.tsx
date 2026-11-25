@@ -3,6 +3,7 @@ import { Check, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { AlertBox, ConfirmDialog, LoadingOverlay, PageHeader } from './ui';
+import { ExcelImportButton, type ExcelImportField } from './ExcelImport';
 import {
   deleteRow,
   formatDate,
@@ -73,6 +74,42 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({
   const canCreate = Boolean(permissions.create && hasPermission(permissions.create));
   const canEdit = Boolean(permissions.edit && hasPermission(permissions.edit));
   const canDelete = Boolean(permissions.delete && hasPermission(permissions.delete));
+
+  const importFields = useMemo<ExcelImportField[]>(() => fields
+    .filter(field => field.type !== 'readonly')
+    .map(field => ({
+      key: field.key,
+      label: field.label,
+      required: field.required,
+      aliases: [field.label, field.key, field.key.replace(/([a-z])([A-Z])/g, '$1 $2')],
+    })), [fields]);
+
+  const importUniqueFields = useMemo(
+    () => fields.filter(field => /name|code|number|kode|nama/i.test(field.key)).map(field => field.key),
+    [fields],
+  );
+
+  const handleImportExcel = async (records: Record<string, string>[]) => {
+    let imported = 0;
+    for (const record of records) {
+      const base = initialRow ? initialRow() : {};
+      const row: DataRow = { ...base };
+      fields.forEach(field => {
+        const raw = record[field.key] ?? '';
+        if (raw === '') return;
+        row[field.key] = field.type === 'number' ? Number(raw) : raw;
+      });
+      const withId = { ...row, id: row.id || newId(collection) };
+      const candidate = transform ? transform(withId, rows) : withId;
+      const validationError = validate ? validate(candidate, rows) : null;
+      if (validationError) throw new Error(`Baris ${imported + 1}: ${validationError}`);
+      await saveRow(collection, candidate, currentUser);
+      if (onSaved) await onSaved(candidate, rows, true);
+      imported++;
+    }
+    await load();
+    return imported;
+  };
 
   const load = useCallback(async () => {
     try {
@@ -180,19 +217,30 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({
     return <AlertBox message="Anda tidak memiliki izin untuk melihat modul ini." />;
   }
 
-  const addButton = canCreate ? (
-    <button
-      onClick={openCreate}
-      className="inline-flex items-center justify-center px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold rounded-xl text-sm transition shadow-sm"
-    >
-      <Plus className="w-4 h-4 mr-2" />
-      Tambah Data
-    </button>
+  const headerAction = canCreate ? (
+    <div className="flex flex-wrap items-center gap-2">
+      <button
+        onClick={openCreate}
+        className="inline-flex items-center justify-center px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold rounded-xl text-sm transition shadow-sm"
+      >
+        <Plus className="w-4 h-4 mr-2" />
+        Tambah Data
+      </button>
+      <ExcelImportButton
+        fields={importFields}
+        permission={permissions.create}
+        existingRows={rows}
+        uniqueFields={importUniqueFields}
+        onImport={handleImportExcel}
+        label="Impor Excel"
+        title={`Impor ${title}`}
+      />
+    </div>
   ) : undefined;
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <PageHeader title={title} description={description} icon={icon} action={addButton} />
+      <PageHeader title={title} description={description} icon={icon} action={headerAction} />
       <AlertBox message={error} onClose={() => setError('')} />
       <AlertBox message={success} kind="success" onClose={() => setSuccess('')} />
 

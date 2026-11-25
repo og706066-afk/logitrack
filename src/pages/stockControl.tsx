@@ -10,6 +10,7 @@ import {
   secondaryButtonClass,
   type TableColumn,
 } from '../components/DataViews';
+import { ExcelImportButton, type ExcelImportField } from '../components/ExcelImport';
 import { AlertBox, ConfirmDialog, InfoCard, LoadingOverlay, PageHeader, StatusBadge } from '../components/ui';
 import { useAuth } from '../contexts/AuthContext';
 import { getUsers } from '../services/rbacService';
@@ -27,6 +28,21 @@ import {
 } from '../services/logitrackService';
 import type { Item, MasterData, StockTransaction, StockTransactionType } from '../types/logitrack';
 import type { UserProfile } from '../types';
+
+const stockImportFields: ExcelImportField[] = [
+  { key: 'transactionNumber', label: 'Nomor Transaksi', aliases: ['nomor transaksi', 'no transaksi', 'transaction number', 'nomor', 'no'] },
+  { key: 'date', label: 'Tanggal', required: true, aliases: ['date', 'tanggal', 'tgl'] },
+  { key: 'type', label: 'Jenis', aliases: ['type', 'jenis', 'tipe'] },
+  { key: 'item', label: 'Barang', required: true, aliases: ['item', 'barang', 'nama barang', 'item name'] },
+  { key: 'quantity', label: 'Jumlah', required: true, aliases: ['quantity', 'jumlah', 'qty'] },
+  { key: 'unit', label: 'Satuan', aliases: ['unit', 'satuan'] },
+  { key: 'source', label: 'Asal/Tujuan', aliases: ['source', 'asal', 'tujuan', 'sumber'] },
+  { key: 'korda', label: 'KORDA', aliases: ['korda', 'nama korda'] },
+  { key: 'warehouse', label: 'Gudang', aliases: ['warehouse', 'gudang', 'lokasi'] },
+  { key: 'condition', label: 'Kondisi', aliases: ['condition', 'kondisi'] },
+  { key: 'status', label: 'Status', aliases: ['status'] },
+  { key: 'notes', label: 'Catatan', aliases: ['notes', 'catatan', 'keterangan'] },
+];
 
 type TabKey = StockTransactionType | 'HISTORY';
 
@@ -372,6 +388,41 @@ export const StockControlPage: React.FC = () => {
     { key: 'createdAt', label: 'Waktu', render: row => displayDate(row.createdAt) },
   ];
 
+  const handleImportExcel = async (records: Record<string, string>[]) => {
+    for (const [index, record] of records.entries()) {
+      const item = products.find(product =>
+        product.name.trim().toLowerCase() === record.item.trim().toLowerCase()
+        || String(product.code || '').trim().toLowerCase() === record.item.trim().toLowerCase());
+      if (!item) throw new Error(`Baris ${index + 1}: barang "${record.item}" tidak ditemukan.`);
+      const type = (['IN', 'OUT', 'ADJUSTMENT', 'OPNAME'] as StockTransactionType[])
+        .find(value => value.toLowerCase() === record.type.trim().toLowerCase()) || (activeTab === 'HISTORY' ? 'IN' : activeTab);
+      const korda = kordas.find(row => row.name.trim().toLowerCase() === record.korda.trim().toLowerCase());
+      const warehouse = warehouses.find(row => row.name.trim().toLowerCase() === record.warehouse.trim().toLowerCase());
+      const status = record.status.toLowerCase() === 'confirmed' ? 'Confirmed' : 'Draft';
+      await createStockTransaction({
+        transactionNumber: record.transactionNumber || undefined,
+        date: record.date,
+        type,
+        itemId: item.id,
+        itemName: item.name,
+        categoryId: item.categoryId || '',
+        categoryName: item.categoryName || '',
+        quantity: toNumber(record.quantity),
+        unit: record.unit || item.unit,
+        source: record.source,
+        kordaId: korda?.id || '',
+        warehouseId: warehouse?.id || item.warehouseId || '',
+        storageLocation: warehouse?.name || record.warehouse,
+        condition: record.condition || 'Baik',
+        status,
+        notes: record.notes,
+        referenceType: 'import',
+      }, currentUser);
+    }
+    await load();
+    return records.length;
+  };
+
   const ActiveIcon = tabIcon(activeTab);
   const sourceLabel = form?.type === 'OUT' ? 'Tujuan' : form?.type === 'IN' ? 'Asal/Sumber' : 'Keterangan Sumber';
   const quantityLabel = form?.type === 'ADJUSTMENT' || form?.type === 'OPNAME' ? 'Stok Aktual' : 'Jumlah';
@@ -383,9 +434,20 @@ export const StockControlPage: React.FC = () => {
         description="Catat mutasi barang masuk, keluar, penyesuaian, dan stock opname hingga konfirmasi saldo."
         icon={ActiveIcon}
         action={hasPermission('stockTransactions.create') && activeTab !== 'HISTORY' ? (
-          <button onClick={() => void openForm(activeTab as StockTransactionType)} className={primaryButtonClass}>
-            <Plus className="w-4 h-4 mr-2" /> Transaksi Baru
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button onClick={() => void openForm(activeTab as StockTransactionType)} className={primaryButtonClass}>
+              <Plus className="w-4 h-4 mr-2" /> Transaksi Baru
+            </button>
+            <ExcelImportButton
+              fields={stockImportFields}
+              permission="imports.execute"
+              existingRows={transactions}
+              uniqueFields={['transactionNumber']}
+              onImport={handleImportExcel}
+              label="Impor Excel"
+              title="Impor Transaksi Stok dari Excel/CSV"
+            />
+          </div>
         ) : undefined}
       />
       <Toast message={error} kind="error" onClose={() => setError('')} />
