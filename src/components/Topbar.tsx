@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Menu, Bell, LogOut, User as UserIcon, Shield } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { LoadingOverlay } from './ui';
+import { ConfirmDialog, LoadingOverlay } from './ui';
 import { ACTION_DELAY_MS, wait } from '../utils/async';
 
 interface TopbarProps {
@@ -10,9 +10,11 @@ interface TopbarProps {
 
 export const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
   const { currentUser, logout } = useAuth();
+  const [confirmLogout, setConfirmLogout] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
 
   const handleLogout = async () => {
+    setConfirmLogout(false);
     setLoggingOut(true);
     try {
       await wait(ACTION_DELAY_MS);
@@ -67,7 +69,7 @@ export const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
               </div>
 
               <button
-                onClick={() => void handleLogout()}
+                onClick={() => setConfirmLogout(true)}
                 disabled={loggingOut}
                 className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition disabled:opacity-50"
                 title="Keluar (Logout)"
@@ -78,6 +80,15 @@ export const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
           )}
         </div>
       </header>
+      {confirmLogout && !loggingOut && (
+        <ConfirmDialog
+          message="Apakah Anda yakin ingin keluar dari sistem?"
+          confirmLabel="Ya, Keluar"
+          cancelLabel="Tidak"
+          onConfirm={() => void handleLogout()}
+          onCancel={() => setConfirmLogout(false)}
+        />
+      )}
       {loggingOut && <LoadingOverlay label="Keluar dari sistem..." />}
     </>
   );

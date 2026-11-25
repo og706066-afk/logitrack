@@ -97,15 +97,17 @@ interface ConfirmDialogProps {
   message: string;
   onConfirm: () => void;
   onCancel: () => void;
+  confirmLabel?: string;
+  cancelLabel?: string;
 }
 
-export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({ message, onConfirm, onCancel }) => (
+export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({ message, onConfirm, onCancel, confirmLabel = 'Hapus', cancelLabel = 'Batal' }) => (
   <div className="fixed inset-0 bg-slate-900/50 z-50 flex items-center justify-center p-4 backdrop-blur-xs animate-fade-in">
     <div className="bg-white rounded-2xl max-w-sm w-full p-5 sm:p-6 shadow-2xl text-center animate-slide-up">
       <p className="text-sm font-semibold text-slate-800 mb-6">{message}</p>
       <div className="flex justify-center space-x-3">
-        <button onClick={onCancel} className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-50">Batal</button>
-        <button onClick={onConfirm} className="px-4 py-2 bg-red-600 text-white rounded-xl text-sm font-semibold hover:bg-red-700">Hapus</button>
+        <button onClick={onCancel} className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-50">{cancelLabel}</button>
+        <button onClick={onConfirm} className="px-4 py-2 bg-red-600 text-white rounded-xl text-sm font-semibold hover:bg-red-700">{confirmLabel}</button>
       </div>
     </div>
   </div>
