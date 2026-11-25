@@ -99,6 +99,8 @@ Dashboard menampilkan 12 ringkasan, grafik masuk/keluar, stok per kategori, dist
 
 `DataTable` di `src/components/DataViews.tsx` otomatis menyediakan **Filter checkbox** untuk kolom dengan nilai berulang (misalnya status, kategori, gudang, role). Kolom dengan kardinalitas 2–12 dipilih otomatis; gunakan `filterable={true}` / `filterable={false}` atau `filterValue` pada `TableColumn` untuk mengontrolnya. Filter antar kolom bersifat AND, pilihan dalam satu kolom bersifat OR, dan tombol **Reset filter** mengembalikan semua baris.
 
+`DataTable` juga menyediakan checkbox baris + **Pilih semua**. Jika `onDelete`/`onBulkDelete` tersedia, muncul aksi hapus/nonaktifkan massal untuk semua baris yang dicentang (hanya baris pada halaman/filter aktif). Master Barang (`inventory.tsx`) menghapus permanen; Wilayah & Penerima (`regions.tsx`) menonaktifkan massal.
+
 ## Perubahan utama
 
 - Menambahkan service Firestore bertipe `src/services/logitrackService.ts` dan tipe `src/types/logitrack.ts`.

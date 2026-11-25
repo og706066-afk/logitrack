@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ListFilter, Pencil, RotateCcw, Trash2, X } from 'lucide-react';
 import { AlertBox } from './ui';
 
@@ -41,12 +41,28 @@ interface DataTableProps<T> {
   rowKey: (row: T) => string;
   onEdit?: (row: T) => void;
   onDelete?: (row: T) => void;
+  onBulkDelete?: (rows: T[]) => void;
+  selectable?: boolean;
+  bulkDeleteLabel?: string;
   emptyLabel?: string;
 }
 
-export function DataTable<T>({ columns, rows, rowKey, onEdit, onDelete, emptyLabel = 'Belum ada data.' }: DataTableProps<T>) {
+export function DataTable<T>({
+  columns,
+  rows,
+  rowKey,
+  onEdit,
+  onDelete,
+  onBulkDelete,
+  selectable,
+  bulkDeleteLabel = 'Hapus semua yang dipilih',
+  emptyLabel = 'Belum ada data.',
+}: DataTableProps<T>) {
   const [open, setOpen] = useState(false);
   const [filters, setFilters] = useState<Record<string, string[]>>({});
+  const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
+  const selectAllRef = useRef<HTMLInputElement>(null);
+  const canSelect = selectable ?? Boolean(onBulkDelete || onDelete);
 
   const filterGroups = useMemo(() => columns.flatMap(column => {
     if (column.filterable === false) return [];
@@ -78,6 +94,39 @@ export function DataTable<T>({ columns, rows, rowKey, onEdit, onDelete, emptyLab
     if (selected.length === 0 || selected.length === group.options.length) return true;
     return selected.includes(filterValueOf(row, group.column));
   })), [rows, filterGroups, filters]);
+
+  const selectedRows = canSelect ? visibleRows.filter(row => selectedKeys.includes(rowKey(row))) : [];
+  const allVisibleSelected = visibleRows.length > 0 && selectedRows.length === visibleRows.length;
+
+  useEffect(() => {
+    if (selectAllRef.current) {
+      selectAllRef.current.indeterminate = selectedRows.length > 0 && !allVisibleSelected;
+    }
+  }, [selectedRows.length, allVisibleSelected]);
+
+  const toggleSelectAll = () => {
+    setSelectedKeys(current => {
+      const visibleKeys = visibleRows.map(rowKey);
+      const remaining = current.filter(key => !visibleKeys.includes(key));
+      return allVisibleSelected ? remaining : [...remaining, ...visibleKeys];
+    });
+  };
+
+  const toggleRow = (key: string) => {
+    setSelectedKeys(current => current.includes(key) ? current.filter(item => item !== key) : [...current, key]);
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedRows.length === 0) return;
+    if (onBulkDelete) {
+      onBulkDelete(selectedRows);
+      return;
+    }
+    if (onDelete && window.confirm(`Hapus ${selectedRows.length} data yang dipilih?`)) {
+      selectedRows.forEach(onDelete);
+      setSelectedKeys([]);
+    }
+  };
 
   const toggleOption = (key: string, value: string) => {
     setFilters(current => {
@@ -159,6 +208,29 @@ export function DataTable<T>({ columns, rows, rowKey, onEdit, onDelete, emptyLab
         </div>
       )}
 
+      {canSelect && selectedRows.length > 0 && (
+        <div className="mx-3 sm:mx-4 mt-2 flex flex-wrap items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
+          <span className="font-semibold">{selectedRows.length} data dipilih</span>
+          {(onBulkDelete || onDelete) && (
+            <button
+              type="button"
+              onClick={handleBulkDelete}
+              className="inline-flex items-center gap-1 font-semibold text-red-600 hover:text-red-700"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              {bulkDeleteLabel}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setSelectedKeys([])}
+            className="ml-auto font-semibold text-slate-500 hover:text-slate-700"
+          >
+            Batalkan pilihan
+          </button>
+        </div>
+      )}
+
       {visibleRows.length === 0 ? (
         <div className="text-center py-12 text-sm text-slate-500">
           {rows.length === 0 ? emptyLabel : 'Tidak ada data yang cocok dengan filter.'}
@@ -168,6 +240,18 @@ export function DataTable<T>({ columns, rows, rowKey, onEdit, onDelete, emptyLab
           <table className="w-full min-w-[720px] text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase tracking-wider">
+                {canSelect && (
+                  <th className="p-4 w-12">
+                    <input
+                      ref={selectAllRef}
+                      type="checkbox"
+                      checked={allVisibleSelected}
+                      onChange={toggleSelectAll}
+                      aria-label="Pilih semua data"
+                      className="w-4 h-4 accent-emerald-700"
+                    />
+                  </th>
+                )}
                 {columns.map(column => <th key={column.key} className="p-4 font-semibold whitespace-nowrap">{column.label}</th>)}
                 {(onEdit || onDelete) && <th className="p-4 font-semibold text-right">Aksi</th>}
               </tr>
@@ -175,6 +259,17 @@ export function DataTable<T>({ columns, rows, rowKey, onEdit, onDelete, emptyLab
             <tbody className="divide-y divide-slate-100 text-sm">
               {visibleRows.map(row => (
                 <tr key={rowKey(row)} className="hover:bg-slate-50/80 transition">
+                  {canSelect && (
+                    <td className="p-4">
+                      <input
+                        type="checkbox"
+                        checked={selectedKeys.includes(rowKey(row))}
+                        onChange={() => toggleRow(rowKey(row))}
+                        aria-label={`Pilih ${columns[0]?.label ?? 'data'}`}
+                        className="w-4 h-4 accent-emerald-700"
+                      />
+                    </td>
+                  )}
                   {columns.map(column => (
                     <td key={column.key} className="p-4 text-slate-700">
                       {column.render ? column.render(row) : String((row as Record<string, unknown>)[column.key] ?? '-')}

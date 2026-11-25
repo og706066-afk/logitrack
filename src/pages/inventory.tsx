@@ -51,7 +51,7 @@ export const ProductsPage: React.FC = () => {
   const [stockFilter, setStockFilter] = useState('all');
   const [page, setPage] = useState(1);
   const [form, setForm] = useState<Partial<Item> | null>(null);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteIds, setDeleteIds] = useState<string[]>([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(true);
@@ -149,16 +149,16 @@ export const ProductsPage: React.FC = () => {
   };
 
   const handleDelete = async () => {
-    if (!deleteId) return;
+    if (deleteIds.length === 0) return;
     setSaving(true);
     try {
-      await removeDocument('products', deleteId, currentUser, 'Master Barang');
-      setDeleteId(null);
-      setSuccess('Barang berhasil dihapus.');
+      await Promise.all(deleteIds.map(id => removeDocument('products', id, currentUser, 'Master Barang')));
+      setSuccess(deleteIds.length === 1 ? 'Barang berhasil dihapus.' : `${deleteIds.length} barang berhasil dihapus.`);
+      setDeleteIds([]);
       await load();
     } catch (e: any) {
       setError(e.message || 'Gagal menghapus barang.');
-      setDeleteId(null);
+      setDeleteIds([]);
     } finally {
       setSaving(false);
     }
@@ -196,7 +196,9 @@ export const ProductsPage: React.FC = () => {
             rows={visible}
             rowKey={row => row.id}
             onEdit={canEdit ? row => setForm({ ...row }) : undefined}
-            onDelete={canDelete ? row => setDeleteId(row.id) : undefined}
+            onDelete={canDelete ? row => setDeleteIds([row.id]) : undefined}
+            onBulkDelete={canDelete ? rows => setDeleteIds(rows.map(row => row.id)) : undefined}
+            bulkDeleteLabel="Hapus barang terpilih"
             emptyLabel="Belum ada barang terdaftar."
             columns={[
               { key: 'code', label: 'Kode', render: row => <span className="font-mono text-xs">{row.code || '-'}</span> },
@@ -241,7 +243,7 @@ export const ProductsPage: React.FC = () => {
           </form>
         </Modal>
       )}
-      {deleteId && <ConfirmDialog message="Hapus barang ini? Tindakan ini tidak dapat dibatalkan." onCancel={() => setDeleteId(null)} onConfirm={() => void handleDelete()} />}
+      {deleteIds.length > 0 && <ConfirmDialog message={deleteIds.length === 1 ? 'Hapus barang ini? Tindakan ini tidak dapat dibatalkan.' : `Hapus ${deleteIds.length} barang terpilih? Tindakan ini tidak dapat dibatalkan.`} onCancel={() => setDeleteIds([])} onConfirm={() => void handleDelete()} />}
       {(loading || saving) && <LoadingOverlay label={saving ? 'Menyimpan data...' : 'Memuat data...'} />}
       <Toast message={error} kind="error" onClose={() => setError('')} />
       <Toast message={success} onClose={() => setSuccess('')} />

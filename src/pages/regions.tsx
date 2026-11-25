@@ -41,7 +41,7 @@ interface RecipientDraft {
 
 interface DeletionTarget {
   kind: 'region' | 'recipient';
-  id: string;
+  ids: string[];
   label: string;
 }
 
@@ -235,11 +235,11 @@ export const RegionsPage: React.FC = () => {
     setError('');
     try {
       if (deletion.kind === 'region') {
-        await updateMasterData('regions', deletion.id, { status: 'Nonaktif', isActive: false }, currentUser);
+        await Promise.all(deletion.ids.map(id => updateMasterData('regions', id, { status: 'Nonaktif', isActive: false }, currentUser)));
         const rows = await getCollection<Region>('regions');
         setRegions(rows);
       } else {
-        await updateMasterData('recipients', deletion.id, { status: 'Nonaktif', isActive: false }, currentUser);
+        await Promise.all(deletion.ids.map(id => updateMasterData('recipients', id, { status: 'Nonaktif', isActive: false }, currentUser)));
         const rows = await getCollection<Recipient>('recipients');
         setRecipients(rows);
       }
@@ -299,7 +299,9 @@ export const RegionsPage: React.FC = () => {
             headName: row.headName,
             status: row.status === 'Nonaktif' ? 'Nonaktif' : 'Aktif',
           }) : undefined}
-          onDelete={canManage ? row => setDeletion({ kind: 'region', id: row.id, label: `Wilayah ${row.name}` }) : undefined}
+          onDelete={canManage ? row => setDeletion({ kind: 'region', ids: [row.id], label: `Wilayah ${row.name}` }) : undefined}
+          onBulkDelete={canManage ? rows => setDeletion({ kind: 'region', ids: rows.map(row => row.id), label: `${rows.length} wilayah terpilih` }) : undefined}
+          bulkDeleteLabel="Nonaktifkan wilayah terpilih"
           emptyLabel="Belum ada data wilayah."
         />
       </div>
@@ -320,7 +322,9 @@ export const RegionsPage: React.FC = () => {
               regionName: row.regionName,
               notes: row.notes,
             }) : undefined}
-            onDelete={canManage ? row => setDeletion({ kind: 'recipient', id: row.id, label: `Penerima ${row.name}` }) : undefined}
+            onDelete={canManage ? row => setDeletion({ kind: 'recipient', ids: [row.id], label: `Penerima ${row.name}` }) : undefined}
+            onBulkDelete={canManage ? rows => setDeletion({ kind: 'recipient', ids: rows.map(row => row.id), label: `${rows.length} penerima terpilih` }) : undefined}
+            bulkDeleteLabel="Nonaktifkan penerima terpilih"
             emptyLabel="Belum ada data penerima."
           />
         </div>
