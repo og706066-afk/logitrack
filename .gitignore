@@ -7,10 +7,29 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
+# Dependencies
+node_modules/
+server/node_modules/
+
+# Build
+dist/
+dist-ssr/
+server/dist/
+
+# Local files
 *.local
+
+# Environment
+.env
+.env.*
+!.env.example
+.env.local
+.env.*.local
+
+# Firebase Admin SDK secrets
+serviceAccountKey.json
+*-adminsdk-*.json
+firebase-admin-key.json
 
 # Editor directories and files
 .vscode/*
@@ -22,8 +41,3 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-
-# Firebase environment
-.env
-.env.local
-.env.*.local
