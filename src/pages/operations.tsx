@@ -248,13 +248,8 @@ export const KitchenRequestsPage: React.FC = () => {
             },
             {
               key: 'itemName',
-              label: 'Item',
-              render: row => (
-                <span>
-                  {row.itemName || '-'}
-                  {row.quantity ? <span className="text-slate-400"> ({row.quantity} {row.unit || ''})</span> : null}
-                </span>
-              ),
+              label: 'Nama Bahan/Barang',
+              render: row => <span>{row.itemName || '-'}</span>,
             },
             {
               key: 'status',
