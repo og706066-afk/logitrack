@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Menu, Bell, LogOut, User as UserIcon, Shield, ClipboardList, AlertTriangle, Truck } from 'lucide-react';
+import { Menu, Bell, LogOut, User as UserIcon, Shield, ClipboardList, AlertTriangle, Truck, Sun, Moon } from 'lucide-react';
 import { getCollection, getShipments } from '../services/logitrackService';
 import type { Item, NeedRequest } from '../types/logitrack';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { ConfirmDialog, LoadingOverlay } from './ui';
 import { ACTION_DELAY_MS, wait } from '../utils/async';
 
@@ -12,6 +13,7 @@ interface TopbarProps {
 
 export const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
   const { currentUser, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -73,6 +75,15 @@ export const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
         </div>
 
         <div className="flex items-center space-x-1 sm:space-x-4 shrink-0">
+          <button
+            onClick={toggleTheme}
+            className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition"
+            title={theme === 'dark' ? 'Mode terang' : 'Mode gelap'}
+            aria-label={theme === 'dark' ? 'Aktifkan mode terang' : 'Aktifkan mode gelap'}
+          >
+            {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+          </button>
+
           <div className="hidden sm:block relative">
             <button
               onClick={() => setShowNotifications(previous => !previous)}

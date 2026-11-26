@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Lock, Mail, AlertCircle, ArrowRight, UserPlus, Truck, PackageCheck, Warehouse, MapPin, Boxes, ClipboardList } from 'lucide-react';
+import { Lock, Mail, AlertCircle, ArrowRight, UserPlus, Truck, PackageCheck, Warehouse, MapPin, Boxes, ClipboardList, Sun, Moon } from 'lucide-react';
+import { useTheme } from '../contexts/ThemeContext';
 import { LOGIN_DELAY_MS, wait } from '../utils/async';
 
 const APP_LOGO = '/Lencana%20Neon%20Silog%20Sistem%20Logistik%20(1).png';
@@ -14,6 +15,7 @@ export const Login: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login, register } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const isRegister = mode === 'register';
@@ -45,9 +47,19 @@ export const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex relative overflow-hidden">
+    <div className="min-h-screen bg-cloud dark:bg-slate-900 flex relative overflow-hidden">
       <div className="absolute -top-24 right-1/4 w-80 h-80 bg-ocean/10 rounded-full blur-3xl pointer-events-none"></div>
       <div className="absolute -bottom-24 right-0 w-80 h-80 bg-cyan/10 rounded-full blur-3xl pointer-events-none"></div>
+
+      <button
+        type="button"
+        onClick={toggleTheme}
+        className="absolute top-4 right-4 z-20 p-2 rounded-full border border-slate-200 bg-white/80 text-slate-700 hover:bg-white shadow-sm transition dark:border-white/20 dark:bg-white/10 dark:text-white dark:hover:bg-white/20 backdrop-blur-sm"
+        title={theme === 'dark' ? 'Mode terang' : 'Mode gelap'}
+        aria-label={theme === 'dark' ? 'Aktifkan mode terang' : 'Aktifkan mode gelap'}
+      >
+        {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+      </button>
 
       <div className="hidden lg:flex lg:w-[56%] xl:w-[52%] relative flex-col justify-between overflow-hidden bg-navy px-12 py-12 xl:px-16 animate-fade-in">
         <div
@@ -133,11 +145,11 @@ export const Login: React.FC = () => {
       <div className="relative z-10 flex min-h-screen w-full items-center justify-center px-5 py-10 sm:px-10 lg:w-[44%] xl:w-[48%] lg:px-14 xl:px-20">
         <div className="w-full max-w-md animate-slide-up">
           <div className="mb-8 flex flex-col items-center text-center lg:hidden">
-            <div className="w-14 h-14 rounded-full bg-white/10 border border-white/20 p-1.5 flex items-center justify-center shadow-lg backdrop-blur-sm">
+            <div className="w-14 h-14 rounded-full bg-white border border-slate-200 p-1.5 flex items-center justify-center shadow-lg dark:bg-white/10 dark:border-white/20 backdrop-blur-sm">
               <img src={APP_LOGO} alt="Logo SILOG" className="w-full h-full object-contain rounded-full" />
             </div>
-            <h2 className="mt-4 text-2xl font-extrabold text-white tracking-tight">SILOG PESANTREN</h2>
-            <p className="mt-1 text-xs text-slate-400">Sistem Informasi Logistik & Dapur Pesantren</p>
+            <h2 className="mt-4 text-2xl font-extrabold text-slate-navy tracking-tight dark:text-white">SILOG PESANTREN</h2>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Sistem Informasi Logistik & Dapur Pesantren</p>
           </div>
 
           <div className="bg-white py-7 sm:py-8 px-5 sm:px-10 shadow-2xl rounded-2xl border border-slate-100">
