@@ -1,10 +1,11 @@
 
 import express from 'express';
-import type { NextFunction, Request, Response } from 'express';
 import cors from 'cors';
 import 'dotenv/config';
 
 import { adminAuth, adminDb } from './config/firebaseAdmin.js';
+import { authenticate, requirePermission, type AuthenticatedRequest } from './middlewares/authMiddleware.js';
+import { auditLogRouter } from './routes/auditLogRoutes.js';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 5000;
@@ -16,57 +17,6 @@ app.use(cors({
 }));
 
 app.use(express.json());
-
-interface AuthenticatedRequest extends Request {
-  userProfile?: {
-    uid: string;
-    role: string;
-    permissions: string[];
-    isActive: boolean;
-  };
-}
-
-async function authenticate(request: AuthenticatedRequest, response: Response, next: NextFunction): Promise<void> {
-  const header = request.headers.authorization;
-  if (!header?.startsWith('Bearer ')) {
-    response.status(401).json({ success: false, message: 'Token otorisasi diperlukan.' });
-    return;
-  }
-  try {
-    const decoded = await adminAuth.verifyIdToken(header.slice(7));
-    const profile = await adminDb.collection('users').doc(decoded.uid).get();
-    const data = profile.data();
-    if (!profile.exists || !data || data.isActive !== true) {
-      response.status(403).json({ success: false, message: 'Akun tidak aktif.' });
-      return;
-    }
-    request.userProfile = {
-      uid: decoded.uid,
-      role: String(data.role ?? ''),
-      permissions: Array.isArray(data.permissions) ? data.permissions : [],
-      isActive: true,
-    };
-    next();
-  } catch {
-    response.status(401).json({ success: false, message: 'Token tidak valid.' });
-  }
-}
-
-function requirePermission(permission: string) {
-  return (request: AuthenticatedRequest, response: Response, next: NextFunction): void => {
-    const profile = request.userProfile;
-    if (!profile) {
-      response.status(401).json({ success: false, message: 'Autentikasi diperlukan.' });
-      return;
-    }
-    const allowed = profile.role === 'Super Admin' || profile.permissions.includes(permission) || profile.permissions.includes('*');
-    if (!allowed) {
-      response.status(403).json({ success: false, message: `Izin ${permission} diperlukan.` });
-      return;
-    }
-    next();
-  };
-}
 
 app.get('/api/health', (_req, res) => {
   res.status(200).json({
@@ -127,6 +77,8 @@ app.get('/api/reports/summary', authenticate, requirePermission('reports.view'),
     response.status(500).json({ success: false, message: error instanceof Error ? error.message : String(error) });
   }
 });
+
+app.use('/api/audit-logs', auditLogRouter);
 
 app.listen(PORT, () => {
   console.log(`SILOG Backend berjalan di http://localhost:${PORT}`);

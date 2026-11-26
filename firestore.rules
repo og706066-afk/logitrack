@@ -125,6 +125,12 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // Arsip audit log: baca terbatas, tulis hanya via Admin SDK/backend.
+    match /audit_log_archives/{archiveId} {
+      allow read: if getUserRole() == 'Super Admin';
+      allow create, update, delete: if false;
+    }
+
     // ==========================================
     // 4. MASTER DATA (Products, Categories, Suppliers)
     // ==========================================

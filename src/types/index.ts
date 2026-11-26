@@ -178,3 +178,11 @@ export interface AuditLog {
   ipAddress?: string;
   createdAt: any;
 }
+
+export interface AuditLogArchive extends AuditLog {
+  originalLogId: string;
+  archivedAt: any;
+  archivedBy: string;
+  archivedByName?: string;
+  archiveReason?: string;
+}

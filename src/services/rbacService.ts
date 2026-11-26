@@ -6,10 +6,12 @@ import {
   updateDoc, 
   deleteDoc, 
   serverTimestamp,
-  addDoc
+  addDoc,
+  query,
+  orderBy
 } from 'firebase/firestore';
-import { db, isFirebaseConfigured } from './firebase';
-import type { Permission, Role, UserProfile, AuditLog } from '../types';
+import { auth, db, isFirebaseConfigured } from './firebase';
+import type { AuditLog, AuditLogArchive, Permission, Role, UserProfile } from '../types';
 
 export const MASTER_PERMISSIONS: Permission[] = [
   // Dashboard
@@ -567,15 +569,22 @@ export async function logAudit(data: Omit<AuditLog, 'id' | 'createdAt'>): Promis
 export async function getAuditLogs(): Promise<AuditLog[]> {
   if (isFirebaseConfigured && db) {
     try {
-      const snap = await getDocs(collection(db, 'audit_logs'));
+      const snap = await getDocs(query(collection(db, 'audit_logs'), orderBy('createdAt', 'desc')));
       if (!snap.empty) {
-        return snap.docs.map(d => ({ id: d.id, ...d.data() } as AuditLog)).sort((a,b) => {
-          const tA = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : new Date(a.createdAt).getTime();
-          const tB = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : new Date(b.createdAt).getTime();
-          return tB - tA;
-        });
+        return snap.docs.map(d => ({ id: d.id, ...d.data() } as AuditLog));
       }
-    } catch (_e) {}
+    } catch (_e) {
+      try {
+        const snap = await getDocs(collection(db, 'audit_logs'));
+        if (!snap.empty) {
+          return snap.docs.map(d => ({ id: d.id, ...d.data() } as AuditLog)).sort((a, b) => {
+            const tA = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : new Date(a.createdAt).getTime();
+            const tB = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : new Date(b.createdAt).getTime();
+            return tB - tA;
+          });
+        }
+      } catch (_err) {}
+    }
   }
 
   const saved = localStorage.getItem(STORAGE_AUDIT_KEY);
@@ -583,4 +592,86 @@ export async function getAuditLogs(): Promise<AuditLog[]> {
     try { return JSON.parse(saved); } catch (_e) {}
   }
   return [];
+}
+
+const STORAGE_ARCHIVE_KEY = 'silog_audit_archives';
+
+export async function getArchivedAuditLogs(): Promise<AuditLogArchive[]> {
+  if (isFirebaseConfigured && db) {
+    try {
+      const snap = await getDocs(query(collection(db, 'audit_log_archives'), orderBy('archivedAt', 'desc')));
+      if (!snap.empty) {
+        return snap.docs.map(d => ({ id: d.id, ...d.data() } as AuditLogArchive));
+      }
+    } catch (_e) {
+      try {
+        const snap = await getDocs(collection(db, 'audit_log_archives'));
+        if (!snap.empty) {
+          return snap.docs.map(d => ({ id: d.id, ...d.data() } as AuditLogArchive)).sort((a, b) => {
+            const tA = a.archivedAt?.seconds ? a.archivedAt.seconds * 1000 : new Date(a.archivedAt).getTime();
+            const tB = b.archivedAt?.seconds ? b.archivedAt.seconds * 1000 : new Date(b.archivedAt).getTime();
+            return tB - tA;
+          });
+        }
+      } catch (_err) {}
+    }
+  }
+
+  const saved = localStorage.getItem(STORAGE_ARCHIVE_KEY);
+  if (saved) {
+    try { return JSON.parse(saved); } catch (_e) {}
+  }
+  return [];
+}
+
+function getApiBaseUrl(): string {
+  return (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ?? '';
+}
+
+function formatArchiveApiError(status: number, payload: any): string {
+  const message = typeof payload?.message === 'string' ? payload.message : '';
+  if (status === 400) return message || 'Permintaan arsip tidak valid. Periksa data yang dipilih.';
+  if (status === 401) return 'Sesi Anda tidak valid atau kedaluwarsa. Silakan login ulang.';
+  if (status === 403) return 'Anda tidak memiliki izin untuk mengarsipkan aktivitas.';
+  if (status === 409) return message || 'Sebagian aktivitas sudah diarsipkan atau tidak ditemukan. Muat ulang data.';
+  if (status === 429) return message || 'Terlalu banyak permintaan arsip. Coba lagi beberapa menit lagi.';
+  if (status >= 500) return 'Server gagal memproses arsip. Coba lagi beberapa saat.';
+  return message || 'Gagal mengarsipkan aktivitas.';
+}
+
+export async function archiveAuditLogs(logIds: string[], archiveReason?: string): Promise<{ archivedCount: number; archivedIds: string[] }> {
+  if (!isFirebaseConfigured || !auth) {
+    throw new Error('Firebase belum dikonfigurasi.');
+  }
+
+  const user = auth.currentUser;
+  if (!user) throw new Error('Sesi Anda tidak ditemukan. Silakan login ulang.');
+
+  let token: string;
+  try {
+    token = await user.getIdToken();
+  } catch {
+    throw new Error('Gagal mengambil sesi autentikasi. Silakan login ulang.');
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(`${getApiBaseUrl()}/api/audit-logs/archive`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ logIds, archiveReason }),
+    });
+  } catch {
+    throw new Error('Backend arsip tidak tersedia. Pastikan server aktif atau VITE_API_URL sudah dikonfigurasi.');
+  }
+
+  const payload = await response.json().catch(() => null);
+  if (!response.ok || !payload?.success) {
+    throw new Error(formatArchiveApiError(response.status, payload));
+  }
+
+  return { archivedCount: payload.archivedCount ?? logIds.length, archivedIds: payload.archivedIds ?? logIds };
 }
