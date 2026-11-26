@@ -33,12 +33,24 @@ function parseItems(text: string, products: DataRow[]): { productId: string; pro
   const result: { productId: string; productName: string; requestedQty: number; unit: string }[] = [];
   const parts = text.split(/[\n,]+/).map(part => part.trim()).filter(Boolean);
   for (const part of parts) {
-    const [productId, rawQty] = part.split(':').map(value => value.trim());
-    const product = products.find(item => item.id === productId);
-    if (!product) continue;
+    const separator = part.lastIndexOf(':');
+    const rawName = (separator >= 0 ? part.slice(0, separator) : part).trim();
+    const rawQty = separator >= 0 ? part.slice(separator + 1).trim() : '';
     const quantity = Number(rawQty || 1);
-    if (!Number.isFinite(quantity) || quantity <= 0) continue;
-    result.push({ productId, productName: product.name, requestedQty: quantity, unit: product.unit });
+    if (!rawName || !Number.isFinite(quantity) || quantity <= 0) continue;
+
+    const needle = rawName.toLowerCase();
+    const product = products.find(item => String(item.name || '').trim().toLowerCase() === needle)
+      || products.find(item => String(item.name || '').trim().toLowerCase().includes(needle))
+      || products.find(item => String(item.id || '').toLowerCase() === needle);
+    if (!product) continue;
+
+    result.push({
+      productId: String(product.id),
+      productName: product.name,
+      requestedQty: quantity,
+      unit: product.unit,
+    });
   }
   return result;
 }
@@ -163,7 +175,7 @@ export const KitchenRequestsPage: React.FC = () => {
     try {
       await wait(ACTION_DELAY_MS);
       const items = parseItems(String(form.itemsText || ''), products);
-      if (items.length === 0) throw new Error('Tambahkan minimal satu item dengan format: id-bahan:jumlah');
+      if (items.length === 0) throw new Error('Tambahkan minimal satu nama bahan/barang yang sesuai master data. Format: nama:jumlah (jumlah opsional).');
       const request = await saveRow('requests', {
         id: newId('req'),
         requestNumber: form.requestNumber || `REQ-${String(Date.now()).slice(-4)}`,
@@ -207,7 +219,7 @@ export const KitchenRequestsPage: React.FC = () => {
     !search.trim() || [row.requestNumber, row.requesterName, row.requesterDepartment, row.status]
       .some(value => String(value ?? '').toLowerCase().includes(search.toLowerCase())));
 
-  const productHint = products.slice(0, 6).map(product => `${product.id}: 1`).join(', ');
+  const productHint = products.slice(0, 6).map(product => `${product.name}: 1`).join(', ');
 
   return (
     <div className="space-y-6">
@@ -250,6 +262,11 @@ export const KitchenRequestsPage: React.FC = () => {
               key: 'itemName',
               label: 'Nama Bahan/Barang',
               render: row => <span>{row.itemName || '-'}</span>,
+            },
+            {
+              key: 'quantity',
+              label: 'Jumlah Bahan/Barang',
+              render: row => <span>{row.quantity ?? '-'}</span>,
             },
             {
               key: 'status',
@@ -320,9 +337,9 @@ export const KitchenRequestsPage: React.FC = () => {
                 <input required value={form.requesterName || ''} onChange={event => setForm({ ...form, requesterName: event.target.value })} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase mb-2">Item (format: id-bahan:jumlah)</label>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-2">Nama Bahan/Barang (format: nama:jumlah)</label>
                 <textarea required rows={4} value={form.itemsText || ''} onChange={event => setForm({ ...form, itemsText: event.target.value })} placeholder={productHint} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm" />
-                <p className="text-[11px] text-slate-500 mt-1">Contoh: {productHint}</p>
+                <p className="text-[11px] text-slate-500 mt-1">Contoh: {productHint}. Jumlah boleh kosong (default 1).</p>
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-700 uppercase mb-2">Catatan</label>
