@@ -9,9 +9,14 @@ export const secondaryButtonClass = 'inline-flex items-center justify-center px-
 export interface TableColumn<T> {
   key: string;
   label: string;
-  render?: (row: T) => React.ReactNode;
+  render?: (row: T, index: number) => React.ReactNode;
   filterable?: boolean;
   filterValue?: (row: T) => string;
+}
+
+export interface TableHeaderGroup {
+  label: string;
+  keys: string[];
 }
 
 const NON_FILTERABLE_KEY = /(id|number|kode|code|date|tanggal|time|email|phone|telepon|address|alamat|notes?|catatan|description|deskripsi|name|nama|title|url|link)/i;
@@ -39,6 +44,8 @@ interface DataTableProps<T> {
   columns: TableColumn<T>[];
   rows: T[];
   rowKey: (row: T) => string;
+  headerGroups?: TableHeaderGroup[];
+  indexOffset?: number;
   onEdit?: (row: T) => void;
   onDelete?: (row: T) => void;
   onBulkDelete?: (rows: T[]) => void;
@@ -51,6 +58,8 @@ export function DataTable<T>({
   columns,
   rows,
   rowKey,
+  headerGroups,
+  indexOffset = 0,
   onEdit,
   onDelete,
   onBulkDelete,
@@ -63,6 +72,12 @@ export function DataTable<T>({
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const selectAllRef = useRef<HTMLInputElement>(null);
   const canSelect = selectable ?? Boolean(onBulkDelete || onDelete);
+
+  const groupedKeys = useMemo(() => {
+    const map = new Map<string, TableHeaderGroup>();
+    headerGroups?.forEach(group => group.keys.forEach(key => map.set(key, group)));
+    return map;
+  }, [headerGroups]);
 
   const filterGroups = useMemo(() => columns.flatMap(column => {
     if (column.filterable === false) return [];
@@ -237,27 +252,60 @@ export function DataTable<T>({
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[720px] text-left border-collapse">
+          <table className={`w-full text-left border-collapse ${headerGroups?.length ? 'min-w-[1180px]' : 'min-w-[720px]'}`}>
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase tracking-wider">
-                {canSelect && (
-                  <th className="p-4 w-12">
-                    <input
-                      ref={selectAllRef}
-                      type="checkbox"
-                      checked={allVisibleSelected}
-                      onChange={toggleSelectAll}
-                      aria-label="Pilih semua data"
-                      className="w-4 h-4 accent-emerald-700"
-                    />
-                  </th>
-                )}
-                {columns.map(column => <th key={column.key} className="p-4 font-semibold whitespace-nowrap">{column.label}</th>)}
-                {(onEdit || onDelete) && <th className="p-4 font-semibold text-right">Aksi</th>}
-              </tr>
+              {headerGroups?.length ? (
+                <>
+                  <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase tracking-wider">
+                    {canSelect && (
+                      <th rowSpan={2} className="p-4 w-12">
+                        <input
+                          ref={selectAllRef}
+                          type="checkbox"
+                          checked={allVisibleSelected}
+                          onChange={toggleSelectAll}
+                          aria-label="Pilih semua data"
+                          className="w-4 h-4 accent-emerald-700"
+                        />
+                      </th>
+                    )}
+                    {columns.map(column => {
+                      const group = groupedKeys.get(column.key);
+                      if (!group) {
+                        return <th key={column.key} rowSpan={2} className="p-4 font-semibold whitespace-nowrap">{column.label}</th>;
+                      }
+                      if (group.keys[0] !== column.key) return null;
+                      return <th key={`group-${group.label}`} colSpan={group.keys.length} className="p-4 font-semibold whitespace-nowrap text-center">{group.label}</th>;
+                    })}
+                    {(onEdit || onDelete) && <th rowSpan={2} className="p-4 font-semibold text-right">Aksi</th>}
+                  </tr>
+                  <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase tracking-wider">
+                    {columns.filter(column => groupedKeys.has(column.key)).map(column => (
+                      <th key={column.key} className="p-4 font-semibold whitespace-nowrap">{column.label}</th>
+                    ))}
+                  </tr>
+                </>
+              ) : (
+                <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase tracking-wider">
+                  {canSelect && (
+                    <th className="p-4 w-12">
+                      <input
+                        ref={selectAllRef}
+                        type="checkbox"
+                        checked={allVisibleSelected}
+                        onChange={toggleSelectAll}
+                        aria-label="Pilih semua data"
+                        className="w-4 h-4 accent-emerald-700"
+                      />
+                    </th>
+                  )}
+                  {columns.map(column => <th key={column.key} className="p-4 font-semibold whitespace-nowrap">{column.label}</th>)}
+                  {(onEdit || onDelete) && <th className="p-4 font-semibold text-right">Aksi</th>}
+                </tr>
+              )}
             </thead>
             <tbody className="divide-y divide-slate-100 text-sm">
-              {visibleRows.map(row => (
+              {visibleRows.map((row, index) => (
                 <tr key={rowKey(row)} className="hover:bg-slate-50/80 transition">
                   {canSelect && (
                     <td className="p-4">
@@ -272,7 +320,7 @@ export function DataTable<T>({
                   )}
                   {columns.map(column => (
                     <td key={column.key} className="p-4 text-slate-700">
-                      {column.render ? column.render(row) : String((row as Record<string, unknown>)[column.key] ?? '-')}
+                      {column.render ? column.render(row, indexOffset + index) : String((row as Record<string, unknown>)[column.key] ?? '-')}
                     </td>
                   ))}
                   {(onEdit || onDelete) && (

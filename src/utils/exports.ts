@@ -4,6 +4,11 @@ export interface ExportColumn<T> {
   value?: (row: T) => string | number;
 }
 
+export interface ExportColumnGroup {
+  label: string;
+  keys: string[];
+}
+
 function cellValue<T>(row: T, column: ExportColumn<T>): string | number {
   if (column.value) return column.value(row);
   const value = (row as Record<string, unknown>)[column.key];
@@ -21,7 +26,13 @@ function safeFilename(value: string): string {
   return value.replace(/[^a-zA-Z0-9_-]/g, '-');
 }
 
-export async function exportToExcel<T>(filename: string, sheetName: string, rows: T[], columns: ExportColumn<T>[]): Promise<void> {
+export async function exportToExcel<T>(
+  filename: string,
+  sheetName: string,
+  rows: T[],
+  columns: ExportColumn<T>[],
+  groups: ExportColumnGroup[] = [],
+): Promise<void> {
   const { default: ExcelJS } = await import('exceljs');
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet(sheetName.slice(0, 31));
@@ -31,9 +42,34 @@ export async function exportToExcel<T>(filename: string, sheetName: string, rows
     columns.forEach(column => { values[column.key] = cellValue(row, column); });
     sheet.addRow(values);
   });
-  sheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
-  sheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF047857' } };
-  sheet.views = [{ state: 'frozen', ySplit: 1 }];
+
+  const hasGroups = groups.length > 0;
+  if (hasGroups) sheet.insertRow(1, []);
+
+  const headerRow = sheet.getRow(hasGroups ? 2 : 1);
+  headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+  headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF047857' } };
+
+  if (hasGroups) {
+    const groupRow = sheet.getRow(1);
+    groups.forEach(group => {
+      const start = columns.findIndex(column => column.key === group.keys[0]) + 1;
+      if (start === 0) return;
+      const end = start + group.keys.length - 1;
+      for (let index = start; index <= end; index += 1) {
+        const cell = sheet.getCell(1, index);
+        cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF065F46' } };
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      }
+      sheet.mergeCells(1, start, 1, end);
+      groupRow.getCell(start).value = group.label;
+    });
+    groupRow.height = 20;
+    headerRow.height = 20;
+  }
+
+  sheet.views = [{ state: 'frozen', ySplit: hasGroups ? 2 : 1 }];
   const buffer = await workbook.xlsx.writeBuffer();
   const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   downloadBlob(`${safeFilename(filename)}.xlsx`, blob);

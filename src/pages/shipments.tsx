@@ -6,6 +6,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ClipboardList,
+  Download,
+  Eye,
   Pencil,
   Plus,
   Trash2,
@@ -23,7 +25,15 @@ import {
   type TableColumn,
 } from '../components/DataViews';
 import { ExcelImportButton, type ExcelImportField } from '../components/ExcelImport';
-import { AlertBox, ConfirmDialog, InfoCard, LoadingOverlay, PageHeader, StatusBadge } from '../components/ui';
+import {
+  LOGISTICS_EXPORT_COLUMNS,
+  LOGISTICS_EXPORT_GROUPS,
+  LOGISTICS_HEADER_GROUPS,
+  LOGISTICS_SHIPMENT_COLUMNS,
+  shipmentSentStatus,
+  toLogisticsShipmentExportRows,
+} from '../components/logisticsColumns';
+import { AlertBox, ConfirmDialog, InfoCard, LoadingOverlay, PageHeader } from '../components/ui';
 import { useAuth } from '../contexts/AuthContext';
 import {
   createShipment,
@@ -42,6 +52,7 @@ import {
 } from '../services/logitrackService';
 import type { UserProfile } from '../types';
 import type { Item, MasterData, Shipment, ShipmentStatus } from '../types/logitrack';
+import { exportToExcel } from '../utils/exports';
 
 interface ShipmentForm {
   id: string;
@@ -86,18 +97,18 @@ interface ToastState {
 
 const shipmentImportFields: ExcelImportField[] = [
   { key: 'shipmentNumber', label: 'Nomor Pengiriman', aliases: ['nomor pengiriman', 'no pengiriman', 'shipment number', 'nomor', 'no'] },
-  { key: 'item', label: 'Barang', required: true, aliases: ['item', 'barang', 'nama barang', 'item name'] },
-  { key: 'quantity', label: 'Volume', required: true, aliases: ['quantity', 'volume', 'jumlah', 'qty'] },
-  { key: 'unit', label: 'Satuan', required: true, aliases: ['unit', 'satuan'] },
-  { key: 'senderFromRegion', label: 'Daerah Pengirim', required: true, aliases: ['sender from region', 'daerah pengirim', 'lokasi pengirim', 'asal'] },
+  { key: 'item', label: 'NAMA BARANG', required: true, aliases: ['item', 'barang', 'nama barang', 'item name'] },
+  { key: 'quantity', label: 'VOL', required: true, aliases: ['quantity', 'volume', 'vol', 'jumlah', 'qty'] },
+  { key: 'unit', label: 'SATUAN', required: true, aliases: ['unit', 'satuan'] },
+  { key: 'senderFromRegion', label: 'DARI KORDA', required: true, aliases: ['sender from region', 'daerah pengirim', 'dari korda', 'lokasi pengirim', 'asal'] },
   { key: 'korda', label: 'KORDA', required: true, aliases: ['korda', 'nama korda', 'tujuan'] },
-  { key: 'plannedQuantity', label: 'Rencana Kirim', aliases: ['planned quantity', 'rencana kirim', 'rencana'] },
-  { key: 'status', label: 'Status', aliases: ['status'] },
-  { key: 'shipmentDate', label: 'Tanggal', required: true, aliases: ['shipment date', 'tanggal', 'tgl'] },
+  { key: 'plannedQuantity', label: 'RENCANA KIRIM', aliases: ['planned quantity', 'rencana kirim', 'rencana'] },
+  { key: 'status', label: 'STATUS', aliases: ['status'] },
+  { key: 'shipmentDate', label: 'TANGGAL', required: true, aliases: ['shipment date', 'tanggal', 'tgl'] },
   { key: 'driver', label: 'Driver', required: true, aliases: ['driver', 'nama driver', 'driver name'] },
-  { key: 'senderName', label: 'Pengirim', aliases: ['sender', 'pengirim', 'nama pengirim'] },
-  { key: 'receiverName', label: 'Penerima', aliases: ['receiver', 'penerima', 'nama penerima'] },
-  { key: 'storageLocation', label: 'Tempat Penyimpanan', aliases: ['storage location', 'tempat penyimpanan', 'gudang'] },
+  { key: 'senderName', label: 'NAMA PENGIRIM', aliases: ['sender', 'pengirim', 'nama pengirim'] },
+  { key: 'receiverName', label: 'NAMA PENERIMA', aliases: ['receiver', 'penerima', 'nama penerima'] },
+  { key: 'storageLocation', label: 'TEMPAT PENYIMPANAN', aliases: ['storage location', 'tempat penyimpanan', 'gudang'] },
   { key: 'notes', label: 'Catatan', aliases: ['notes', 'catatan', 'keterangan'] },
 ];
 
@@ -111,8 +122,13 @@ function activeRows<T extends MasterData>(rows: T[]): T[] {
   return rows.filter(row => row.isActive !== false);
 }
 
-function nameOf(rows: { id: string; name: string }[], id: string): string {
-  return rows.find(row => row.id === id)?.name || '';
+function DetailField({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="min-w-0">
+      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{label}</p>
+      <div className="mt-1 text-sm text-slate-800 break-words">{value}</div>
+    </div>
+  );
 }
 
 function validateShipmentForm(form: ShipmentForm, products: Item[]): string | null {
@@ -142,6 +158,7 @@ export const ShipmentsPage: React.FC = () => {
   const canEditFull = hasPermission('shipments.edit') && !isDriver;
   const canConfirmPermission = hasPermission('shipments.confirm');
   const canUploadPermission = hasPermission('shipments.upload');
+  const canExport = hasPermission('reports.export');
   const canDelete = currentUser?.role === 'Super Admin' && !isDriver;
 
   const [shipments, setShipments] = useState<Shipment[]>([]);
@@ -155,6 +172,8 @@ export const ShipmentsPage: React.FC = () => {
   const [form, setForm] = useState<ShipmentForm | null>(null);
   const [driverForm, setDriverForm] = useState<DriverUpdateForm | null>(null);
   const [receiptForm, setReceiptForm] = useState<ReceiptForm | null>(null);
+  const [detailTarget, setDetailTarget] = useState<Shipment | null>(null);
+  const [exporting, setExporting] = useState(false);
   const [uploadTarget, setUploadTarget] = useState<Shipment | null>(null);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Shipment | null>(null);
@@ -411,78 +430,35 @@ export const ShipmentsPage: React.FC = () => {
   const currentPage = Math.min(page, totalPages);
   const pageRows = filteredShipments.slice((currentPage - 1) * 10, currentPage * 10);
 
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      await exportToExcel(
+        `pengiriman-${todayString()}`,
+        'Data Pengiriman',
+        toLogisticsShipmentExportRows(filteredShipments),
+        LOGISTICS_EXPORT_COLUMNS,
+        LOGISTICS_EXPORT_GROUPS,
+      );
+      showToast('Data pengiriman berhasil diekspor ke Excel.');
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Gagal mengekspor data pengiriman.', 'error');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const columns: TableColumn<Shipment>[] = [
-    {
-      key: 'shipmentNumber',
-      label: 'No. Pengiriman',
-      render: row => <span className="font-semibold text-slate-800">{row.shipmentNumber}</span>,
-    },
-    {
-      key: 'shipmentDate',
-      label: 'Tanggal',
-      render: row => <span className="text-xs text-slate-500">{displayDate(row.shipmentDate)}</span>,
-    },
-    {
-      key: 'itemName',
-      label: 'Barang',
-      render: row => (
-        <div>
-          <p className="font-medium text-slate-800">{row.itemName || '-'}</p>
-          <p className="text-xs text-slate-500">{toNumber(row.quantity).toLocaleString('id-ID')} {row.unit}</p>
-        </div>
-      ),
-    },
-    {
-      key: 'plannedQuantity',
-      label: 'Rencana Kirim',
-      render: row => <span>{toNumber(row.plannedQuantity).toLocaleString('id-ID')} {row.unit}</span>,
-    },
-    {
-      key: 'kordaName',
-      label: 'Tujuan / KORDA',
-      render: row => (
-        <div>
-          <p className="text-slate-700">{row.kordaName || nameOf(kordas, row.kordaId) || '-'}</p>
-          <p className="text-xs text-slate-500">{row.senderFromRegion || '-'}</p>
-        </div>
-      ),
-    },
-    {
-      key: 'driverName',
-      label: 'Driver',
-      render: row => <span className="text-slate-700">{row.driverName || '-'}</span>,
-    },
-    {
-      key: 'status',
-      label: 'Status',
-      render: row => <StatusBadge value={row.status} />,
-    },
-    {
-      key: 'receivedQuantity',
-      label: 'Diterima',
-      render: row => toNumber(row.receivedQuantity) > 0
-        ? <span className="font-semibold text-slate-800">{toNumber(row.receivedQuantity).toLocaleString('id-ID')} {row.unit}</span>
-        : <span className="text-slate-400">-</span>,
-    },
-    {
-      key: 'proofPhotos',
-      label: 'Bukti',
-      render: row => row.proofPhotos?.length ? (
-        <div className="flex flex-wrap items-center gap-1">
-          {row.proofPhotos.slice(0, 2).map((url, index) => (
-            <a key={`${url}-${index}`} href={url} target="_blank" rel="noreferrer">
-              <img src={url} alt="Bukti pengiriman" className="w-9 h-9 object-cover rounded-lg border border-slate-200" />
-            </a>
-          ))}
-          {row.proofPhotos.length > 2 && <span className="text-xs text-slate-500">+{row.proofPhotos.length - 2}</span>}
-        </div>
-      ) : <span className="text-xs text-slate-400">-</span>,
-    },
+    ...LOGISTICS_SHIPMENT_COLUMNS,
     {
       key: 'actions',
       label: 'Aksi',
+      filterable: false,
       render: row => (
         <div className="flex justify-end gap-1">
+          <button onClick={() => setDetailTarget(row)} className="p-2 text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg" title="Detail">
+            <Eye className="w-4 h-4" />
+          </button>
           {canEditFull && (
             <button onClick={() => void openForm(row)} className="p-2 text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg" title="Ubah">
               <Pencil className="w-4 h-4" />
@@ -576,20 +552,29 @@ export const ShipmentsPage: React.FC = () => {
         title="Pengiriman Barang"
         description={isDriver ? 'Lihat tugas pengiriman Anda, perbarui status, dan unggah bukti foto.' : 'Kelola pengiriman barang, konfirmasi penerimaan, dan arsipkan bukti foto.'}
         icon={Truck}
-        action={canCreate ? (
+        action={(canCreate || canExport) ? (
           <div className="flex flex-wrap items-center gap-2">
-            <button onClick={() => void openForm()} className={primaryButtonClass}>
-              <Plus className="w-4 h-4 mr-2" /> Buat Pengiriman
-            </button>
-            <ExcelImportButton
-              fields={shipmentImportFields}
-              permission="imports.execute"
-              existingRows={shipments}
-              uniqueFields={['shipmentNumber']}
-              onImport={handleImportExcel}
-              label="Impor Excel"
-              title="Impor Pengiriman dari Excel/CSV"
-            />
+            {canCreate && (
+              <button onClick={() => void openForm()} className={primaryButtonClass}>
+                <Plus className="w-4 h-4 mr-2" /> Buat Pengiriman
+              </button>
+            )}
+            {canCreate && (
+              <ExcelImportButton
+                fields={shipmentImportFields}
+                permission="imports.execute"
+                existingRows={shipments}
+                uniqueFields={['shipmentNumber']}
+                onImport={handleImportExcel}
+                label="Impor Excel"
+                title="Impor Pengiriman dari Excel/CSV"
+              />
+            )}
+            {canExport && (
+              <button onClick={() => void handleExport()} disabled={exporting} className={secondaryButtonClass}>
+                <Download className="w-4 h-4 mr-2" /> Ekspor Excel
+              </button>
+            )}
           </div>
         ) : undefined}
       />
@@ -619,6 +604,8 @@ export const ShipmentsPage: React.FC = () => {
           columns={columns}
           rows={pageRows}
           rowKey={row => row.id}
+          headerGroups={LOGISTICS_HEADER_GROUPS}
+          indexOffset={(currentPage - 1) * 10}
           emptyLabel={shipments.length === 0 ? (isDriver ? 'Belum ada pengiriman yang ditugaskan kepada Anda.' : 'Belum ada data pengiriman.') : 'Tidak ada pengiriman yang cocok dengan filter.'}
         />
         {filteredShipments.length > 10 && (
@@ -655,27 +642,27 @@ export const ShipmentsPage: React.FC = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase mb-2">Nama Barang</label>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-2">NAMA BARANG</label>
                 <input required value={form.itemName} onChange={event => updateForm({ itemName: event.target.value })} className={inputClass} />
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase mb-2">Volume</label>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-2">VOL</label>
                 <input required type="number" min="0.01" step="any" value={form.quantity} onChange={event => updateForm({ quantity: event.target.value })} className={inputClass} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase mb-2">Satuan</label>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-2">SATUAN</label>
                 <input required value={form.unit} onChange={event => updateForm({ unit: event.target.value })} className={inputClass} />
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase mb-2">Nama Pengirim dari Daerah</label>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-2">DARI KORDA</label>
                 <input required value={form.senderFromRegion} onChange={event => updateForm({ senderFromRegion: event.target.value })} className={inputClass} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase mb-2">Asal / KORDA</label>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-2">KORDA TUJUAN</label>
                 <select required value={form.kordaId} onChange={event => updateForm({ kordaId: event.target.value })} className={inputClass}>
                   <option value="">Pilih KORDA</option>
                   {toOptions(activeRows(kordas)).map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
@@ -684,19 +671,20 @@ export const ShipmentsPage: React.FC = () => {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase mb-2">Rencana Jumlah Kirim</label>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-2">RENCANA KIRIM</label>
                 <input required type="number" min="0.01" step="any" value={form.plannedQuantity} onChange={event => updateForm({ plannedQuantity: event.target.value })} className={inputClass} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase mb-2">Status</label>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-2">STATUS / SUDAH/BELUM</label>
                 <select value={form.status} onChange={event => updateForm({ status: event.target.value as ShipmentStatus })} className={inputClass}>
                   {SHIPMENT_STATUSES.map(status => <option key={status} value={status}>{status}</option>)}
                 </select>
+                <p className="mt-1 text-xs text-slate-500">Tampilan tabel: {form.status === 'Belum dikirim' ? 'Belum' : 'Sudah'}</p>
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase mb-2">Tanggal Pengiriman</label>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-2">TANGGAL</label>
                 <input required type="date" value={form.shipmentDate} onChange={event => updateForm({ shipmentDate: event.target.value })} className={inputClass} />
               </div>
               <div>
@@ -712,16 +700,16 @@ export const ShipmentsPage: React.FC = () => {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase mb-2">Nama Pengirim</label>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-2">NAMA PENGIRIM</label>
                 <input required value={form.senderName} onChange={event => updateForm({ senderName: event.target.value })} className={inputClass} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase mb-2">Penerima</label>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-2">NAMA PENERIMA</label>
                 <input required value={form.receiverName} onChange={event => updateForm({ receiverName: event.target.value })} className={inputClass} />
               </div>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase mb-2">Tempat Penyimpanan</label>
+              <label className="block text-xs font-semibold text-slate-700 uppercase mb-2">TEMPAT PENYIMPANAN</label>
               <input required value={form.storageLocation} onChange={event => updateForm({ storageLocation: event.target.value })} className={inputClass} />
             </div>
             <div>
@@ -733,6 +721,46 @@ export const ShipmentsPage: React.FC = () => {
               <button type="submit" className={primaryButtonClass}>Simpan Pengiriman</button>
             </div>
           </form>
+        </Modal>
+      )}
+
+      {detailTarget && (
+        <Modal title={`Detail Pengiriman ${detailTarget.shipmentNumber}`} onClose={() => setDetailTarget(null)} wide>
+          <div className="space-y-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <DetailField label="NAMA BARANG" value={detailTarget.itemName || '-'} />
+              <DetailField label="VOL" value={toNumber(detailTarget.quantity).toLocaleString('id-ID')} />
+              <DetailField label="SATUAN" value={detailTarget.unit || '-'} />
+              <DetailField label="DARI KORDA" value={detailTarget.senderFromRegion || '-'} />
+              <DetailField label="RENCANA KIRIM" value={toNumber(detailTarget.plannedQuantity).toLocaleString('id-ID')} />
+              <DetailField label="STATUS / SUDAH/BELUM" value={shipmentSentStatus(detailTarget)} />
+              <DetailField label="STATUS / TANGGAL" value={displayDate(detailTarget.shipmentDate)} />
+              <DetailField label="NAMA PENGIRIM" value={detailTarget.senderName || '-'} />
+              <DetailField label="NAMA PENERIMA" value={detailTarget.receiverName || '-'} />
+              <DetailField label="TEMPAT PENYIMPANAN" value={detailTarget.storageLocation || '-'} />
+              <DetailField label="KORDA TUJUAN" value={detailTarget.kordaName || '-'} />
+              <DetailField label="DRIVER" value={detailTarget.driverName || '-'} />
+              <DetailField label="STATUS PENGIRIMAN" value={detailTarget.status} />
+              <DetailField label="DITERIMA" value={toNumber(detailTarget.receivedQuantity).toLocaleString('id-ID')} />
+            </div>
+            {detailTarget.notes && (
+              <div className="pt-4 border-t border-slate-200">
+                <DetailField label="CATATAN" value={detailTarget.notes} />
+              </div>
+            )}
+            {detailTarget.proofPhotos?.length ? (
+              <div className="flex flex-wrap gap-2 pt-4 border-t border-slate-200">
+                {detailTarget.proofPhotos.map((url, index) => (
+                  <a key={`${url}-${index}`} href={url} target="_blank" rel="noreferrer">
+                    <img src={url} alt="Bukti pengiriman" className="w-16 h-16 object-cover rounded-xl border border-slate-200" />
+                  </a>
+                ))}
+              </div>
+            ) : null}
+            <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
+              <button type="button" onClick={() => setDetailTarget(null)} className={secondaryButtonClass}>Tutup</button>
+            </div>
+          </div>
         </Modal>
       )}
 
@@ -831,6 +859,7 @@ export const ShipmentsPage: React.FC = () => {
 
       {loading && !processing && <LoadingOverlay label="Memuat data pengiriman..." />}
       {processing && <LoadingOverlay label={processing} />}
+      {exporting && <LoadingOverlay label="Mengekspor data pengiriman..." />}
       <Toast message={toast.message} kind={toast.kind} onClose={() => setToast({ message: '', kind: 'success' })} />
     </div>
   );

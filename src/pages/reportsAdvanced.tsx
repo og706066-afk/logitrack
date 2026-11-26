@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { BarChart3, Download, FileText, Printer } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { LOGISTICS_EXPORT_GROUPS, LOGISTICS_HEADER_GROUPS, shipmentSentStatus } from '../components/logisticsColumns';
 import { AlertBox, LoadingOverlay, PageHeader } from '../components/ui';
 import {
   DataTable,
@@ -346,29 +347,31 @@ export const ReportsAdvancedPage: React.FC = () => {
           .filter(item => inRange(item.shipmentDate)
             && categoryMatch(productCategory(item.itemId || '', item.itemName))
             && kordaMatch(item.kordaId, item.kordaName))
-          .map(item => ({
+          .map((item, index) => ({
+            no: index + 1,
+            itemName: item.itemName,
+            quantity: toNumber(item.quantity),
+            unit: item.unit,
+            senderFromRegion: item.senderFromRegion || '-',
+            plannedQuantity: toNumber(item.plannedQuantity),
+            statusFlag: shipmentSentStatus(item),
             tanggal: displayDate(item.shipmentDate),
-            nomor: item.shipmentNumber,
-            barang: item.itemName,
-            jumlah: toNumber(item.quantity),
-            satuan: item.unit,
-            korda: kordaName(item.kordaId, item.kordaName),
-            driver: item.driverName || '-',
-            status: item.status,
-            diterima: toNumber(item.receivedQuantity),
-            kekurangan: Math.max(0, toNumber(item.plannedQuantity) - toNumber(item.receivedQuantity)),
+            senderName: item.senderName || '-',
+            receiverName: item.receiverName || '-',
+            storageLocation: item.storageLocation || '-',
           }));
         columns = [
-          column('tanggal', 'Tanggal'),
-          column('nomor', 'No. pengiriman'),
-          column('barang', 'Barang'),
-          column('jumlah', 'Jumlah'),
-          column('satuan', 'Satuan'),
-          column('korda', 'KORDA'),
-          column('driver', 'Driver'),
-          column('status', 'Status'),
-          column('diterima', 'Diterima'),
-          column('kekurangan', 'Kekurangan'),
+          column('no', 'NO'),
+          column('itemName', 'NAMA BARANG'),
+          column('quantity', 'VOL'),
+          column('unit', 'SATUAN'),
+          column('senderFromRegion', 'DARI KORDA'),
+          column('plannedQuantity', 'RENCANA KIRIM'),
+          column('statusFlag', 'SUDAH/BELUM'),
+          column('tanggal', 'TANGGAL'),
+          column('senderName', 'NAMA PENGIRIM'),
+          column('receiverName', 'NAMA PENERIMA'),
+          column('storageLocation', 'TEMPAT PENYIMPANAN'),
         ];
         break;
       }
@@ -622,7 +625,13 @@ export const ReportsAdvancedPage: React.FC = () => {
     try {
       const filename = `laporan-${reportType}-${todayString()}`;
       if (format === 'excel') {
-        await exportToExcel(filename, reportTitle, report.rows, report.columns);
+        await exportToExcel(
+          filename,
+          reportTitle,
+          report.rows,
+          report.columns,
+          reportType === 'pengiriman' ? LOGISTICS_EXPORT_GROUPS : [],
+        );
       } else if (format === 'pdf') {
         await exportToPdf(filename, reportTitle, report.rows, report.columns);
       } else {
@@ -696,6 +705,8 @@ export const ReportsAdvancedPage: React.FC = () => {
           columns={tableColumns}
           rows={report.rows}
           rowKey={row => String(row.__rowId)}
+          headerGroups={reportType === 'pengiriman' ? LOGISTICS_HEADER_GROUPS : undefined}
+          indexOffset={0}
           emptyLabel="Tidak ada data yang sesuai dengan filter laporan."
         />
       </div>
