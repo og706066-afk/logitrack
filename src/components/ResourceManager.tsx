@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Check, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
+import { Check, Plus, Search, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { AlertBox, ConfirmDialog, LoadingOverlay, PageHeader } from './ui';
+import { DataTable } from './DataViews';
 import { ExcelImportButton, type ExcelImportField } from './ExcelImport';
 import {
   deleteRow,
@@ -50,7 +51,6 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({
   permissions,
   fields,
   columns,
-  columnLabels,
   initialRow,
   transform,
   validate,
@@ -264,41 +264,15 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({
         ) : filteredRows.length === 0 ? (
           <div className="text-center py-12 text-slate-500 text-sm">Belum ada data yang tersedia.</div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[640px] text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase tracking-wider">
-                  {visibleColumns.map(key => (
-                    <th key={key} className="p-4 font-semibold whitespace-nowrap">{columnLabels?.[key] || key}</th>
-                  ))}
-                  {(canEdit || canDelete) && <th className="p-4 font-semibold text-right">Aksi</th>}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-sm">
-                {filteredRows.map(row => (
-                  <tr key={row.id} className="hover:bg-slate-50/80 transition">
-                    {visibleColumns.map(key => (
-                      <td key={key} className="p-4 text-slate-700">{displayValue(key, row, renderCell)}</td>
-                    ))}
-                    {(canEdit || canDelete) && (
-                      <td className="p-4 text-right whitespace-nowrap">
-                        {canEdit && (
-                          <button onClick={() => openEdit(row)} className="p-2 text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg" title="Ubah">
-                            <Pencil className="w-4 h-4" />
-                          </button>
-                        )}
-                        {canDelete && (
-                          <button onClick={() => setDeleteId(row.id)} className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg" title="Hapus">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <DataTable<DataRow>
+            columns={[]}
+            rows={filteredRows}
+            rowKey={row => String(row.id)}
+            onEdit={canEdit ? openEdit : undefined}
+            onDelete={canDelete ? row => setDeleteId(String(row.id)) : undefined}
+            selectable={false}
+            emptyLabel="Belum ada data yang tersedia."
+          />
         )}
       </div>
 

@@ -15,16 +15,18 @@ import {
 } from 'recharts';
 import { useAuth } from '../contexts/AuthContext';
 import { AlertBox, InfoCard, LoadingOverlay, PageHeader, StatusBadge } from '../components/ui';
+import { DataTable } from '../components/DataViews';
 import { getAuditLogs } from '../services/rbacService';
 import { asNumber, getRows, today, type DataRow } from '../services/logisticsService';
 import { ACTION_DELAY_MS, wait } from '../utils/async';
+import { STANDARD_EXPORT_COLUMNS, toStandardExportRows } from '../components/logisticsColumns';
 
 const CHART_COLORS = ['#047857', '#0ea5e9', '#f59e0b', '#8b5cf6', '#ef4444', '#14b8a6'];
 
-function downloadCsv(filename: string, rows: DataRow[], columns: string[]): void {
+function downloadCsv<T extends object>(filename: string, rows: T[], columns: string[]): void {
   const header = columns.join(';');
   const body = rows.map(row => columns.map(column => {
-    const value = row[column];
+    const value = (row as Record<string, unknown>)[column];
     const text = value === undefined || value === null ? '' : typeof value === 'object' ? JSON.stringify(value) : String(value);
     return `"${text.replace(/"/g, '""')}"`;
   }).join(';')).join('\n');
@@ -35,6 +37,10 @@ function downloadCsv(filename: string, rows: DataRow[], columns: string[]): void
   link.download = filename;
   link.click();
   URL.revokeObjectURL(url);
+}
+
+function downloadStandardCsv<T extends object>(filename: string, rows: T[]): void {
+  downloadCsv(filename, toStandardExportRows(rows), STANDARD_EXPORT_COLUMNS.map(column => column.key));
 }
 
 export const ReportsPage: React.FC = () => {
@@ -108,7 +114,7 @@ export const ReportsPage: React.FC = () => {
     setExporting(true);
     try {
       await wait(ACTION_DELAY_MS);
-      downloadCsv(`silog-laporan-stok-${new Date().toISOString().slice(0, 10)}.csv`, products, ['name', 'categoryName', 'unit', 'currentStock', 'minStock']);
+      downloadStandardCsv(`silog-laporan-stok-${new Date().toISOString().slice(0, 10)}.csv`, products);
     } finally {
       setExporting(false);
     }
@@ -118,10 +124,10 @@ export const ReportsPage: React.FC = () => {
     setExporting(true);
     try {
       await wait(ACTION_DELAY_MS);
-      downloadCsv(`silog-laporan-transaksi-${new Date().toISOString().slice(0, 10)}.csv`, [
-        ...stockIn.map(row => ({ tanggal: row.date, nomor: row.invoiceNumber, jenis: 'MASUK', bahan: row.productName, jumlah: row.quantity, keterangan: row.supplierName })),
-        ...stockOut.map(row => ({ tanggal: row.date, nomor: row.stockOutNumber, jenis: 'KELUAR', bahan: row.productName, jumlah: row.quantity, keterangan: row.destination })),
-      ], ['tanggal', 'nomor', 'jenis', 'bahan', 'jumlah', 'keterangan']);
+      downloadStandardCsv(`silog-laporan-transaksi-${new Date().toISOString().slice(0, 10)}.csv`, [
+        ...stockIn.map(row => ({ tanggal: row.date, nomor: row.invoiceNumber, status: 'MASUK', itemName: row.productName, quantity: row.quantity, senderName: row.supplierName })),
+        ...stockOut.map(row => ({ tanggal: row.date, nomor: row.stockOutNumber, status: 'KELUAR', itemName: row.productName, quantity: row.quantity, receiverName: row.destination })),
+      ]);
     } finally {
       setExporting(false);
     }
@@ -226,32 +232,19 @@ export const ReportsPage: React.FC = () => {
         <div className="p-5 border-b border-slate-200">
           <h3 className="font-bold text-slate-800 text-sm">Bahan Makanan dengan Stok Terendah</h3>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase tracking-wider">
-                <th className="p-4 font-semibold">Bahan Makanan</th>
-                <th className="p-4 font-semibold">Kategori</th>
-                <th className="p-4 font-semibold">Stok Saat Ini</th>
-                <th className="p-4 font-semibold">Minimum</th>
-                <th className="p-4 font-semibold">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-sm">
-              {[...products].sort((a, b) => asNumber(a.currentStock) - asNumber(b.currentStock)).slice(0, 8).map(product => (
-                <tr key={product.id} className="hover:bg-slate-50/80">
-                  <td className="p-4 font-semibold text-slate-800">{product.name}</td>
-                  <td className="p-4 text-slate-600">{product.categoryName || '-'}</td>
-                  <td className="p-4 text-slate-700">{product.currentStock} {product.unit}</td>
-                  <td className="p-4 text-slate-600">{product.minStock} {product.unit}</td>
-                  <td className="p-4">
-                    <StatusBadge value={asNumber(product.currentStock) <= asNumber(product.minStock) ? 'Menipis' : 'Aman'} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable<DataRow>
+          columns={[]}
+          rows={[...products]
+            .sort((a, b) => asNumber(a.currentStock) - asNumber(b.currentStock))
+            .slice(0, 8)
+            .map(product => ({
+              ...product,
+              status: asNumber(product.currentStock) <= asNumber(product.minStock) ? 'Menipis' : 'Aman',
+            }))}
+          rowKey={row => String(row.id)}
+          selectable={false}
+          emptyLabel="Belum ada data bahan makanan."
+        />
       </div>
 
       <p className="text-xs text-slate-400 text-center">Laporan dihasilkan dari data SILOG per {today()}</p>

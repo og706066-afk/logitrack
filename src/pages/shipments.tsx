@@ -29,7 +29,6 @@ import {
   LOGISTICS_EXPORT_COLUMNS,
   LOGISTICS_EXPORT_GROUPS,
   LOGISTICS_HEADER_GROUPS,
-  LOGISTICS_SHIPMENT_COLUMNS,
   shipmentSentStatus,
   toLogisticsShipmentExportRows,
 } from '../components/logisticsColumns';
@@ -449,7 +448,6 @@ export const ShipmentsPage: React.FC = () => {
   };
 
   const columns: TableColumn<Shipment>[] = [
-    ...LOGISTICS_SHIPMENT_COLUMNS,
     {
       key: 'actions',
       label: 'Aksi',

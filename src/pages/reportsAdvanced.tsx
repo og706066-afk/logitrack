@@ -1,7 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { BarChart3, Download, FileText, Printer } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { LOGISTICS_EXPORT_GROUPS, LOGISTICS_HEADER_GROUPS, shipmentSentStatus } from '../components/logisticsColumns';
+import {
+  LOGISTICS_HEADER_GROUPS,
+  STANDARD_EXPORT_COLUMNS,
+  STANDARD_EXPORT_GROUPS,
+  shipmentSentStatus,
+  toStandardExportRows,
+} from '../components/logisticsColumns';
 import { AlertBox, LoadingOverlay, PageHeader } from '../components/ui';
 import {
   DataTable,
@@ -624,18 +630,19 @@ export const ReportsAdvancedPage: React.FC = () => {
     setError('');
     try {
       const filename = `laporan-${reportType}-${todayString()}`;
+      const exportRows = toStandardExportRows(report.rows);
       if (format === 'excel') {
         await exportToExcel(
           filename,
           reportTitle,
-          report.rows,
-          report.columns,
-          reportType === 'pengiriman' ? LOGISTICS_EXPORT_GROUPS : [],
+          exportRows,
+          STANDARD_EXPORT_COLUMNS,
+          STANDARD_EXPORT_GROUPS,
         );
       } else if (format === 'pdf') {
-        await exportToPdf(filename, reportTitle, report.rows, report.columns);
+        await exportToPdf(filename, reportTitle, exportRows, STANDARD_EXPORT_COLUMNS);
       } else {
-        printReport(reportTitle, report.rows, report.columns);
+        printReport(reportTitle, exportRows, STANDARD_EXPORT_COLUMNS);
       }
       setSuccess(`Laporan ${format === 'excel' ? 'Excel' : format === 'pdf' ? 'PDF' : 'cetak'} siap digunakan.`);
     } catch (reason: unknown) {

@@ -404,28 +404,19 @@ export const RegionsPage: React.FC = () => {
             <h3 className="font-bold text-slate-800 text-sm flex items-center"><Users className="w-4 h-4 mr-2 text-emerald-600" /> Rekap Penerima per Wilayah</h3>
             <p className="text-xs text-slate-500 mt-1">Data pribadi penerima disembunyikan sesuai kebijakan akses.</p>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[520px] text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase tracking-wider">
-                  <th className="p-4 font-semibold">Wilayah</th>
-                  <th className="p-4 font-semibold">Jumlah penerima</th>
-                  <th className="p-4 font-semibold">Jumlah warga</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-sm">
-                {regions.length === 0 ? (
-                  <tr><td colSpan={3} className="p-6 text-center text-slate-500">Belum ada data wilayah.</td></tr>
-                ) : regions.map(region => (
-                  <tr key={region.id} className="hover:bg-slate-50/80">
-                    <td className="p-4 font-semibold text-slate-800">{region.name}</td>
-                    <td className="p-4 text-slate-700">{recipientCountByRegion.get(region.id) || 0} orang</td>
-                    <td className="p-4 text-slate-700">{toNumber(region.population).toLocaleString('id-ID')}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <DataTable
+            columns={[]}
+            rows={regions.map(region => ({
+              ...region,
+              itemName: region.name,
+              quantity: recipientCountByRegion.get(region.id) || 0,
+              plannedQuantity: toNumber(region.population),
+              status: 'Aktif',
+            }))}
+            rowKey={region => region.id}
+            selectable={false}
+            emptyLabel="Belum ada data wilayah."
+          />
         </div>
       )}
 

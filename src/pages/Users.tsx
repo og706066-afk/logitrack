@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { UsersRound, Shield, Check, X, AlertCircle, Edit2 } from 'lucide-react';
+import { UsersRound, Check, X, AlertCircle, Edit2 } from 'lucide-react';
 import type { UserProfile, Role } from '../types';
 import { getUsers, updateUserRoleAndStatus, getRoles } from '../services/rbacService';
 import { LoadingOverlay } from '../components/ui';
+import { DataTable } from '../components/DataViews';
 import { ACTION_DELAY_MS, wait } from '../utils/async';
 
 export const Users: React.FC = () => {
@@ -108,59 +109,30 @@ export const Users: React.FC = () => {
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[640px] text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase tracking-wider">
-                  <th className="p-4 font-semibold">Pengguna</th>
-                  <th className="p-4 font-semibold">Email</th>
-                  <th className="p-4 font-semibold">Role</th>
-                  <th className="p-4 font-semibold">Status Akun</th>
-                  <th className="p-4 font-semibold text-right">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-sm">
-                {users.map((u) => (
-                  <tr key={u.uid} className="hover:bg-slate-50/80 transition">
-                    <td className="p-4">
-                      <div className="font-bold text-slate-800 flex items-center">
-                        {u.displayName}
-                        {u.uid === currentUser?.uid && (
-                          <span className="ml-2 px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-[10px] font-semibold">
-                            Anda
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-xs text-slate-500">{u.phoneNumber || 'Tanpa No. HP'}</div>
-                    </td>
-                    <td className="p-4 text-slate-600 font-mono text-xs">{u.email}</td>
-                    <td className="p-4">
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        <Shield className="w-3 h-3 mr-1" />
-                        {u.role}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${u.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
-                        {u.isActive ? 'Aktif' : 'Nonaktif'}
-                      </span>
-                    </td>
-                    <td className="p-4 text-right">
-                      {canManageUsers && u.uid !== currentUser?.uid && (
-                        <button
-                          onClick={() => handleOpenEdit(u)}
-                          className="inline-flex items-center px-3 py-1.5 bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 text-slate-700 rounded-lg text-xs font-semibold transition"
-                        >
-                          <Edit2 className="w-3.5 h-3.5 mr-1" />
-                          Ubah Role
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <DataTable<UserProfile>
+            columns={[
+              {
+                key: 'actions',
+                label: 'Aksi',
+                filterable: false,
+                render: user => (
+                  canManageUsers && user.uid !== currentUser?.uid ? (
+                    <button
+                      onClick={() => handleOpenEdit(user)}
+                      className="inline-flex items-center px-3 py-1.5 bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 text-slate-700 rounded-lg text-xs font-semibold transition"
+                    >
+                      <Edit2 className="w-3.5 h-3.5 mr-1" />
+                      Ubah Role
+                    </button>
+                  ) : null
+                ),
+              },
+            ]}
+            rows={users}
+            rowKey={user => user.uid}
+            selectable={false}
+            emptyLabel="Belum ada pengguna."
+          />
         </div>
       )}
 

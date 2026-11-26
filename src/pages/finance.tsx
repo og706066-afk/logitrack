@@ -23,7 +23,12 @@ import {
   todayString,
   updateFinanceTransaction,
 } from '../services/logitrackService';
-import { exportToExcel, exportToPdf, type ExportColumn } from '../utils/exports';
+import { exportToExcel, exportToPdf } from '../utils/exports';
+import {
+  STANDARD_EXPORT_COLUMNS,
+  STANDARD_EXPORT_GROUPS,
+  toStandardExportRows,
+} from '../components/logisticsColumns';
 import type { FinanceTransaction } from '../types/logitrack';
 
 type TypeFilter = 'Semua' | 'Pemasukan' | 'Pengeluaran';
@@ -44,6 +49,9 @@ interface FinanceDraft {
 }
 
 interface ReportRow {
+  itemName: string;
+  quantity: number;
+  status: string;
   tanggal: string;
   nomor: string;
   jenis: string;
@@ -62,16 +70,6 @@ const financeImportFields: ExcelImportField[] = [
   { key: 'donorName', label: 'Nama Donor', aliases: ['donor', 'donor name', 'nama donor', 'pemberi'] },
   { key: 'description', label: 'Keterangan', aliases: ['description', 'keterangan', 'deskripsi'] },
   { key: 'paymentMethod', label: 'Metode Bayar', aliases: ['payment method', 'metode bayar', 'pembayaran'] },
-];
-
-const REPORT_COLUMNS: ExportColumn<ReportRow>[] = [
-  { key: 'tanggal', label: 'Tanggal' },
-  { key: 'nomor', label: 'Nomor' },
-  { key: 'jenis', label: 'Jenis' },
-  { key: 'pemasukan', label: 'Pemasukan' },
-  { key: 'pengeluaran', label: 'Pengeluaran' },
-  { key: 'saldo', label: 'Saldo' },
-  { key: 'keterangan', label: 'Keterangan' },
 ];
 
 function emptyDraft(): FinanceDraft {
@@ -181,6 +179,9 @@ export const FinancePage: React.FC = () => {
         return total + delta;
       }, 0);
       return {
+        itemName: row.description || row.source || row.donorName || row.transactionNumber,
+        quantity: toNumber(row.amount),
+        status: row.type,
         tanggal: displayDate(row.date),
         nomor: row.transactionNumber,
         jenis: row.type,
@@ -293,10 +294,11 @@ export const FinancePage: React.FC = () => {
     try {
       const filename = `laporan-kas-${todayString()}`;
       const title = 'Laporan Pemasukan, Pengeluaran, dan Saldo';
+      const exportRows = toStandardExportRows(reportRows);
       if (format === 'excel') {
-        await exportToExcel(filename, 'Buku Kas', reportRows, REPORT_COLUMNS);
+        await exportToExcel(filename, 'Buku Kas', exportRows, STANDARD_EXPORT_COLUMNS, STANDARD_EXPORT_GROUPS);
       } else {
-        await exportToPdf(filename, title, reportRows, REPORT_COLUMNS);
+        await exportToPdf(filename, title, exportRows, STANDARD_EXPORT_COLUMNS);
       }
       setSuccess(`Laporan ${format === 'excel' ? 'Excel' : 'PDF'} berhasil dibuat.`);
     } catch (reason: unknown) {
@@ -403,47 +405,20 @@ export const FinancePage: React.FC = () => {
           <h3 className="font-bold text-slate-800 text-sm">Laporan Pemasukan, Pengeluaran & Saldo</h3>
           <p className="text-xs text-slate-500 mt-1">Saldo dihitung berurutan dari transaksi sesuai filter yang aktif.</p>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[720px] text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase tracking-wider">
-                <th className="p-4 font-semibold">Tanggal</th>
-                <th className="p-4 font-semibold">Nomor</th>
-                <th className="p-4 font-semibold">Jenis</th>
-                <th className="p-4 font-semibold">Pemasukan</th>
-                <th className="p-4 font-semibold">Pengeluaran</th>
-                <th className="p-4 font-semibold">Saldo</th>
-                <th className="p-4 font-semibold">Keterangan</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-sm">
-              {reportRows.length === 0 ? (
-                <tr><td colSpan={7} className="p-6 text-center text-slate-500">Belum ada data laporan.</td></tr>
-              ) : reportRows.map(row => (
-                <tr key={row.nomor} className="hover:bg-slate-50/80">
-                  <td className="p-4 text-slate-600">{row.tanggal}</td>
-                  <td className="p-4 font-semibold text-slate-800">{row.nomor}</td>
-                  <td className="p-4 text-slate-700">{row.jenis}</td>
-                  <td className="p-4 text-emerald-700">{row.pemasukan ? rupiah(row.pemasukan) : '-'}</td>
-                  <td className="p-4 text-red-600">{row.pengeluaran ? rupiah(row.pengeluaran) : '-'}</td>
-                  <td className="p-4 font-semibold">{rupiah(row.saldo)}</td>
-                  <td className="p-4 text-slate-600">{row.keterangan || '-'}</td>
-                </tr>
-              ))}
-            </tbody>
-            {reportRows.length > 0 && (
-              <tfoot>
-                <tr className="bg-emerald-50 border-t border-emerald-200 font-bold text-slate-800">
-                  <td className="p-4" colSpan={3}>Saldo akhir</td>
-                  <td className="p-4 text-emerald-700">{rupiah(income)}</td>
-                  <td className="p-4 text-red-600">{rupiah(expense)}</td>
-                  <td className="p-4">{rupiah(balance)}</td>
-                  <td className="p-4" />
-                </tr>
-              </tfoot>
-            )}
-          </table>
-        </div>
+        <DataTable<ReportRow>
+          columns={[]}
+          rows={reportRows}
+          rowKey={row => row.nomor}
+          selectable={false}
+          emptyLabel="Belum ada data laporan."
+        />
+        {reportRows.length > 0 && (
+          <div className="flex flex-wrap items-center gap-4 border-t border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-semibold text-slate-800">
+            <span>Saldo akhir: {rupiah(balance)}</span>
+            <span className="text-emerald-700">Pemasukan: {rupiah(income)}</span>
+            <span className="text-red-600">Pengeluaran: {rupiah(expense)}</span>
+          </div>
+        )}
       </div>
 
       {form && (

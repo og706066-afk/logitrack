@@ -12,11 +12,11 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { AlertBox, LoadingOverlay, PageHeader, StatusBadge } from '../components/ui';
 import { ResourceManager, type ResourceField } from '../components/ResourceManager';
+import { DataTable } from '../components/DataViews';
 import { getUsers, updateUserRoleAndStatus } from '../services/rbacService';
 import {
   asNumber,
   deleteRow,
-  formatDate,
   getRows,
   newId,
   patchRow,
@@ -228,53 +228,41 @@ export const KitchenRequestsPage: React.FC = () => {
           <Search className="w-5 h-5 text-slate-400 shrink-0" />
           <input value={search} onChange={event => setSearch(event.target.value)} placeholder="Cari nomor atau peminta..." className="flex-1 min-w-0 text-sm focus:outline-hidden text-slate-800" />
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[720px] text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase tracking-wider">
-                <th className="p-4 font-semibold">No. Permintaan</th>
-                <th className="p-4 font-semibold">Peminta</th>
-                <th className="p-4 font-semibold">Departemen</th>
-                <th className="p-4 font-semibold">Item</th>
-                <th className="p-4 font-semibold">Status</th>
-                <th className="p-4 font-semibold">Tanggal</th>
-                <th className="p-4 font-semibold text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-sm">
-              {visibleRows.map(row => (
-                <tr key={row.id} className="hover:bg-slate-50/80">
-                  <td className="p-4 font-semibold text-slate-800">{row.requestNumber}</td>
-                  <td className="p-4 text-slate-700">{row.requesterName}</td>
-                  <td className="p-4 text-slate-600">{row.requesterDepartment}</td>
-                  <td className="p-4 text-slate-600">{details.filter(item => item.requestId === row.id).length} item</td>
-                  <td className="p-4"><StatusBadge value={row.status} /></td>
-                  <td className="p-4 text-xs text-slate-500">{formatDate(row.createdAt)}</td>
-                  <td className="p-4 text-right whitespace-nowrap">
-                    {row.status === 'Pending' && hasPermission('requests.approve') && (
-                      <button onClick={() => void changeStatus(row, 'Approved', { approvedBy: currentUser?.uid, approvedAt: new Date() })} className="p-2 text-emerald-700 hover:bg-emerald-50 rounded-lg" title="Setujui"><Check className="w-4 h-4" /></button>
-                    )}
-                    {row.status === 'Pending' && hasPermission('requests.reject') && (
-                      <button onClick={() => {
-                        const reason = window.prompt('Alasan penolakan:');
-                        if (reason) void changeStatus(row, 'Rejected', { rejectedReason: reason });
-                      }} className="p-2 text-red-600 hover:bg-red-50 rounded-lg" title="Tolak"><X className="w-4 h-4" /></button>
-                    )}
-                    {row.status === 'Approved' && hasPermission('requests.create') && (
-                      <button onClick={() => void changeStatus(row, 'Processing')} className="px-2.5 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100">Proses</button>
-                    )}
-                    {row.status === 'Processing' && (hasPermission('requests.create') || hasPermission('requests.approve')) && (
-                      <button onClick={() => void changeStatus(row, 'Completed')} className="px-2.5 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 rounded-lg hover:bg-emerald-100">Selesai</button>
-                    )}
-                    {hasPermission('requests.delete') && (
-                      <button onClick={() => void handleDelete(row)} className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg" title="Hapus">×</button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable<DataRow>
+          columns={[
+            {
+              key: 'actions',
+              label: 'Aksi',
+              filterable: false,
+              render: row => (
+                <div className="flex items-center justify-end gap-1">
+                  {row.status === 'Pending' && hasPermission('requests.approve') && (
+                    <button onClick={() => void changeStatus(row, 'Approved', { approvedBy: currentUser?.uid, approvedAt: new Date() })} className="p-2 text-emerald-700 hover:bg-emerald-50 rounded-lg" title="Setujui"><Check className="w-4 h-4" /></button>
+                  )}
+                  {row.status === 'Pending' && hasPermission('requests.reject') && (
+                    <button onClick={() => {
+                      const reason = window.prompt('Alasan penolakan:');
+                      if (reason) void changeStatus(row, 'Rejected', { rejectedReason: reason });
+                    }} className="p-2 text-red-600 hover:bg-red-50 rounded-lg" title="Tolak"><X className="w-4 h-4" /></button>
+                  )}
+                  {row.status === 'Approved' && hasPermission('requests.create') && (
+                    <button onClick={() => void changeStatus(row, 'Processing')} className="px-2.5 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100">Proses</button>
+                  )}
+                  {row.status === 'Processing' && (hasPermission('requests.create') || hasPermission('requests.approve')) && (
+                    <button onClick={() => void changeStatus(row, 'Completed')} className="px-2.5 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 rounded-lg hover:bg-emerald-100">Selesai</button>
+                  )}
+                  {hasPermission('requests.delete') && (
+                    <button onClick={() => void handleDelete(row)} className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg" title="Hapus">×</button>
+                  )}
+                </div>
+              ),
+            },
+          ]}
+          rows={visibleRows}
+          rowKey={row => String(row.id)}
+          selectable={false}
+          emptyLabel="Belum ada permintaan."
+        />
       </div>
 
       {form && (
@@ -445,50 +433,38 @@ export const DeliveriesPage: React.FC = () => {
       <AlertBox message={success} kind="success" onClose={() => setSuccess('')} />
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[720px] text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase tracking-wider">
-                <th className="p-4 font-semibold">No. Pengiriman</th>
-                <th className="p-4 font-semibold">Permintaan</th>
-                <th className="p-4 font-semibold">Driver</th>
-                <th className="p-4 font-semibold">Kendaraan</th>
-                <th className="p-4 font-semibold">Tanggal</th>
-                <th className="p-4 font-semibold">Status</th>
-                <th className="p-4 font-semibold text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-sm">
-              {rows.map(row => (
-                <tr key={row.id} className="hover:bg-slate-50/80">
-                  <td className="p-4 font-semibold text-slate-800">{row.deliveryNumber}</td>
-                  <td className="p-4 text-slate-600">{requests.find(item => item.id === row.requestId)?.requestNumber || '-'}</td>
-                  <td className="p-4 text-slate-700">{row.driverName}</td>
-                  <td className="p-4 text-slate-600">{row.vehicleNumber}</td>
-                  <td className="p-4 text-xs text-slate-500">{row.shippingDate}</td>
-                  <td className="p-4"><StatusBadge value={row.status} /></td>
-                  <td className="p-4 text-right whitespace-nowrap">
-                    {(hasPermission('deliveries.update') || row.driverId === currentUser?.uid) && row.status === 'Assigned' && (
-                      <button onClick={() => void updateStatus(row, { status: 'On Delivery' })} className="px-2.5 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100">Berangkat</button>
-                    )}
-                    {(hasPermission('deliveries.update') || row.driverId === currentUser?.uid) && row.status === 'On Delivery' && (
-                      <button onClick={() => {
-                        const proof = window.prompt('URL bukti pengiriman (opsional):') || '';
-                        void updateStatus(row, { status: 'Delivered', proofImageUrl: proof, deliveredAt: new Date() });
-                      }} className="px-2.5 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 rounded-lg hover:bg-emerald-100">Sampai</button>
-                    )}
-                    {hasPermission('deliveries.complete') && row.status === 'Delivered' && (
-                      <button onClick={() => void updateStatus(row, { status: 'Confirmed' })} className="px-2.5 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 rounded-lg hover:bg-emerald-100">Konfirmasi</button>
-                    )}
-                    {hasPermission('deliveries.delete') && (
-                      <button onClick={() => void handleDelete(row)} className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg" title="Hapus">×</button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable<DataRow>
+          columns={[
+            {
+              key: 'actions',
+              label: 'Aksi',
+              filterable: false,
+              render: row => (
+                <div className="flex items-center justify-end gap-1">
+                  {(hasPermission('deliveries.update') || row.driverId === currentUser?.uid) && row.status === 'Assigned' && (
+                    <button onClick={() => void updateStatus(row, { status: 'On Delivery' })} className="px-2.5 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100">Berangkat</button>
+                  )}
+                  {(hasPermission('deliveries.update') || row.driverId === currentUser?.uid) && row.status === 'On Delivery' && (
+                    <button onClick={() => {
+                      const proof = window.prompt('URL bukti pengiriman (opsional):') || '';
+                      void updateStatus(row, { status: 'Delivered', proofImageUrl: proof, deliveredAt: new Date() });
+                    }} className="px-2.5 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 rounded-lg hover:bg-emerald-100">Sampai</button>
+                  )}
+                  {hasPermission('deliveries.complete') && row.status === 'Delivered' && (
+                    <button onClick={() => void updateStatus(row, { status: 'Confirmed' })} className="px-2.5 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 rounded-lg hover:bg-emerald-100">Konfirmasi</button>
+                  )}
+                  {hasPermission('deliveries.delete') && (
+                    <button onClick={() => void handleDelete(row)} className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg" title="Hapus">×</button>
+                  )}
+                </div>
+              ),
+            },
+          ]}
+          rows={rows}
+          rowKey={row => String(row.id)}
+          selectable={false}
+          emptyLabel="Belum ada pengiriman."
+        />
       </div>
 
       {form && (
