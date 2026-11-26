@@ -116,7 +116,7 @@ export const Login: React.FC = () => {
               <MapPin className="w-4 h-4" />
             </div>
             <div className="absolute top-[10%] left-[3%] -translate-x-1/2 animate-route-truck w-10 h-10 rounded-xl bg-cyan text-navy flex items-center justify-center shadow-lg shadow-cyan/20">
-              <Truck className="w-5 h-5" />
+              <Truck className="w-5 h-5 animate-truck-turn" />
             </div>
           </div>
 
