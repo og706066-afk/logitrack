@@ -215,9 +215,23 @@ export const KitchenRequestsPage: React.FC = () => {
     }
   };
 
-  const visibleRows = rows.filter(row =>
-    !search.trim() || [row.requestNumber, row.requesterName, row.requesterDepartment, row.status]
-      .some(value => String(value ?? '').toLowerCase().includes(search.toLowerCase())));
+  const visibleRows = rows
+    .filter(row =>
+      !search.trim() || [row.requestNumber, row.requesterName, row.requesterDepartment, row.status]
+        .some(value => String(value ?? '').toLowerCase().includes(search.toLowerCase())))
+    .map(row => {
+      const items = details.filter(item => String(item.requestId) === String(row.id));
+      const names = items.map(item => item.productName).filter(Boolean);
+      const quantities = items.map(item => asNumber(item.approvedQty ?? item.requestedQty));
+      return {
+        ...row,
+        requestNo: row.requestNo || row.requestNumber || '-',
+        requestedBy: row.requestedBy || row.requesterName || '-',
+        department: row.department || row.requesterDepartment || '-',
+        itemName: names.length ? names.join(', ') : row.itemName || '-',
+        quantity: quantities.length ? quantities.join(', ') : row.quantity ?? '-',
+      };
+    });
 
   const productHint = products.slice(0, 6).map(product => `${product.name}: 1`).join(', ');
 
