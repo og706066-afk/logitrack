@@ -66,7 +66,7 @@ export const Users: React.FC = () => {
       setSuccess(`Role pengguna ${selectedUser.email} berhasil diperbarui.`);
       setIsModalOpen(false);
       await refreshUserData();
-      loadData();
+      await loadData();
     } catch (err: any) {
       setError(err.message || 'Gagal memperbarui pengguna');
     } finally {

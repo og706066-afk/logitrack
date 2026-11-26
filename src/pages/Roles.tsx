@@ -100,7 +100,7 @@ export const Roles: React.FC = () => {
       setSuccess('Role berhasil disimpan.');
       setIsModalOpen(false);
       await refreshUserData();
-      loadData();
+      await loadData();
     } catch (err: any) {
       setError(err.message || 'Gagal menyimpan role');
     } finally {
@@ -120,7 +120,7 @@ export const Roles: React.FC = () => {
       await deleteRole(roleId, currentUser);
       setSuccess('Role berhasil dihapus.');
       await refreshUserData();
-      loadData();
+      await loadData();
     } catch (err: any) {
       setError(err.message || 'Gagal menghapus role');
     } finally {

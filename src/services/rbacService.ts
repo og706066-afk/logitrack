@@ -349,47 +349,17 @@ export const ADDITIONAL_ROLE_PRESETS: Role[] = [
 const SYSTEM_ROLE_PRESETS = [...WAREHOUSE_ROLE_PRESETS, ...ADDITIONAL_ROLE_PRESETS];
 
 async function syncWarehouseRoles(roles: Role[]): Promise<Role[]> {
-  const presetsByName = new Map(SYSTEM_ROLE_PRESETS.map(role => [role.name, role]));
-  const updated: Role[] = [];
+  if (roles.length > 0) return roles;
 
-  const merged = roles.map(role => {
-    const preset = presetsByName.get(role.name);
-    if (!preset || role.isSystem === false) return role;
-    const canonical: Role = {
-      ...role,
-      permissions: preset.permissions,
-      description: preset.description,
-      isSystem: true,
-      isActive: true,
-      updatedAt: new Date(),
-    };
-    updated.push(canonical);
-    return canonical;
-  });
-
-  const existingNames = new Set(merged.map(role => role.name));
-  const missing = SYSTEM_ROLE_PRESETS.filter(role => !existingNames.has(role.name));
-  const finalRoles = [...merged, ...missing];
-
-  if (updated.length === 0 && missing.length === 0) return roles;
-
+  const finalRoles = SYSTEM_ROLE_PRESETS.map(role => ({ ...role }));
   localStorage.setItem(STORAGE_ROLES_KEY, JSON.stringify(finalRoles));
 
   if (isFirebaseConfigured && db) {
-    await Promise.allSettled([
-      ...updated.map(role => updateDoc(doc(db!, 'roles', role.id), {
-        permissions: role.permissions,
-        description: role.description,
-        isSystem: true,
-        isActive: true,
-        updatedAt: serverTimestamp(),
-      })),
-      ...missing.map(role => setDoc(doc(db!, 'roles', role.id), {
-        ...role,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      })),
-    ]);
+    await Promise.allSettled(finalRoles.map(role => setDoc(doc(db!, 'roles', role.id), {
+      ...role,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    })));
   }
 
   return finalRoles;
