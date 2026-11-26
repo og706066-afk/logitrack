@@ -51,8 +51,8 @@ export const Login: React.FC = () => {
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10 animate-slide-up">
         <div className="flex justify-center">
-          <div className="w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center">
-            <img src={APP_LOGO} alt="Logo SILOG" className="w-full h-full object-contain" />
+          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-white/10 border border-white/20 p-1.5 flex items-center justify-center shadow-lg backdrop-blur-sm">
+            <img src={APP_LOGO} alt="Logo SILOG" className="w-full h-full object-contain rounded-full" />
           </div>
         </div>
         <h2 className="mt-5 sm:mt-6 text-center text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
@@ -176,8 +176,8 @@ export const Login: React.FC = () => {
       {loading && (
         <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
           <div className="w-full max-w-xs bg-white rounded-3xl shadow-2xl px-7 py-9 flex flex-col items-center animate-slide-up">
-            <div className="w-16 h-16 flex items-center justify-center animate-pulse-soft">
-              <img src={APP_LOGO} alt="Logo SILOG" className="w-full h-full object-contain" />
+            <div className="w-16 h-16 rounded-full bg-ocean-light/60 border border-ocean/20 p-1 flex items-center justify-center animate-pulse-soft">
+              <img src={APP_LOGO} alt="Logo SILOG" className="w-full h-full object-contain rounded-full" />
             </div>
             <div className="mt-6 w-11 h-11 border-4 border-ocean-light border-t-ocean rounded-full animate-spin" />
             <p className="mt-5 text-sm font-bold text-slate-800 text-center">

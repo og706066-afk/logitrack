@@ -80,8 +80,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
       `}>
         {/* Brand header */}
         <div className="p-4 sm:p-6 border-b border-slate-navy/80 flex items-center space-x-3 min-w-0">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0">
-            <img src={APP_LOGO} alt="Logo SILOG" className="w-10 h-10 object-contain" />
+          <div className="w-10 h-10 rounded-full bg-slate-900/60 border border-cyan/30 p-1 flex items-center justify-center shrink-0 shadow-sm">
+            <img src={APP_LOGO} alt="Logo SILOG" className="w-full h-full object-contain rounded-full" />
           </div>
           <div className="min-w-0">
             <h1 className="text-base sm:text-lg font-bold tracking-tight text-white truncate">SILOG PESANTREN</h1>
