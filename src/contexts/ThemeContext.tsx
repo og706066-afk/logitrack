@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 
 type Theme = 'light' | 'dark';
 
@@ -24,18 +24,36 @@ const getInitialTheme = (): Theme => {
   return 'light';
 };
 
+const persistTheme = (theme: Theme) => {
+  try {
+    localStorage.setItem(STORAGE_KEY, theme);
+  } catch {
+    return false;
+  }
+  return true;
+};
+
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setThemeState] = useState<Theme>(getInitialTheme);
+  const isFirstRender = useRef(true);
 
   useEffect(() => {
     const root = document.documentElement;
     root.classList.toggle('dark', theme === 'dark');
     root.style.colorScheme = theme;
-    try {
-      localStorage.setItem(STORAGE_KEY, theme);
-    } catch {
+    persistTheme(theme);
+
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
       return;
     }
+
+    root.classList.add('theme-transition');
+    const timeout = window.setTimeout(() => root.classList.remove('theme-transition'), 300);
+    return () => {
+      window.clearTimeout(timeout);
+      root.classList.remove('theme-transition');
+    };
   }, [theme]);
 
   const value: ThemeContextType = {
