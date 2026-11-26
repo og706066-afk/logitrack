@@ -19,7 +19,6 @@ import { DataTable } from '../components/DataViews';
 import { getAuditLogs } from '../services/rbacService';
 import { asNumber, getRows, today, type DataRow } from '../services/logisticsService';
 import { ACTION_DELAY_MS, wait } from '../utils/async';
-import { STANDARD_EXPORT_COLUMNS, toStandardExportRows } from '../components/logisticsColumns';
 
 const CHART_COLORS = ['#047857', '#0ea5e9', '#f59e0b', '#8b5cf6', '#ef4444', '#14b8a6'];
 
@@ -37,10 +36,6 @@ function downloadCsv<T extends object>(filename: string, rows: T[], columns: str
   link.download = filename;
   link.click();
   URL.revokeObjectURL(url);
-}
-
-function downloadStandardCsv<T extends object>(filename: string, rows: T[]): void {
-  downloadCsv(filename, toStandardExportRows(rows), STANDARD_EXPORT_COLUMNS.map(column => column.key));
 }
 
 export const ReportsPage: React.FC = () => {
@@ -114,7 +109,7 @@ export const ReportsPage: React.FC = () => {
     setExporting(true);
     try {
       await wait(ACTION_DELAY_MS);
-      downloadStandardCsv(`silog-laporan-stok-${new Date().toISOString().slice(0, 10)}.csv`, products);
+      downloadCsv(`silog-laporan-stok-${new Date().toISOString().slice(0, 10)}.csv`, products, ['name', 'category', 'unit', 'currentStock', 'minStock']);
     } finally {
       setExporting(false);
     }
@@ -124,10 +119,10 @@ export const ReportsPage: React.FC = () => {
     setExporting(true);
     try {
       await wait(ACTION_DELAY_MS);
-      downloadStandardCsv(`silog-laporan-transaksi-${new Date().toISOString().slice(0, 10)}.csv`, [
-        ...stockIn.map(row => ({ tanggal: row.date, nomor: row.invoiceNumber, status: 'MASUK', itemName: row.productName, quantity: row.quantity, senderName: row.supplierName })),
-        ...stockOut.map(row => ({ tanggal: row.date, nomor: row.stockOutNumber, status: 'KELUAR', itemName: row.productName, quantity: row.quantity, receiverName: row.destination })),
-      ]);
+      downloadCsv(`silog-laporan-transaksi-${new Date().toISOString().slice(0, 10)}.csv`, [
+        ...stockIn.map(row => ({ tanggal: row.date, nomor: row.invoiceNumber, status: 'MASUK', itemName: row.productName, quantity: row.quantity, supplier: row.supplierName })),
+        ...stockOut.map(row => ({ tanggal: row.date, nomor: row.stockOutNumber, status: 'KELUAR', itemName: row.productName, quantity: row.quantity, tujuan: row.destination })),
+      ], ['tanggal', 'nomor', 'status', 'itemName', 'quantity', 'supplier', 'tujuan']);
     } finally {
       setExporting(false);
     }
@@ -233,7 +228,33 @@ export const ReportsPage: React.FC = () => {
           <h3 className="font-bold text-slate-800 text-sm">Bahan Makanan dengan Stok Terendah</h3>
         </div>
         <DataTable<DataRow>
-          columns={[]}
+          columns={[
+            {
+              key: 'name',
+              label: 'Bahan Makanan',
+              render: row => <span className="font-medium text-slate-800">{row.name || '-'}</span>,
+            },
+            {
+              key: 'category',
+              label: 'Kategori',
+              render: row => <span>{row.category || '-'}</span>,
+            },
+            {
+              key: 'currentStock',
+              label: 'Stok Saat Ini',
+              render: row => <span className="font-semibold">{asNumber(row.currentStock)} {row.unit || ''}</span>,
+            },
+            {
+              key: 'minStock',
+              label: 'Minimum',
+              render: row => <span>{asNumber(row.minStock)} {row.unit || ''}</span>,
+            },
+            {
+              key: 'status',
+              label: 'Status',
+              render: row => <StatusBadge value={row.status} />,
+            },
+          ]}
           rows={[...products]
             .sort((a, b) => asNumber(a.currentStock) - asNumber(b.currentStock))
             .slice(0, 8)

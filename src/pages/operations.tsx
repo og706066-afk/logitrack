@@ -17,6 +17,7 @@ import { getUsers, updateUserRoleAndStatus } from '../services/rbacService';
 import {
   asNumber,
   deleteRow,
+  formatDate,
   getRows,
   newId,
   patchRow,
@@ -231,6 +232,42 @@ export const KitchenRequestsPage: React.FC = () => {
         <DataTable<DataRow>
           columns={[
             {
+              key: 'requestNo',
+              label: 'No. Permintaan',
+              render: row => <span className="font-medium text-slate-800">{row.requestNo || '-'}</span>,
+            },
+            {
+              key: 'requestedBy',
+              label: 'Peminta',
+              render: row => <span>{row.requestedBy || '-'}</span>,
+            },
+            {
+              key: 'department',
+              label: 'Departemen',
+              render: row => <span>{row.department || '-'}</span>,
+            },
+            {
+              key: 'itemName',
+              label: 'Item',
+              render: row => (
+                <span>
+                  {row.itemName || '-'}
+                  {row.quantity ? <span className="text-slate-400"> ({row.quantity} {row.unit || ''})</span> : null}
+                </span>
+              ),
+            },
+            {
+              key: 'status',
+              label: 'Status',
+              render: row => <StatusBadge value={row.status} />,
+            },
+            {
+              key: 'createdAt',
+              label: 'Tanggal',
+              filterable: false,
+              render: row => <span className="text-xs text-slate-500">{formatDate(row.createdAt)}</span>,
+            },
+            {
               key: 'actions',
               label: 'Aksi',
               filterable: false,
@@ -435,6 +472,37 @@ export const DeliveriesPage: React.FC = () => {
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         <DataTable<DataRow>
           columns={[
+            {
+              key: 'deliveryNo',
+              label: 'No. Pengiriman',
+              render: row => <span className="font-medium text-slate-800">{row.deliveryNo || '-'}</span>,
+            },
+            {
+              key: 'requestNo',
+              label: 'Permintaan',
+              render: row => <span>{row.requestNo || '-'}</span>,
+            },
+            {
+              key: 'driverName',
+              label: 'Driver',
+              render: row => <span>{row.driverName || '-'}</span>,
+            },
+            {
+              key: 'vehicle',
+              label: 'Kendaraan',
+              render: row => <span>{row.vehicle || '-'}</span>,
+            },
+            {
+              key: 'deliveryDate',
+              label: 'Tanggal',
+              filterable: false,
+              render: row => <span className="text-xs text-slate-500">{formatDate(row.deliveryDate)}</span>,
+            },
+            {
+              key: 'status',
+              label: 'Status',
+              render: row => <StatusBadge value={row.status} />,
+            },
             {
               key: 'actions',
               label: 'Aksi',

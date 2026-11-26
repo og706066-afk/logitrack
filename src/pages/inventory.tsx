@@ -378,8 +378,9 @@ export const WarehouseStockPage: React.FC = () => {
         icon={Warehouse}
         permissions={{ view: 'warehouses.view', create: 'warehouses.create', edit: 'warehouses.edit', delete: 'warehouses.delete' }}
         fields={warehouseFields}
-        columns={['name', 'location', 'description']}
-        columnLabels={{ name: 'Gudang', location: 'Lokasi', description: 'Keterangan' }}
+        columns={['name', 'location']}
+        columnLabels={{ name: 'NAMA GUDANG', location: 'LOKASI' }}
+        searchKeys={['name', 'location', 'description']}
         initialRow={() => ({ createdAt: new Date() })}
         validate={row => (!row.name || !row.location ? 'Nama dan lokasi gudang wajib diisi.' : null)}
       />

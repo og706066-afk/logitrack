@@ -405,14 +405,24 @@ export const RegionsPage: React.FC = () => {
             <p className="text-xs text-slate-500 mt-1">Data pribadi penerima disembunyikan sesuai kebijakan akses.</p>
           </div>
           <DataTable
-            columns={[]}
-            rows={regions.map(region => ({
-              ...region,
-              itemName: region.name,
-              quantity: recipientCountByRegion.get(region.id) || 0,
-              plannedQuantity: toNumber(region.population),
-              status: 'Aktif',
-            }))}
+            columns={[
+              {
+                key: 'name',
+                label: 'Wilayah',
+                render: row => <span className="font-medium text-slate-800">{row.name || '-'}</span>,
+              },
+              {
+                key: 'recipientCount',
+                label: 'Jumlah penerima',
+                render: row => <span>{recipientCountByRegion.get(row.id) || 0} penerima</span>,
+              },
+              {
+                key: 'population',
+                label: 'Jumlah warga',
+                render: row => <span>{toNumber(row.population).toLocaleString('id-ID')} warga</span>,
+              },
+            ]}
+            rows={regions}
             rowKey={region => region.id}
             selectable={false}
             emptyLabel="Belum ada data wilayah."

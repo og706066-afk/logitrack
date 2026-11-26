@@ -2,11 +2,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { BarChart3, Download, FileText, Printer } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import {
+  LOGISTICS_EXPORT_GROUPS,
   LOGISTICS_HEADER_GROUPS,
-  STANDARD_EXPORT_COLUMNS,
-  STANDARD_EXPORT_GROUPS,
   shipmentSentStatus,
-  toStandardExportRows,
 } from '../components/logisticsColumns';
 import { AlertBox, LoadingOverlay, PageHeader } from '../components/ui';
 import {
@@ -56,6 +54,24 @@ type ReportKey =
 type ReportRow = Record<string, string | number>;
 type ShipmentRow = Shipment & { itemId?: string };
 type DistributionRow = Distribution & { kordaName?: string };
+
+const NUMBER_KEYS = new Set([
+  'currentStock',
+  'minStock',
+  'quantity',
+  'plannedQuantity',
+  'receivedQuantity',
+  'shortage',
+  'total',
+  'population',
+  'permintaan',
+  'kebutuhan',
+  'pengiriman',
+  'terkirim',
+  'distribusi',
+  'jumlah',
+  'no',
+]);
 
 const REPORT_TYPES: { value: ReportKey; label: string }[] = [
   { value: 'inventaris', label: 'Laporan Inventaris Barang' },
@@ -623,6 +639,17 @@ export const ReportsAdvancedPage: React.FC = () => {
     [report.columns],
   );
 
+  const exportColumns = useMemo<ExportColumn<ReportRow>[]>(
+    () => report.columns.map(item => ({
+      key: item.key,
+      label: item.label,
+      value: NUMBER_KEYS.has(item.key)
+        ? row => toNumber(row[item.key])
+        : undefined,
+    })),
+    [report.columns],
+  );
+
   const reportTitle = REPORT_TYPES.find(item => item.value === reportType)?.label || 'Laporan SILOG';
 
   const handleExport = async (format: 'excel' | 'pdf' | 'print') => {
@@ -630,19 +657,18 @@ export const ReportsAdvancedPage: React.FC = () => {
     setError('');
     try {
       const filename = `laporan-${reportType}-${todayString()}`;
-      const exportRows = toStandardExportRows(report.rows);
       if (format === 'excel') {
         await exportToExcel(
           filename,
           reportTitle,
-          exportRows,
-          STANDARD_EXPORT_COLUMNS,
-          STANDARD_EXPORT_GROUPS,
+          report.rows,
+          exportColumns,
+          reportType === 'pengiriman' ? LOGISTICS_EXPORT_GROUPS : undefined,
         );
       } else if (format === 'pdf') {
-        await exportToPdf(filename, reportTitle, exportRows, STANDARD_EXPORT_COLUMNS);
+        await exportToPdf(filename, reportTitle, report.rows, exportColumns);
       } else {
-        printReport(reportTitle, exportRows, STANDARD_EXPORT_COLUMNS);
+        printReport(reportTitle, report.rows, exportColumns);
       }
       setSuccess(`Laporan ${format === 'excel' ? 'Excel' : format === 'pdf' ? 'PDF' : 'cetak'} siap digunakan.`);
     } catch (reason: unknown) {

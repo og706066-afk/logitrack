@@ -320,7 +320,6 @@ export function ExcelImportButton({
                   columns={previewColumns}
                   rows={results.slice(0, PREVIEW_LIMIT)}
                   rowKey={row => String(row.rowNumber)}
-                  standard={false}
                   emptyLabel="Klik Validasi Data untuk melihat preview hasil pemetaan."
                 />
               </div>

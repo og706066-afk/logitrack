@@ -52,7 +52,37 @@ export const AuditLogs: React.FC = () => {
       ) : (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
           <DataTable
-            columns={[]}
+            columns={[
+              {
+                key: 'createdAt',
+                label: 'Waktu',
+                filterable: false,
+                render: log => {
+                  const date = log.createdAt?.toDate?.() ?? new Date(log.createdAt);
+                  return <span className="text-xs text-slate-500">{date.toLocaleString('id-ID')}</span>;
+                },
+              },
+              {
+                key: 'userName',
+                label: 'Pengguna',
+                render: log => <span className="font-medium text-slate-800">{log.userName || '-'}</span>,
+              },
+              {
+                key: 'module',
+                label: 'Modul',
+                render: log => <span>{log.module || '-'}</span>,
+              },
+              {
+                key: 'action',
+                label: 'Aksi',
+                render: log => <span className="inline-flex items-center px-2 py-1 rounded bg-slate-100 text-xs font-semibold text-slate-700">{log.action}</span>,
+              },
+              {
+                key: 'description',
+                label: 'Keterangan',
+                render: log => <span>{log.description || '-'}</span>,
+              },
+            ]}
             rows={logs}
             rowKey={log => log.id}
             selectable={false}

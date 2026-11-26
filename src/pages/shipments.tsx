@@ -94,6 +94,75 @@ interface ToastState {
   kind: 'error' | 'success';
 }
 
+const shipmentTableColumns: TableColumn<Shipment>[] = [
+  {
+    key: 'no',
+    label: 'NO',
+    filterable: false,
+    render: (_row, index) => <span className="font-semibold text-slate-800">{index + 1}</span>,
+  },
+  {
+    key: 'itemName',
+    label: 'NAMA BARANG',
+    render: row => <span className="font-medium text-slate-800">{row.itemName || '-'}</span>,
+  },
+  {
+    key: 'quantity',
+    label: 'VOL',
+    render: row => <span>{toNumber(row.quantity)}</span>,
+  },
+  {
+    key: 'unit',
+    label: 'SATUAN',
+    render: row => <span>{row.unit || '-'}</span>,
+  },
+  {
+    key: 'senderFromRegion',
+    label: 'DARI KORDA',
+    render: row => <span>{row.senderFromRegion || '-'}</span>,
+  },
+  {
+    key: 'plannedQuantity',
+    label: 'RENCANA KIRIM',
+    render: row => <span>{toNumber(row.plannedQuantity)}</span>,
+  },
+  {
+    key: 'statusFlag',
+    label: 'SUDAH/BELUM',
+    filterable: true,
+    filterValue: row => shipmentSentStatus(row),
+    render: row => {
+      const status = shipmentSentStatus(row);
+      return (
+        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${status === 'Sudah' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : status === 'Belum' ? 'bg-slate-100 text-slate-600 border-slate-200' : 'bg-white text-slate-400 border-slate-200'}`}>
+          {status}
+        </span>
+      );
+    },
+  },
+  {
+    key: 'tanggal',
+    label: 'TANGGAL',
+    filterable: false,
+    render: row => <span className="text-xs text-slate-500">{displayDate(row.shipmentDate)}</span>,
+  },
+  {
+    key: 'senderName',
+    label: 'NAMA PENGIRIM',
+    render: row => <span>{row.senderName || '-'}</span>,
+  },
+  {
+    key: 'receiverName',
+    label: 'NAMA PENERIMA',
+    render: row => <span>{row.receiverName || '-'}</span>,
+  },
+  {
+    key: 'storageLocation',
+    label: 'TEMPAT PENYIMPANAN',
+    render: row => <span>{row.storageLocation || '-'}</span>,
+  },
+];
+
 const shipmentImportFields: ExcelImportField[] = [
   { key: 'shipmentNumber', label: 'Nomor Pengiriman', aliases: ['nomor pengiriman', 'no pengiriman', 'shipment number', 'nomor', 'no'] },
   { key: 'item', label: 'NAMA BARANG', required: true, aliases: ['item', 'barang', 'nama barang', 'item name'] },
@@ -599,7 +668,7 @@ export const ShipmentsPage: React.FC = () => {
           <input type="date" value={dateTo} onChange={event => { setDateTo(event.target.value); setPage(1); }} className={`${inputClass} w-auto`} aria-label="Tanggal sampai" />
         </FilterBar>
         <DataTable
-          columns={columns}
+          columns={[...shipmentTableColumns, ...columns]}
           rows={pageRows}
           rowKey={row => row.id}
           headerGroups={LOGISTICS_HEADER_GROUPS}

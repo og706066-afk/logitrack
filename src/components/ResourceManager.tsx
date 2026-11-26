@@ -3,7 +3,7 @@ import { Check, Plus, Search, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { AlertBox, ConfirmDialog, LoadingOverlay, PageHeader } from './ui';
-import { DataTable } from './DataViews';
+import { DataTable, type TableColumn } from './DataViews';
 import { ExcelImportButton, type ExcelImportField } from './ExcelImport';
 import {
   deleteRow,
@@ -51,6 +51,7 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({
   permissions,
   fields,
   columns,
+  columnLabels,
   initialRow,
   transform,
   validate,
@@ -142,6 +143,20 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({
     if (/price|amount/i.test(key)) return `Rp ${Number(value).toLocaleString('id-ID')}`;
     return String(value);
   };
+
+  const nativeColumns = useMemo<TableColumn<DataRow>[]>(() => [
+    {
+      key: 'no',
+      label: 'NO',
+      filterable: false,
+      render: (_row, index) => <span className="font-semibold text-slate-800">{index + 1}</span>,
+    },
+    ...visibleColumns.map(key => ({
+      key,
+      label: columnLabels?.[key] || key,
+      render: (row: DataRow) => displayValue(key, row, renderCell),
+    })),
+  ], [visibleColumns, columnLabels, renderCell]);
 
   const filteredRows = useMemo(() => {
     const needle = search.trim().toLowerCase();
@@ -265,7 +280,7 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({
           <div className="text-center py-12 text-slate-500 text-sm">Belum ada data yang tersedia.</div>
         ) : (
           <DataTable<DataRow>
-            columns={[]}
+            columns={nativeColumns}
             rows={filteredRows}
             rowKey={row => String(row.id)}
             onEdit={canEdit ? openEdit : undefined}

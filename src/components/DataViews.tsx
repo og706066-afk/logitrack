@@ -1,11 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ListFilter, Pencil, RotateCcw, Trash2, X } from 'lucide-react';
 import { AlertBox } from './ui';
-import {
-  defaultStandardRowResolver,
-  STANDARD_HEADER_GROUPS,
-  type StandardRowResolver,
-} from './logisticsColumns';
 
 export const inputClass = 'w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-emerald-600';
 export const primaryButtonClass = 'inline-flex items-center justify-center px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold rounded-xl text-sm transition shadow-sm disabled:opacity-50';
@@ -45,87 +40,12 @@ function filterValueOf<T>(row: T, column: TableColumn<T>): string {
   return String(raw);
 }
 
-function createStandardColumns<T>(
-  resolver: StandardRowResolver<T> = defaultStandardRowResolver as StandardRowResolver<T>,
-): TableColumn<T>[] {
-  const values = (row: T, index: number) => resolver(row, index);
-  return [
-    {
-      key: 'no',
-      label: 'NO',
-      filterable: false,
-      render: (_row, index) => <span className="font-semibold text-slate-800">{index + 1}</span>,
-    },
-    {
-      key: 'itemName',
-      label: 'NAMA BARANG',
-      render: (row, index) => <span className="font-medium text-slate-800">{values(row, index).itemName}</span>,
-    },
-    {
-      key: 'quantity',
-      label: 'VOL',
-      render: (row, index) => <span>{values(row, index).quantity}</span>,
-    },
-    {
-      key: 'unit',
-      label: 'SATUAN',
-      render: (row, index) => <span>{values(row, index).unit}</span>,
-    },
-    {
-      key: 'senderFromRegion',
-      label: 'DARI KORDA',
-      render: (row, index) => <span>{values(row, index).senderFromRegion}</span>,
-    },
-    {
-      key: 'plannedQuantity',
-      label: 'RENCANA KIRIM',
-      render: (row, index) => <span>{values(row, index).plannedQuantity}</span>,
-    },
-    {
-      key: 'statusFlag',
-      label: 'SUDAH/BELUM',
-      filterable: true,
-      filterValue: row => values(row, 0).statusFlag,
-      render: (row, index) => {
-        const status = values(row, index).statusFlag;
-        return (
-          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${status === 'Sudah' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : status === 'Belum' ? 'bg-slate-100 text-slate-600 border-slate-200' : 'bg-white text-slate-400 border-slate-200'}`}>
-            {status}
-          </span>
-        );
-      },
-    },
-    {
-      key: 'tanggal',
-      label: 'TANGGAL',
-      filterable: false,
-      render: (row, index) => <span className="text-xs text-slate-500">{values(row, index).tanggal}</span>,
-    },
-    {
-      key: 'senderName',
-      label: 'NAMA PENGIRIM',
-      render: (row, index) => <span>{values(row, index).senderName}</span>,
-    },
-    {
-      key: 'receiverName',
-      label: 'NAMA PENERIMA',
-      render: (row, index) => <span>{values(row, index).receiverName}</span>,
-    },
-    {
-      key: 'storageLocation',
-      label: 'TEMPAT PENYIMPANAN',
-      render: (row, index) => <span>{values(row, index).storageLocation}</span>,
-    },
-  ];
-}
-
 interface DataTableProps<T> {
   columns: TableColumn<T>[];
   rows: T[];
   rowKey: (row: T) => string;
   headerGroups?: TableHeaderGroup[];
   indexOffset?: number;
-  standard?: boolean;
   onEdit?: (row: T) => void;
   onDelete?: (row: T) => void;
   onBulkDelete?: (rows: T[]) => void;
@@ -140,7 +60,6 @@ export function DataTable<T>({
   rowKey,
   headerGroups,
   indexOffset = 0,
-  standard = true,
   onEdit,
   onDelete,
   onBulkDelete,
@@ -154,24 +73,13 @@ export function DataTable<T>({
   const selectAllRef = useRef<HTMLInputElement>(null);
   const canSelect = selectable ?? Boolean(onBulkDelete || onDelete);
 
-  const standardColumns = useMemo(() => createStandardColumns<T>(), []);
-  const actionColumns = useMemo(
-    () => columns.filter(column => /^(actions?|aksi)$/i.test(column.key) || /^aksi$/i.test(column.label)),
-    [columns],
-  );
-  const effectiveColumns = useMemo(
-    () => standard ? [...standardColumns, ...actionColumns] : columns,
-    [standard, standardColumns, actionColumns, columns],
-  );
-  const effectiveHeaderGroups = standard ? STANDARD_HEADER_GROUPS : headerGroups;
-
   const groupedKeys = useMemo(() => {
     const map = new Map<string, TableHeaderGroup>();
-    effectiveHeaderGroups?.forEach(group => group.keys.forEach(key => map.set(key, group)));
+    headerGroups?.forEach(group => group.keys.forEach(key => map.set(key, group)));
     return map;
-  }, [effectiveHeaderGroups]);
+  }, [headerGroups]);
 
-  const filterGroups = useMemo(() => effectiveColumns.flatMap(column => {
+  const filterGroups = useMemo(() => columns.flatMap(column => {
     if (column.filterable === false) return [];
     if (!column.filterable && NON_FILTERABLE_KEY.test(column.key)) return [];
 
@@ -187,7 +95,7 @@ export function DataTable<T>({
       .sort((a, b) => a.value.localeCompare(b.value, 'id-ID'));
 
     return [{ column, options }];
-  }), [effectiveColumns, rows]);
+  }), [columns, rows]);
 
   const isGroupActive = (key: string, optionCount: number) => {
     const selected = filters[key] ?? [];
@@ -344,9 +252,9 @@ export function DataTable<T>({
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className={`w-full text-left border-collapse ${effectiveHeaderGroups?.length ? 'min-w-[1180px]' : 'min-w-[720px]'}`}>
+          <table className={`w-full text-left border-collapse ${headerGroups?.length ? 'min-w-[1180px]' : 'min-w-[720px]'}`}>
             <thead>
-              {effectiveHeaderGroups?.length ? (
+              {headerGroups?.length ? (
                 <>
                   <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase tracking-wider">
                     {canSelect && (
@@ -361,7 +269,7 @@ export function DataTable<T>({
                         />
                       </th>
                     )}
-                    {effectiveColumns.map(column => {
+                    {columns.map(column => {
                       const group = groupedKeys.get(column.key);
                       if (!group) {
                         return <th key={column.key} rowSpan={2} className="p-4 font-semibold whitespace-nowrap">{column.label}</th>;
@@ -372,7 +280,7 @@ export function DataTable<T>({
                     {(onEdit || onDelete) && <th rowSpan={2} className="p-4 font-semibold text-right">Aksi</th>}
                   </tr>
                   <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase tracking-wider">
-                    {effectiveColumns.filter(column => groupedKeys.has(column.key)).map(column => (
+                    {columns.filter(column => groupedKeys.has(column.key)).map(column => (
                       <th key={column.key} className="p-4 font-semibold whitespace-nowrap">{column.label}</th>
                     ))}
                   </tr>
@@ -391,7 +299,7 @@ export function DataTable<T>({
                       />
                     </th>
                   )}
-                  {effectiveColumns.map(column => <th key={column.key} className="p-4 font-semibold whitespace-nowrap">{column.label}</th>)}
+                  {columns.map(column => <th key={column.key} className="p-4 font-semibold whitespace-nowrap">{column.label}</th>)}
                   {(onEdit || onDelete) && <th className="p-4 font-semibold text-right">Aksi</th>}
                 </tr>
               )}
@@ -405,12 +313,12 @@ export function DataTable<T>({
                         type="checkbox"
                         checked={selectedKeys.includes(rowKey(row))}
                         onChange={() => toggleRow(rowKey(row))}
-                        aria-label={`Pilih ${effectiveColumns[0]?.label ?? 'data'}`}
+                        aria-label={`Pilih ${columns[0]?.label ?? 'data'}`}
                         className="w-4 h-4 accent-emerald-700"
                       />
                     </td>
                   )}
-                  {effectiveColumns.map(column => (
+                  {columns.map(column => (
                     <td key={column.key} className="p-4 text-slate-700">
                       {column.render ? column.render(row, indexOffset + index) : String((row as Record<string, unknown>)[column.key] ?? '-')}
                     </td>

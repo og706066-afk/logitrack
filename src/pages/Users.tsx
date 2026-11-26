@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { UsersRound, Check, X, AlertCircle, Edit2 } from 'lucide-react';
+import { UsersRound, Check, X, AlertCircle, Edit2, Shield } from 'lucide-react';
 import type { UserProfile, Role } from '../types';
 import { getUsers, updateUserRoleAndStatus, getRoles } from '../services/rbacService';
 import { LoadingOverlay } from '../components/ui';
@@ -111,6 +111,45 @@ export const Users: React.FC = () => {
         <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
           <DataTable<UserProfile>
             columns={[
+              {
+                key: 'displayName',
+                label: 'Pengguna',
+                render: user => (
+                  <div>
+                    <div className="font-medium text-slate-800">{user.displayName || '-'}</div>
+                    {user.uid === currentUser?.uid && (
+                      <span className="inline-block mt-0.5 text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">Anda</span>
+                    )}
+                  </div>
+                ),
+              },
+              {
+                key: 'email',
+                label: 'Email',
+                render: user => <span className="text-xs text-slate-500">{user.email || '-'}</span>,
+              },
+              {
+                key: 'role',
+                label: 'Role',
+                filterable: true,
+                filterValue: user => user.role,
+                render: user => (
+                  <span className="inline-flex items-center px-2 py-1 bg-emerald-50 text-emerald-700 rounded text-xs font-semibold">
+                    <Shield className="w-3 h-3 mr-1" /> {user.role}
+                  </span>
+                ),
+              },
+              {
+                key: 'isActive',
+                label: 'Status Akun',
+                filterable: true,
+                filterValue: user => (user.isActive === false ? 'Nonaktif' : 'Aktif'),
+                render: user => (
+                  <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-semibold ${user.isActive === false ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>
+                    {user.isActive === false ? 'Nonaktif' : 'Aktif'}
+                  </span>
+                ),
+              },
               {
                 key: 'actions',
                 label: 'Aksi',

@@ -23,12 +23,7 @@ import {
   todayString,
   updateFinanceTransaction,
 } from '../services/logitrackService';
-import { exportToExcel, exportToPdf } from '../utils/exports';
-import {
-  STANDARD_EXPORT_COLUMNS,
-  STANDARD_EXPORT_GROUPS,
-  toStandardExportRows,
-} from '../components/logisticsColumns';
+import { exportToExcel, exportToPdf, type ExportColumn } from '../utils/exports';
 import type { FinanceTransaction } from '../types/logitrack';
 
 type TypeFilter = 'Semua' | 'Pemasukan' | 'Pengeluaran';
@@ -49,9 +44,6 @@ interface FinanceDraft {
 }
 
 interface ReportRow {
-  itemName: string;
-  quantity: number;
-  status: string;
   tanggal: string;
   nomor: string;
   jenis: string;
@@ -60,6 +52,26 @@ interface ReportRow {
   saldo: number;
   keterangan: string;
 }
+
+const reportColumns: TableColumn<ReportRow>[] = [
+  { key: 'tanggal', label: 'Tanggal', render: row => <span className="text-xs text-slate-500">{row.tanggal}</span> },
+  { key: 'nomor', label: 'Nomor', render: row => <span className="font-medium text-slate-800">{row.nomor}</span> },
+  { key: 'jenis', label: 'Jenis', render: row => <span>{row.jenis}</span> },
+  { key: 'pemasukan', label: 'Pemasukan', render: row => <span className="text-emerald-700">{row.pemasukan ? rupiah(row.pemasukan) : '-'}</span> },
+  { key: 'pengeluaran', label: 'Pengeluaran', render: row => <span className="text-red-600">{row.pengeluaran ? rupiah(row.pengeluaran) : '-'}</span> },
+  { key: 'saldo', label: 'Saldo', render: row => <span className="font-semibold">{rupiah(row.saldo)}</span> },
+  { key: 'keterangan', label: 'Keterangan', render: row => <span>{row.keterangan || '-'}</span> },
+];
+
+const REPORT_COLUMNS: ExportColumn<ReportRow>[] = [
+  { key: 'tanggal', label: 'Tanggal' },
+  { key: 'nomor', label: 'Nomor' },
+  { key: 'jenis', label: 'Jenis' },
+  { key: 'pemasukan', label: 'Pemasukan' },
+  { key: 'pengeluaran', label: 'Pengeluaran' },
+  { key: 'saldo', label: 'Saldo' },
+  { key: 'keterangan', label: 'Keterangan' },
+];
 
 const financeImportFields: ExcelImportField[] = [
   { key: 'transactionNumber', label: 'Nomor Transaksi', aliases: ['nomor transaksi', 'no transaksi', 'transaction number', 'nomor', 'no'] },
@@ -179,9 +191,6 @@ export const FinancePage: React.FC = () => {
         return total + delta;
       }, 0);
       return {
-        itemName: row.description || row.source || row.donorName || row.transactionNumber,
-        quantity: toNumber(row.amount),
-        status: row.type,
         tanggal: displayDate(row.date),
         nomor: row.transactionNumber,
         jenis: row.type,
@@ -294,11 +303,10 @@ export const FinancePage: React.FC = () => {
     try {
       const filename = `laporan-kas-${todayString()}`;
       const title = 'Laporan Pemasukan, Pengeluaran, dan Saldo';
-      const exportRows = toStandardExportRows(reportRows);
       if (format === 'excel') {
-        await exportToExcel(filename, 'Buku Kas', exportRows, STANDARD_EXPORT_COLUMNS, STANDARD_EXPORT_GROUPS);
+        await exportToExcel(filename, 'Buku Kas', reportRows, REPORT_COLUMNS);
       } else {
-        await exportToPdf(filename, title, exportRows, STANDARD_EXPORT_COLUMNS);
+        await exportToPdf(filename, title, reportRows, REPORT_COLUMNS);
       }
       setSuccess(`Laporan ${format === 'excel' ? 'Excel' : 'PDF'} berhasil dibuat.`);
     } catch (reason: unknown) {
@@ -406,7 +414,7 @@ export const FinancePage: React.FC = () => {
           <p className="text-xs text-slate-500 mt-1">Saldo dihitung berurutan dari transaksi sesuai filter yang aktif.</p>
         </div>
         <DataTable<ReportRow>
-          columns={[]}
+          columns={reportColumns}
           rows={reportRows}
           rowKey={row => row.nomor}
           selectable={false}
