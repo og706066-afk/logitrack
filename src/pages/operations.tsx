@@ -242,7 +242,7 @@ export const KitchenRequestsPage: React.FC = () => {
         description="Buat permintaan bahan makanan, setujui oleh Manager, lalu proses oleh Staf Gudang."
         icon={ClipboardList}
         action={hasPermission('requests.create') ? (
-          <button onClick={() => setForm({ requestNumber: `REQ-${String(Date.now()).slice(-4)}`, requesterName: currentUser?.displayName || '', requesterDepartment: '', notes: '', itemsText: '' })} className="inline-flex items-center px-4 py-2.5 bg-emerald-700 text-white font-semibold rounded-xl text-sm hover:bg-emerald-800 shadow-sm">
+          <button onClick={() => setForm({ requestNumber: `REQ-${String(Date.now()).slice(-4)}`, requesterName: currentUser?.displayName || '', requesterDepartment: '', notes: '', itemsText: '' })} className="inline-flex items-center px-4 py-2.5 bg-ocean text-white font-semibold rounded-xl text-sm hover:bg-ocean-dark shadow-sm">
             <Plus className="w-4 h-4 mr-2" /> Buat Permintaan
           </button>
         ) : undefined}
@@ -300,7 +300,7 @@ export const KitchenRequestsPage: React.FC = () => {
               render: row => (
                 <div className="flex items-center justify-end gap-1">
                   {row.status === 'Pending' && hasPermission('requests.approve') && (
-                    <button onClick={() => void changeStatus(row, 'Approved', { approvedBy: currentUser?.uid, approvedAt: new Date() })} className="p-2 text-emerald-700 hover:bg-emerald-50 rounded-lg" title="Setujui"><Check className="w-4 h-4" /></button>
+                    <button onClick={() => void changeStatus(row, 'Approved', { approvedBy: currentUser?.uid, approvedAt: new Date() })} className="p-2 text-ocean hover:bg-ocean-light/70 rounded-lg" title="Setujui"><Check className="w-4 h-4" /></button>
                   )}
                   {row.status === 'Pending' && hasPermission('requests.reject') && (
                     <button onClick={() => {
@@ -312,7 +312,7 @@ export const KitchenRequestsPage: React.FC = () => {
                     <button onClick={() => void changeStatus(row, 'Processing')} className="px-2.5 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100">Proses</button>
                   )}
                   {row.status === 'Processing' && (hasPermission('requests.create') || hasPermission('requests.approve')) && (
-                    <button onClick={() => void changeStatus(row, 'Completed')} className="px-2.5 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 rounded-lg hover:bg-emerald-100">Selesai</button>
+                    <button onClick={() => void changeStatus(row, 'Completed')} className="px-2.5 py-1.5 text-xs font-semibold text-ocean bg-ocean-light rounded-lg hover:bg-ocean-light/70">Selesai</button>
                   )}
                   {hasPermission('requests.delete') && (
                     <button onClick={() => void handleDelete(row)} className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg" title="Hapus">×</button>
@@ -361,7 +361,7 @@ export const KitchenRequestsPage: React.FC = () => {
               </div>
               <div className="flex justify-end space-x-3 pt-4 border-t border-slate-200">
                 <button type="button" onClick={() => setForm(null)} className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-sm">Batal</button>
-                <button type="submit" className="px-5 py-2 bg-emerald-700 text-white rounded-xl text-sm font-semibold">Kirim Permintaan</button>
+                <button type="submit" className="px-5 py-2 bg-ocean text-white rounded-xl text-sm font-semibold">Kirim Permintaan</button>
               </div>
             </form>
           </div>
@@ -487,7 +487,7 @@ export const DeliveriesPage: React.FC = () => {
         description={isDriver ? 'Lihat tugas pengiriman Anda dan perbarui statusnya.' : 'Tugaskan driver, pantau status pengiriman, dan konfirmasi penerimaan.'}
         icon={Send}
         action={hasPermission('deliveries.create') ? (
-          <button onClick={() => setForm({ deliveryNumber: `DEL-${String(Date.now()).slice(-4)}`, requestId: '', driverId: '', vehicleNumber: '', shippingDate: today(), notes: '' })} className="inline-flex items-center px-4 py-2.5 bg-emerald-700 text-white font-semibold rounded-xl text-sm hover:bg-emerald-800 shadow-sm">
+          <button onClick={() => setForm({ deliveryNumber: `DEL-${String(Date.now()).slice(-4)}`, requestId: '', driverId: '', vehicleNumber: '', shippingDate: today(), notes: '' })} className="inline-flex items-center px-4 py-2.5 bg-ocean text-white font-semibold rounded-xl text-sm hover:bg-ocean-dark shadow-sm">
             <Plus className="w-4 h-4 mr-2" /> Buat Tugas
           </button>
         ) : undefined}
@@ -542,10 +542,10 @@ export const DeliveriesPage: React.FC = () => {
                     <button onClick={() => {
                       const proof = window.prompt('URL bukti pengiriman (opsional):') || '';
                       void updateStatus(row, { status: 'Delivered', proofImageUrl: proof, deliveredAt: new Date() });
-                    }} className="px-2.5 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 rounded-lg hover:bg-emerald-100">Sampai</button>
+                    }} className="px-2.5 py-1.5 text-xs font-semibold text-ocean bg-ocean-light rounded-lg hover:bg-ocean-light/70">Sampai</button>
                   )}
                   {hasPermission('deliveries.complete') && row.status === 'Delivered' && (
-                    <button onClick={() => void updateStatus(row, { status: 'Confirmed' })} className="px-2.5 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 rounded-lg hover:bg-emerald-100">Konfirmasi</button>
+                    <button onClick={() => void updateStatus(row, { status: 'Confirmed' })} className="px-2.5 py-1.5 text-xs font-semibold text-ocean bg-ocean-light rounded-lg hover:bg-ocean-light/70">Konfirmasi</button>
                   )}
                   {hasPermission('deliveries.delete') && (
                     <button onClick={() => void handleDelete(row)} className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg" title="Hapus">×</button>
@@ -608,7 +608,7 @@ export const DeliveriesPage: React.FC = () => {
               </div>
               <div className="flex justify-end space-x-3 pt-4 border-t border-slate-200">
                 <button type="button" onClick={() => setForm(null)} className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-sm">Batal</button>
-                <button type="submit" className="px-5 py-2 bg-emerald-700 text-white rounded-xl text-sm font-semibold">Simpan Tugas</button>
+                <button type="submit" className="px-5 py-2 bg-ocean text-white rounded-xl text-sm font-semibold">Simpan Tugas</button>
               </div>
             </form>
           </div>
@@ -679,7 +679,7 @@ export const DriversPage: React.FC = () => {
         {driverUsers.map(user => (
           <div key={user.uid} className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
             <div className="flex items-center space-x-3 mb-4">
-              <div className="w-11 h-11 rounded-xl bg-emerald-700 text-white flex items-center justify-center font-bold">
+              <div className="w-11 h-11 rounded-xl bg-ocean text-white flex items-center justify-center font-bold">
                 {user.displayName.charAt(0).toUpperCase()}
               </div>
               <div>
@@ -688,7 +688,7 @@ export const DriversPage: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center justify-between text-xs text-slate-600">
-              <span className="inline-flex items-center"><Truck className="w-4 h-4 mr-1 text-emerald-600" /> {deliveries.filter(item => item.driverId === user.uid).length} pengiriman</span>
+              <span className="inline-flex items-center"><Truck className="w-4 h-4 mr-1 text-ocean" /> {deliveries.filter(item => item.driverId === user.uid).length} pengiriman</span>
               <StatusBadge value={user.isActive ? 'Aktif' : 'Nonaktif'} />
             </div>
           </div>
@@ -700,7 +700,7 @@ export const DriversPage: React.FC = () => {
           <h3 className="font-bold text-slate-800 mb-3 text-sm">Tetapkan Pengguna sebagai Driver</h3>
           <div className="flex flex-wrap gap-2">
             {users.filter(user => user.role !== 'Driver' && user.uid !== currentUser.uid).map(user => (
-              <button key={user.uid} onClick={() => void assignDriver(user)} className="px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 text-slate-700 rounded-xl">
+              <button key={user.uid} onClick={() => void assignDriver(user)} className="px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-ocean-light/70 hover:text-ocean text-slate-700 rounded-xl">
                 + {user.displayName}
               </button>
             ))}

@@ -46,8 +46,8 @@ export const Login: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-900 flex flex-col justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-      <div className="absolute -top-20 left-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-emerald-600/10 rounded-full blur-3xl pointer-events-none"></div>
-      <div className="absolute -bottom-20 right-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-emerald-800/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="absolute -top-20 left-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-ocean/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="absolute -bottom-20 right-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-ocean-dark/10 rounded-full blur-3xl pointer-events-none"></div>
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10 animate-slide-up">
         <div className="flex justify-center">
@@ -91,7 +91,7 @@ export const Login: React.FC = () => {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Nama Anda"
-                    className="block w-full pl-11 pr-4 py-2.5 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 text-sm focus:outline-hidden focus:ring-2 focus:ring-emerald-600 focus:bg-white transition disabled:opacity-60"
+                    className="block w-full pl-11 pr-4 py-2.5 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 text-sm focus:outline-hidden focus:ring-2 focus:ring-ocean focus:bg-white transition disabled:opacity-60"
                   />
                 </div>
               </div>
@@ -114,7 +114,7 @@ export const Login: React.FC = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="admin@silog.pesantren.id"
-                  className="block w-full pl-11 pr-4 py-2.5 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 text-sm focus:outline-hidden focus:ring-2 focus:ring-emerald-600 focus:bg-white transition disabled:opacity-60"
+                  className="block w-full pl-11 pr-4 py-2.5 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 text-sm focus:outline-hidden focus:ring-2 focus:ring-ocean focus:bg-white transition disabled:opacity-60"
                 />
               </div>
             </div>
@@ -136,7 +136,7 @@ export const Login: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="block w-full pl-11 pr-4 py-2.5 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 text-sm focus:outline-hidden focus:ring-2 focus:ring-emerald-600 focus:bg-white transition disabled:opacity-60"
+                  className="block w-full pl-11 pr-4 py-2.5 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 text-sm focus:outline-hidden focus:ring-2 focus:ring-ocean focus:bg-white transition disabled:opacity-60"
                 />
               </div>
             </div>
@@ -144,7 +144,7 @@ export const Login: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center py-2.5 sm:py-3 px-4 border border-transparent rounded-xl shadow-md text-sm font-semibold text-white bg-emerald-700 hover:bg-emerald-800 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-emerald-600 transition disabled:opacity-60 active:scale-[0.99]"
+              className="w-full flex items-center justify-center py-2.5 sm:py-3 px-4 border border-transparent rounded-xl shadow-md text-sm font-semibold text-white bg-ocean hover:bg-ocean-dark focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-ocean transition disabled:opacity-60 active:scale-[0.99]"
             >
               {loading ? (
                 <span className="flex items-center justify-center">
@@ -164,7 +164,7 @@ export const Login: React.FC = () => {
                 type="button"
                 onClick={switchMode}
                 disabled={loading}
-                className="text-xs sm:text-sm font-semibold text-emerald-700 hover:text-emerald-900 hover:underline disabled:opacity-60"
+                className="text-xs sm:text-sm font-semibold text-ocean hover:text-slate-navy hover:underline disabled:opacity-60"
               >
                 {isRegister ? 'Sudah punya akun? Masuk' : 'Belum punya akun? Daftar'}
               </button>
@@ -179,7 +179,7 @@ export const Login: React.FC = () => {
             <div className="w-16 h-16 flex items-center justify-center animate-pulse-soft">
               <img src={APP_LOGO} alt="Logo SILOG" className="w-full h-full object-contain" />
             </div>
-            <div className="mt-6 w-11 h-11 border-4 border-emerald-100 border-t-emerald-600 rounded-full animate-spin" />
+            <div className="mt-6 w-11 h-11 border-4 border-ocean-light border-t-ocean rounded-full animate-spin" />
             <p className="mt-5 text-sm font-bold text-slate-800 text-center">
               {isRegister ? 'Sedang membuat akun...' : 'Sedang masuk ke sistem...'}
             </p>

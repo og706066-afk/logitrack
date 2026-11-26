@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ListFilter, Pencil, RotateCcw, Trash2, X } from 'lucide-react';
 import { AlertBox } from './ui';
 import {
@@ -7,8 +7,8 @@ import {
   type StandardRowResolver,
 } from './logisticsColumns';
 
-export const inputClass = 'w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-emerald-600';
-export const primaryButtonClass = 'inline-flex items-center justify-center px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold rounded-xl text-sm transition shadow-sm disabled:opacity-50';
+export const inputClass = 'w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-ocean';
+export const primaryButtonClass = 'inline-flex items-center justify-center px-4 py-2.5 bg-ocean hover:bg-ocean-dark text-white font-semibold rounded-xl text-sm transition shadow-sm disabled:opacity-50';
 export const secondaryButtonClass = 'inline-flex items-center justify-center px-4 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold rounded-xl text-sm transition disabled:opacity-50';
 
 export interface TableColumn<T> {
@@ -61,7 +61,7 @@ function createStandardColumns<T>(
       render: (row, index) => {
         const status = values(row, index).statusFlag;
         return (
-          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${status === 'Sudah' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : status === 'Belum' ? 'bg-slate-100 text-slate-600 border-slate-200' : 'bg-white text-slate-400 border-slate-200'}`}>
+          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${status === 'Sudah' ? 'bg-green-50 text-green-700 border-green-200' : status === 'Belum' ? 'bg-slate-100 text-slate-600 border-slate-200' : 'bg-white text-slate-400 border-slate-200'}`}>
             {status}
           </span>
         );
@@ -235,13 +235,13 @@ export function DataTable<T>({
           <button
             type="button"
             onClick={() => setOpen(current => !current)}
-            className="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-emerald-700"
+            className="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-ocean"
             aria-expanded={open}
           >
             <ListFilter className="w-4 h-4" />
             Filter checkbox
             {activeCount > 0 && (
-              <span className="px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">{activeCount}</span>
+              <span className="px-1.5 py-0.5 rounded-full bg-ocean-light text-ocean-dark">{activeCount}</span>
             )}
           </button>
           {activeCount > 0 && (
@@ -271,7 +271,7 @@ export function DataTable<T>({
                       type="checkbox"
                       checked={allChecked}
                       onChange={() => toggleAll(group.column.key, group.options.map(option => option.value))}
-                      className="w-3.5 h-3.5 accent-emerald-700"
+                      className="w-3.5 h-3.5 accent-ocean"
                     />
                     <span className="font-medium">Semua</span>
                   </label>
@@ -281,7 +281,7 @@ export function DataTable<T>({
                         type="checkbox"
                         checked={allChecked || selected.includes(option.value)}
                         onChange={() => toggleOption(group.column.key, option.value)}
-                        className="w-3.5 h-3.5 accent-emerald-700"
+                        className="w-3.5 h-3.5 accent-ocean"
                       />
                       <span className="truncate" title={option.value}>{option.value}</span>
                       <span className="ml-auto text-slate-400">({option.count})</span>
@@ -295,7 +295,7 @@ export function DataTable<T>({
       )}
 
       {canSelect && selectedRows.length > 0 && (
-        <div className="mx-3 sm:mx-4 mt-2 flex flex-wrap items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
+        <div className="mx-3 sm:mx-4 mt-2 flex flex-wrap items-center gap-2 rounded-xl border border-ocean/20 bg-ocean-light px-3 py-2 text-xs text-ocean-dark">
           <span className="font-semibold">{selectedRows.length} data dipilih</span>
           {(onBulkDelete || onDelete) && (
             <button
@@ -336,7 +336,7 @@ export function DataTable<T>({
                           checked={allVisibleSelected}
                           onChange={toggleSelectAll}
                           aria-label="Pilih semua data"
-                          className="w-4 h-4 accent-emerald-700"
+                          className="w-4 h-4 accent-ocean"
                         />
                       </th>
                     )}
@@ -366,7 +366,7 @@ export function DataTable<T>({
                         checked={allVisibleSelected}
                         onChange={toggleSelectAll}
                         aria-label="Pilih semua data"
-                        className="w-4 h-4 accent-emerald-700"
+                        className="w-4 h-4 accent-ocean"
                       />
                     </th>
                   )}
@@ -385,7 +385,7 @@ export function DataTable<T>({
                         checked={selectedKeys.includes(rowKey(row))}
                         onChange={() => toggleRow(rowKey(row))}
                         aria-label={`Pilih ${effectiveColumns[0]?.label ?? 'data'}`}
-                        className="w-4 h-4 accent-emerald-700"
+                        className="w-4 h-4 accent-ocean"
                       />
                     </td>
                   )}
@@ -397,7 +397,7 @@ export function DataTable<T>({
                   {(onEdit || onDelete) && (
                     <td className="p-4 text-right whitespace-nowrap">
                       {onEdit && (
-                        <button onClick={() => onEdit(row)} className="p-2 text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg" title="Ubah">
+                        <button onClick={() => onEdit(row)} className="p-2 text-slate-500 hover:text-ocean hover:bg-ocean-light/70 rounded-lg" title="Ubah">
                           <Pencil className="w-4 h-4" />
                         </button>
                       )}

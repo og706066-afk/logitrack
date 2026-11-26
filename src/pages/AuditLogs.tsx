@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Archive, ScrollText, ShieldAlert } from 'lucide-react';
 import type { AuditLog, AuditLogArchive } from '../types';
 import { archiveAuditLogs, getArchivedAuditLogs, getAuditLogs } from '../services/rbacService';
@@ -184,7 +184,7 @@ export const AuditLogs: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="min-w-0">
             <h1 className="text-lg sm:text-xl font-bold text-slate-800 flex items-center">
-              <ScrollText className="w-5 h-5 sm:w-6 sm:h-6 mr-2 shrink-0 text-emerald-600" />
+              <ScrollText className="w-5 h-5 sm:w-6 sm:h-6 mr-2 shrink-0 text-ocean" />
               Audit Log Sistem & Keamanan
             </h1>
             <p className="text-sm text-slate-500 mt-0.5">
@@ -195,7 +195,7 @@ export const AuditLogs: React.FC = () => {
             <button
               type="button"
               onClick={() => { setTab('active'); setSearch(''); setSelectedLogs([]); setClearSelectionToken((t) => t + 1); }}
-              className={`px-3 py-2 rounded-xl text-sm font-semibold border transition ${tab === 'active' ? 'bg-emerald-700 text-white border-emerald-700' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+              className={`px-3 py-2 rounded-xl text-sm font-semibold border transition ${tab === 'active' ? 'bg-ocean text-white border-ocean' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
             >
               Aktivitas
             </button>
@@ -203,7 +203,7 @@ export const AuditLogs: React.FC = () => {
               <button
                 type="button"
                 onClick={() => { setTab('archived'); setSearch(''); setSelectedLogs([]); setClearSelectionToken((t) => t + 1); }}
-                className={`px-3 py-2 rounded-xl text-sm font-semibold border transition inline-flex items-center gap-1.5 ${tab === 'archived' ? 'bg-emerald-700 text-white border-emerald-700' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+                className={`px-3 py-2 rounded-xl text-sm font-semibold border transition inline-flex items-center gap-1.5 ${tab === 'archived' ? 'bg-ocean text-white border-ocean' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
               >
                 <Archive className="w-4 h-4" /> Arsip
               </button>
@@ -216,7 +216,7 @@ export const AuditLogs: React.FC = () => {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={tab === 'active' ? 'Cari aktivitas...' : 'Cari arsip aktivitas...'}
-            className="w-full sm:max-w-sm px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-emerald-600"
+            className="w-full sm:max-w-sm px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-ocean"
           />
           {tab === 'active' && isSuperAdmin && selectedLogs.length > 0 && (
             <button
@@ -236,7 +236,7 @@ export const AuditLogs: React.FC = () => {
 
       {loading ? (
         <div className="flex flex-col items-center justify-center gap-3 py-12 text-slate-500 text-sm">
-          <div className="w-8 h-8 border-4 border-emerald-100 border-t-emerald-600 rounded-full animate-spin" />
+          <div className="w-8 h-8 border-4 border-ocean-light border-t-ocean rounded-full animate-spin" />
           Memuat audit log...
         </div>
       ) : tab === 'active' || !isSuperAdmin ? (
@@ -295,7 +295,7 @@ export const AuditLogs: React.FC = () => {
               onChange={(e) => setArchiveReason(e.target.value)}
               rows={3}
               maxLength={500}
-              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-emerald-600"
+              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-ocean"
               placeholder="Contoh: Pembersihan log rutin bulan ini"
             />
             <div className="flex justify-end gap-3 mt-5">

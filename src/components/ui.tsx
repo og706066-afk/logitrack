@@ -12,8 +12,8 @@ interface PageHeaderProps {
 export const PageHeader: React.FC<PageHeaderProps> = ({ title, description, icon: Icon, action }) => (
   <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
     <div className="min-w-0">
-      <h1 className="text-lg sm:text-xl font-bold text-slate-800 flex items-center">
-        <Icon className="w-5 h-5 sm:w-6 sm:h-6 mr-2 shrink-0 text-emerald-600" />
+      <h1 className="text-lg sm:text-xl font-bold text-slate-navy flex items-center">
+        <Icon className="w-5 h-5 sm:w-6 sm:h-6 mr-2 shrink-0 text-ocean" />
         <span className="truncate">{title}</span>
       </h1>
       <p className="text-xs sm:text-sm text-slate-500 mt-0.5">{description}</p>
@@ -32,11 +32,11 @@ export const AlertBox: React.FC<AlertBoxProps> = ({ message, kind = 'error', onC
   if (!message) return null;
   const isError = kind === 'error';
   return (
-    <div className={`p-3.5 sm:p-4 border rounded-xl flex items-center space-x-3 text-xs sm:text-sm ${isError ? 'bg-red-50 border-red-200 text-red-700' : 'bg-emerald-50 border-emerald-200 text-emerald-700'}`}>
-      {isError ? <AlertCircle className="w-5 h-5 shrink-0 text-red-500" /> : <Check className="w-5 h-5 shrink-0 text-emerald-600" />}
+    <div className={`p-3.5 sm:p-4 border rounded-xl flex items-center space-x-3 text-xs sm:text-sm ${isError ? 'bg-red-50 border-red-200 text-red-700' : 'bg-green-50 border-green-200 text-green-700'}`}>
+      {isError ? <AlertCircle className="w-5 h-5 shrink-0 text-red-500" /> : <Check className="w-5 h-5 shrink-0 text-green-600" />}
       <span>{message}</span>
       {onClose && (
-        <button onClick={onClose} className={`ml-auto ${isError ? 'text-red-500' : 'text-emerald-600'}`}>×</button>
+        <button onClick={onClose} className={`ml-auto ${isError ? 'text-red-500' : 'text-green-600'}`}>×</button>
       )}
     </div>
   );
@@ -48,20 +48,20 @@ interface StatusBadgeProps {
 
 const STATUS_STYLES: Record<string, string> = {
   Pending: 'bg-amber-50 text-amber-700 border-amber-200',
-  Approved: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  Approved: 'bg-green-50 text-green-700 border-green-200',
   Processing: 'bg-blue-50 text-blue-700 border-blue-200',
-  Completed: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  Completed: 'bg-green-50 text-green-700 border-green-200',
   Rejected: 'bg-red-50 text-red-600 border-red-200',
   Assigned: 'bg-slate-100 text-slate-700 border-slate-200',
   'On Delivery': 'bg-blue-50 text-blue-700 border-blue-200',
-  Delivered: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  Confirmed: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  Aktif: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  Delivered: 'bg-green-50 text-green-700 border-green-200',
+  Confirmed: 'bg-green-50 text-green-700 border-green-200',
+  Aktif: 'bg-green-50 text-green-700 border-green-200',
   Nonaktif: 'bg-red-50 text-red-600 border-red-200',
-  IN: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  IN: 'bg-green-50 text-green-700 border-green-200',
   OUT: 'bg-red-50 text-red-600 border-red-200',
   Menipis: 'bg-red-50 text-red-600 border-red-200',
-  Aman: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  Aman: 'bg-green-50 text-green-700 border-green-200',
 };
 
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ value }) => (
@@ -78,7 +78,7 @@ interface InfoCardProps {
   color?: string;
 }
 
-export const InfoCard: React.FC<InfoCardProps> = ({ title, value, detail, icon: Icon, color = 'bg-emerald-600' }) => (
+export const InfoCard: React.FC<InfoCardProps> = ({ title, value, detail, icon: Icon, color = 'bg-ocean' }) => (
   <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
     <div className="flex items-center justify-between mb-4">
       <div className={`w-10 h-10 rounded-xl ${color} text-white flex items-center justify-center shadow-sm`}>
@@ -88,7 +88,7 @@ export const InfoCard: React.FC<InfoCardProps> = ({ title, value, detail, icon: 
     </div>
     <div>
       <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">{title}</p>
-      <p className="text-xl font-bold text-slate-800 mt-1">{value}</p>
+      <p className="text-xl font-bold text-slate-navy mt-1">{value}</p>
     </div>
   </div>
 );
@@ -120,7 +120,7 @@ interface LoadingOverlayProps {
 export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ label = 'Memproses...' }) => (
   <div className="fixed inset-0 z-[60] bg-slate-900/45 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in" role="status" aria-live="polite">
     <div className="bg-white rounded-2xl px-8 py-7 shadow-2xl flex flex-col items-center space-y-4 min-w-[220px] max-w-[90vw] animate-slide-up">
-      <div className="w-12 h-12 border-4 border-emerald-100 border-t-emerald-600 rounded-full animate-spin" />
+      <div className="w-12 h-12 border-4 border-ocean-light border-t-ocean rounded-full animate-spin" />
       <p className="text-sm font-semibold text-slate-700 text-center">{label}</p>
       <p className="text-xs text-slate-500 text-center">Mohon tunggu sebentar</p>
     </div>

@@ -134,7 +134,7 @@ const shipmentTableColumns: TableColumn<Shipment>[] = [
     render: row => {
       const status = shipmentSentStatus(row);
       return (
-        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${status === 'Sudah' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : status === 'Belum' ? 'bg-slate-100 text-slate-600 border-slate-200' : 'bg-white text-slate-400 border-slate-200'}`}>
+        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${status === 'Sudah' ? 'bg-green-50 text-green-700 border-green-200' : status === 'Belum' ? 'bg-slate-100 text-slate-600 border-slate-200' : 'bg-white text-slate-400 border-slate-200'}`}>
           {status}
         </span>
       );
@@ -523,11 +523,11 @@ export const ShipmentsPage: React.FC = () => {
       filterable: false,
       render: row => (
         <div className="flex justify-end gap-1">
-          <button onClick={() => setDetailTarget(row)} className="p-2 text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg" title="Detail">
+          <button onClick={() => setDetailTarget(row)} className="p-2 text-slate-500 hover:text-ocean hover:bg-ocean-light/70 rounded-lg" title="Detail">
             <Eye className="w-4 h-4" />
           </button>
           {canEditFull && (
-            <button onClick={() => void openForm(row)} className="p-2 text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg" title="Ubah">
+            <button onClick={() => void openForm(row)} className="p-2 text-slate-500 hover:text-ocean hover:bg-ocean-light/70 rounded-lg" title="Ubah">
               <Pencil className="w-4 h-4" />
             </button>
           )}
@@ -540,7 +540,7 @@ export const ShipmentsPage: React.FC = () => {
                 shortageNote: row.shortageNote || '',
                 damageNote: row.damageNote || '',
               })}
-              className="p-2 text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg"
+              className="p-2 text-slate-500 hover:text-ocean hover:bg-ocean-light/70 rounded-lg"
               title="Perbarui pengiriman"
             >
               <Pencil className="w-4 h-4" />
@@ -560,7 +560,7 @@ export const ShipmentsPage: React.FC = () => {
                 shortageNote: row.shortageNote || '',
                 damageNote: row.damageNote || '',
               })}
-              className="p-2 text-emerald-700 hover:bg-emerald-50 rounded-lg"
+              className="p-2 text-ocean hover:bg-ocean-light/70 rounded-lg"
               title="Konfirmasi penerimaan"
             >
               <Check className="w-4 h-4" />

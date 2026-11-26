@@ -12,9 +12,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requir
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 text-emerald-800">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 text-ocean-dark">
         <div className="flex flex-col items-center space-y-4">
-          <div className="w-12 h-12 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-12 h-12 border-4 border-ocean border-t-transparent rounded-full animate-spin"></div>
           <p className="font-medium text-slate-600">Memuat Sistem SILOG...</p>
         </div>
       </div>
@@ -34,11 +34,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requir
           </div>
           <h2 className="text-xl font-bold text-slate-800 mb-2">Akses Ditolak</h2>
           <p className="text-slate-600 text-sm mb-6">
-            Anda tidak memiliki izin (<code className="bg-slate-100 px-2 py-0.5 rounded text-xs">{requiredPermission}</code>) untuk mengakses modul ini dengan role <span className="font-semibold text-emerald-700">{currentUser.role}</span>.
+            Anda tidak memiliki izin (<code className="bg-slate-100 px-2 py-0.5 rounded text-xs">{requiredPermission}</code>) untuk mengakses modul ini dengan role <span className="font-semibold text-ocean">{currentUser.role}</span>.
           </p>
           <a
             href="/"
-            className="inline-block bg-emerald-700 text-white px-5 py-2.5 rounded-xl font-medium text-sm hover:bg-emerald-800 transition shadow-sm"
+            className="inline-block bg-ocean text-white px-5 py-2.5 rounded-xl font-medium text-sm hover:bg-ocean-dark transition shadow-sm"
           >
             Kembali ke Beranda
           </a>

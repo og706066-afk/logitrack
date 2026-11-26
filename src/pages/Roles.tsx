@@ -140,7 +140,7 @@ export const Roles: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-xs">
         <div className="min-w-0">
           <h1 className="text-lg sm:text-xl font-bold text-slate-800 flex items-center">
-            <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6 mr-2 shrink-0 text-emerald-600" />
+            <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6 mr-2 shrink-0 text-ocean" />
             Manajemen Role & Dynamic Permission
           </h1>
           <p className="text-sm text-slate-500 mt-0.5">
@@ -150,7 +150,7 @@ export const Roles: React.FC = () => {
         {canManageRoles && (
           <button
             onClick={handleOpenAdd}
-            className="inline-flex items-center justify-center px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold rounded-xl text-sm transition shadow-sm"
+            className="inline-flex items-center justify-center px-4 py-2.5 bg-ocean hover:bg-ocean-dark text-white font-semibold rounded-xl text-sm transition shadow-sm"
           >
             <Plus className="w-4 h-4 mr-2" />
             Tambah Role Baru
@@ -166,15 +166,15 @@ export const Roles: React.FC = () => {
       )}
 
       {success && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center space-x-3 text-emerald-700 text-sm">
-          <Check className="w-5 h-5 text-emerald-600 shrink-0" />
+        <div className="p-4 bg-green-50 border border-green-200 rounded-xl flex items-center space-x-3 text-green-700 text-sm">
+          <Check className="w-5 h-5 text-ocean shrink-0" />
           <span>{success}</span>
         </div>
       )}
 
       {loading ? (
         <div className="flex flex-col items-center justify-center gap-3 py-12 text-slate-500 text-sm">
-          <div className="w-8 h-8 border-4 border-emerald-100 border-t-emerald-600 rounded-full animate-spin" />
+          <div className="w-8 h-8 border-4 border-ocean-light border-t-ocean rounded-full animate-spin" />
           Memuat data role...
         </div>
       ) : roles.length === 0 ? (
@@ -210,7 +210,7 @@ export const Roles: React.FC = () => {
                               </span>
                             )}
                           </div>
-                          <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${role.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${role.isActive ? 'bg-green-50 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
                             {role.isActive ? 'Aktif' : 'Nonaktif'}
                           </span>
                         </div>
@@ -232,7 +232,7 @@ export const Roles: React.FC = () => {
                         <div className="flex items-center justify-end space-x-2 pt-4 border-t border-slate-100">
                           <button
                             onClick={() => handleOpenEdit(role)}
-                            className="p-2 text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition"
+                            className="p-2 text-slate-600 hover:text-ocean hover:bg-ocean-light/70 rounded-lg transition"
                             title="Edit Role"
                           >
                             <Edit2 className="w-4 h-4" />
@@ -282,7 +282,7 @@ export const Roles: React.FC = () => {
                   value={roleName}
                   onChange={(e) => setRoleName(e.target.value)}
                   placeholder="Contoh: Keuangan / Pengawas"
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-emerald-600"
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-ocean"
                 />
               </div>
 
@@ -293,7 +293,7 @@ export const Roles: React.FC = () => {
                   onChange={(e) => setRoleDesc(e.target.value)}
                   placeholder="Jelaskan fungsi dan batasan role ini..."
                   rows={2}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-emerald-600"
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-ocean"
                 />
               </div>
 
@@ -314,7 +314,7 @@ export const Roles: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => handleToggleModulePermissions(moduleName)}
-                            className="text-xs font-semibold text-emerald-700 hover:text-emerald-800"
+                            className="text-xs font-semibold text-ocean hover:text-ocean-dark"
                           >
                             {allChecked ? 'Batalkan Semua' : 'Pilih Semua'}
                           </button>
@@ -326,7 +326,7 @@ export const Roles: React.FC = () => {
                                 type="checkbox"
                                 checked={selectedPermissions.includes(p.id)}
                                 onChange={() => handleTogglePermission(p.id)}
-                                className="mt-0.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                                className="mt-0.5 rounded border-slate-300 text-ocean focus:ring-ocean"
                               />
                               <div>
                                 <p className="font-semibold text-slate-800">{p.name}</p>
@@ -352,7 +352,7 @@ export const Roles: React.FC = () => {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-5 py-2 bg-emerald-700 text-white rounded-xl text-sm font-semibold hover:bg-emerald-800 shadow-sm disabled:opacity-50"
+                  className="px-5 py-2 bg-ocean text-white rounded-xl text-sm font-semibold hover:bg-ocean-dark shadow-sm disabled:opacity-50"
                 >
                   Simpan Role
                 </button>

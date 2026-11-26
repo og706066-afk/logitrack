@@ -236,7 +236,7 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({
     <div className="flex flex-wrap items-center gap-2">
       <button
         onClick={openCreate}
-        className="inline-flex items-center justify-center px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold rounded-xl text-sm transition shadow-sm"
+        className="inline-flex items-center justify-center px-4 py-2.5 bg-ocean hover:bg-ocean-dark text-white font-semibold rounded-xl text-sm transition shadow-sm"
       >
         <Plus className="w-4 h-4 mr-2" />
         Tambah Data
@@ -273,7 +273,7 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({
 
         {loading ? (
           <div className="flex flex-col items-center justify-center py-12 gap-3 text-slate-500 text-sm">
-            <div className="w-8 h-8 border-4 border-emerald-100 border-t-emerald-600 rounded-full animate-spin" />
+            <div className="w-8 h-8 border-4 border-ocean-light border-t-ocean rounded-full animate-spin" />
             Memuat data...
           </div>
         ) : filteredRows.length === 0 ? (
@@ -311,14 +311,14 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({
                       required={field.required}
                       rows={3}
                       placeholder={field.placeholder}
-                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-emerald-600"
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-ocean"
                     />
                   ) : field.type === 'select' ? (
                     <select
                       value={String(form[field.key] ?? '')}
                       onChange={event => updateField(field, event.target.value)}
                       required={field.required}
-                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-emerald-600"
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-ocean"
                     >
                       <option value="">Pilih {field.label}</option>
                       {field.options?.map(option => (
@@ -332,14 +332,14 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({
                       onChange={event => updateField(field, event.target.value)}
                       required={field.required}
                       placeholder={field.placeholder}
-                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-emerald-600"
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-ocean"
                     />
                   )}
                 </div>
               ))}
               <div className="flex items-center justify-end space-x-3 pt-4 border-t border-slate-200">
                 <button type="button" onClick={() => setForm(null)} className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-50">Batal</button>
-                <button type="submit" disabled={saving} className="px-5 py-2 bg-emerald-700 text-white rounded-xl text-sm font-semibold hover:bg-emerald-800 disabled:opacity-50 inline-flex items-center">
+                <button type="submit" disabled={saving} className="px-5 py-2 bg-ocean text-white rounded-xl text-sm font-semibold hover:bg-ocean-dark disabled:opacity-50 inline-flex items-center">
                   {saving ? 'Menyimpan...' : <><Check className="w-4 h-4 mr-2" /> Simpan</>}
                 </button>
               </div>

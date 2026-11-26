@@ -362,7 +362,7 @@ export const StockControlPage: React.FC = () => {
         <div className="flex items-center justify-end gap-2">
           {row.proofUrl && <a href={row.proofUrl} target="_blank" rel="noreferrer" className="text-xs font-semibold text-blue-600 hover:underline">Bukti</a>}
           {row.status === 'Draft' && hasPermission('stockTransactions.confirm') && (
-            <button onClick={() => setConfirming(row)} className="inline-flex items-center px-2.5 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 rounded-lg hover:bg-emerald-100">
+            <button onClick={() => setConfirming(row)} className="inline-flex items-center px-2.5 py-1.5 text-xs font-semibold text-ocean bg-ocean-light rounded-lg hover:bg-ocean-light/70">
               <Check className="w-3.5 h-3.5 mr-1" /> Konfirmasi
             </button>
           )}
@@ -377,7 +377,7 @@ export const StockControlPage: React.FC = () => {
     { key: 'previousStock', label: 'Stok Sebelum', render: row => toNumber(row.previousStock) },
     { key: 'delta', label: 'Perubahan', render: row => {
       const delta = movementDelta(row);
-      return <span className={`font-semibold ${delta < 0 ? 'text-red-600' : 'text-emerald-700'}`}>{delta > 0 ? `+${delta}` : delta}</span>;
+      return <span className={`font-semibold ${delta < 0 ? 'text-red-600' : 'text-ocean'}`}>{delta > 0 ? `+${delta}` : delta}</span>;
     } },
     { key: 'newStock', label: 'Stok Sesudah', render: row => <span className="font-semibold">{toNumber(row.newStock)}</span> },
     {
@@ -466,7 +466,7 @@ export const StockControlPage: React.FC = () => {
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`px-3.5 py-2 text-xs sm:text-sm font-semibold rounded-xl transition ${activeTab === tab.key ? 'bg-emerald-700 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+              className={`px-3.5 py-2 text-xs sm:text-sm font-semibold rounded-xl transition ${activeTab === tab.key ? 'bg-ocean text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
             >
               {tab.label}
             </button>

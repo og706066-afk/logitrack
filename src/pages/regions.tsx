@@ -332,7 +332,7 @@ export const RegionsPage: React.FC = () => {
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         <div className="p-5 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
-          <h3 className="font-bold text-slate-800 text-sm flex items-center"><MapPin className="w-4 h-4 mr-2 text-emerald-600" /> Data Wilayah</h3>
+          <h3 className="font-bold text-slate-800 text-sm flex items-center"><MapPin className="w-4 h-4 mr-2 text-ocean" /> Data Wilayah</h3>
           {canManage && (
             <ExcelImportButton
               fields={regionImportFields}
@@ -368,7 +368,7 @@ export const RegionsPage: React.FC = () => {
       {canSeePersonal ? (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
           <div className="p-5 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
-            <h3 className="font-bold text-slate-800 text-sm flex items-center"><Users className="w-4 h-4 mr-2 text-emerald-600" /> Data Penerima Distribusi</h3>
+            <h3 className="font-bold text-slate-800 text-sm flex items-center"><Users className="w-4 h-4 mr-2 text-ocean" /> Data Penerima Distribusi</h3>
             {canManage && (
               <ExcelImportButton
                 fields={recipientImportFields}
@@ -401,7 +401,7 @@ export const RegionsPage: React.FC = () => {
       ) : (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
           <div className="p-5 border-b border-slate-200">
-            <h3 className="font-bold text-slate-800 text-sm flex items-center"><Users className="w-4 h-4 mr-2 text-emerald-600" /> Rekap Penerima per Wilayah</h3>
+            <h3 className="font-bold text-slate-800 text-sm flex items-center"><Users className="w-4 h-4 mr-2 text-ocean" /> Rekap Penerima per Wilayah</h3>
             <p className="text-xs text-slate-500 mt-1">Data pribadi penerima disembunyikan sesuai kebijakan akses.</p>
           </div>
           <DataTable
@@ -432,7 +432,7 @@ export const RegionsPage: React.FC = () => {
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         <div className="p-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <h3 className="font-bold text-slate-800 text-sm flex items-center"><Send className="w-4 h-4 mr-2 text-emerald-600" /> Riwayat Penyaluran per Wilayah</h3>
+          <h3 className="font-bold text-slate-800 text-sm flex items-center"><Send className="w-4 h-4 mr-2 text-ocean" /> Riwayat Penyaluran per Wilayah</h3>
           <select value={selectedRegion?.id || ''} onChange={event => setSelectedRegionId(event.target.value)} className={`${inputClass} max-w-xs`} aria-label="Pilih wilayah">
             <option value="">Pilih wilayah</option>
             {regions.map(region => <option key={region.id} value={region.id}>{region.name}</option>)}

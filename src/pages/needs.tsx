@@ -328,7 +328,7 @@ export const NeedsPage: React.FC = () => {
       render: row => {
         const stock = toNumber(products.find(entry => entry.id === row.itemId)?.currentStock);
         const shortage = shortageAmount(row, stock);
-        return <span className={shortage > 0 ? 'font-semibold text-red-600' : 'text-emerald-700'}>{shortage.toLocaleString('id-ID')} {row.unit}</span>;
+        return <span className={shortage > 0 ? 'font-semibold text-red-600' : 'text-ocean'}>{shortage.toLocaleString('id-ID')} {row.unit}</span>;
       },
     },
     {
@@ -352,12 +352,12 @@ export const NeedsPage: React.FC = () => {
       render: row => (
         <div className="flex justify-end gap-1">
           {canEditRow(row) && (
-            <button onClick={() => void openForm(row)} className="p-2 text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg" title="Ubah">
+            <button onClick={() => void openForm(row)} className="p-2 text-slate-500 hover:text-ocean hover:bg-ocean-light/70 rounded-lg" title="Ubah">
               <Pencil className="w-4 h-4" />
             </button>
           )}
           {row.status === 'Pending' && canApprove && (
-            <button onClick={() => setDecision({ row, type: 'Approved', reason: '' })} className="p-2 text-emerald-700 hover:bg-emerald-50 rounded-lg" title="Setujui">
+            <button onClick={() => setDecision({ row, type: 'Approved', reason: '' })} className="p-2 text-ocean hover:bg-ocean-light/70 rounded-lg" title="Setujui">
               <Check className="w-4 h-4" />
             </button>
           )}

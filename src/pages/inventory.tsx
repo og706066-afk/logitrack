@@ -238,7 +238,7 @@ export const ProductsPage: React.FC = () => {
         </FilterBar>
         {loading ? (
           <div className="flex flex-col items-center justify-center py-12 gap-3 text-slate-500 text-sm">
-            <div className="w-8 h-8 border-4 border-emerald-100 border-t-emerald-600 rounded-full animate-spin" />
+            <div className="w-8 h-8 border-4 border-ocean-light border-t-ocean rounded-full animate-spin" />
             Memuat data...
           </div>
         ) : (

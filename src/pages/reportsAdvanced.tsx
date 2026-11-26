@@ -732,7 +732,7 @@ export const ReportsAdvancedPage: React.FC = () => {
             <h3 className="font-bold text-slate-800 text-sm">{reportTitle}</h3>
             <p className="text-xs text-slate-500 mt-1">Dihasilkan dari data Firestore sesuai filter yang dipilih.</p>
           </div>
-          <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full">{report.rows.length} baris</span>
+          <span className="text-xs font-semibold text-ocean bg-ocean-light px-3 py-1 rounded-full">{report.rows.length} baris</span>
         </div>
         <DataTable
           columns={tableColumns}

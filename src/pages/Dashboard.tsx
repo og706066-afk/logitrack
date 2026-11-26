@@ -58,7 +58,7 @@ const PERIOD_OPTIONS: { value: PeriodKey; label: string }[] = [
   { value: 'all', label: 'Semua waktu' },
 ];
 
-const CHART_COLORS = ['#047857', '#0ea5e9', '#f59e0b', '#8b5cf6', '#ef4444', '#14b8a6'];
+const CHART_COLORS = ['#087FA5', '#00C5E8', '#172B3D', '#0ea5e9', '#f59e0b', '#8b5cf6'];
 const SHIPMENT_STATUSES: Shipment['status'][] = [
   'Belum dikirim',
   'Siap dikirim',
@@ -234,7 +234,7 @@ export const Dashboard: React.FC = () => {
   );
 
   const cards: { title: string; value: string; detail: string; icon: LucideIcon; color: string }[] = [
-    { title: 'Total barang', value: `${filteredProducts.length} jenis`, detail: 'Master barang', icon: Package, color: 'bg-emerald-600' },
+    { title: 'Total barang', value: `${filteredProducts.length} jenis`, detail: 'Master barang', icon: Package, color: 'bg-ocean' },
     { title: 'Total kategori', value: `${categoryOptions.length} kategori`, detail: 'Terdaftar', icon: Tags, color: 'bg-teal-600' },
     { title: 'Total stok tersedia', value: `${totalStock.toLocaleString('id-ID')} unit`, detail: 'Stok saat ini', icon: Warehouse, color: 'bg-sky-600' },
     { title: 'Total barang masuk', value: `${totalStockIn.toLocaleString('id-ID')} unit`, detail: 'Transaksi confirmed', icon: ArrowDown, color: 'bg-green-600' },
@@ -244,29 +244,29 @@ export const Dashboard: React.FC = () => {
     { title: 'Total pengiriman', value: `${filteredShipments.length} pengiriman`, detail: 'Seluruh status', icon: Truck, color: 'bg-indigo-600' },
     { title: 'Pengiriman belum dilakukan', value: `${notShipped} pengiriman`, detail: 'Belum / siap dikirim', icon: Clock3, color: 'bg-slate-600' },
     { title: 'Pengiriman dalam perjalanan', value: `${inTransit} pengiriman`, detail: 'Sedang dikirim', icon: Send, color: 'bg-blue-600' },
-    { title: 'Pengiriman selesai', value: `${completedShipments} pengiriman`, detail: 'Diterima', icon: CheckCircle2, color: 'bg-emerald-700' },
+    { title: 'Pengiriman selesai', value: `${completedShipments} pengiriman`, detail: 'Diterima', icon: CheckCircle2, color: 'bg-ocean' },
     { title: 'Permintaan menunggu persetujuan', value: `${pendingNeeds} permintaan`, detail: 'Status pending', icon: ClipboardList, color: 'bg-amber-500' },
   ];
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="bg-gradient-to-r from-emerald-900 to-emerald-950 rounded-2xl p-5 sm:p-6 text-white shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="bg-gradient-to-r from-slate-navy to-navy rounded-2xl p-5 sm:p-6 text-white shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-800 text-emerald-200 mb-2">
-            <CheckCircle2 className="w-3.5 h-3.5 mr-1 text-emerald-400" />
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-ocean/20 text-cyan mb-2">
+            <CheckCircle2 className="w-3.5 h-3.5 mr-1 text-cyan" />
             Sistem Operasional Aktif
           </span>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight break-words">
             Selamat Datang, {currentUser?.displayName || currentUser?.email || 'Pengguna'}!
           </h1>
-          <p className="text-emerald-200 text-sm mt-1">
+          <p className="text-sky-100/80 text-sm mt-1">
             Anda masuk sebagai <strong className="text-white">{currentUser?.role || '-'}</strong> di Sistem Informasi Logistik Pesantren (SILOG).
           </p>
         </div>
-        <div className="bg-emerald-800/80 backdrop-blur-xs px-4 py-3 rounded-xl border border-emerald-700">
-          <p className="text-xs text-emerald-300 font-medium">Status Gudang Utama</p>
+        <div className="bg-ocean-dark/80 backdrop-blur-xs px-4 py-3 rounded-xl border border-ocean">
+          <p className="text-xs text-cyan font-medium">Status Gudang Utama</p>
           <p className="text-sm font-bold text-white flex items-center mt-0.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 mr-2 animate-pulse" />
+            <span className="w-2.5 h-2.5 rounded-full bg-cyan mr-2 animate-pulse" />
             Terpantau & Terhubung
           </p>
         </div>
@@ -307,7 +307,7 @@ export const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200 shadow-xs">
           <h3 className="text-base font-bold text-slate-800 mb-4 flex items-center">
-            <TrendingUp className="w-5 h-5 mr-2 text-emerald-600" />
+            <TrendingUp className="w-5 h-5 mr-2 text-ocean" />
             Barang Masuk & Keluar per Bulan
           </h3>
           {monthlyData.length === 0 ? (
@@ -321,8 +321,8 @@ export const Dashboard: React.FC = () => {
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="masuk" name="Barang masuk" fill="#047857" />
-                  <Bar dataKey="keluar" name="Barang keluar" fill="#f59e0b" />
+                  <Bar dataKey="masuk" name="Barang masuk" fill="#087FA5" />
+                  <Bar dataKey="keluar" name="Barang keluar" fill="#00C5E8" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -331,7 +331,7 @@ export const Dashboard: React.FC = () => {
 
         <div className="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200 shadow-xs">
           <h3 className="text-base font-bold text-slate-800 mb-4 flex items-center">
-            <Warehouse className="w-5 h-5 mr-2 text-emerald-600" />
+            <Warehouse className="w-5 h-5 mr-2 text-ocean" />
             Stok per Kategori
           </h3>
           {categoryStockData.length === 0 ? (
@@ -357,7 +357,7 @@ export const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200 shadow-xs">
           <h3 className="text-base font-bold text-slate-800 mb-4 flex items-center">
-            <Send className="w-5 h-5 mr-2 text-emerald-600" />
+            <Send className="w-5 h-5 mr-2 text-ocean" />
             Distribusi Status Pengiriman
           </h3>
           {shipmentStatusData.length === 0 ? (
@@ -407,7 +407,7 @@ export const Dashboard: React.FC = () => {
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         <div className="p-5 border-b border-slate-200">
           <h3 className="text-base font-bold text-slate-800 flex items-center">
-            <Clock3 className="w-5 h-5 mr-2 text-emerald-600" />
+            <Clock3 className="w-5 h-5 mr-2 text-ocean" />
             Aktivitas Terbaru
           </h3>
         </div>
@@ -418,7 +418,7 @@ export const Dashboard: React.FC = () => {
             {filteredActivities.slice(0, 6).map(log => (
               <div key={log.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-4 hover:bg-slate-50/80">
                 <div className="flex items-center space-x-3 min-w-0">
-                  <div className="w-9 h-9 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold shrink-0">
+                  <div className="w-9 h-9 rounded-lg bg-ocean-light text-ocean flex items-center justify-center text-xs font-bold shrink-0">
                     {String(log.userName || '?').charAt(0).toUpperCase()}
                   </div>
                   <div className="min-w-0">
@@ -427,7 +427,7 @@ export const Dashboard: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-3 sm:shrink-0">
-                  <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800">{log.action}</span>
+                  <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-ocean-light text-ocean-dark">{log.action}</span>
                   <span className="text-xs text-slate-500">{displayDate(log.createdAt)}</span>
                 </div>
               </div>

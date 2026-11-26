@@ -100,13 +100,13 @@ export const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
             <div className="flex items-center space-x-1 sm:space-x-3 sm:pl-3 sm:border-l sm:border-slate-200">
               <div className="hidden sm:block text-right">
                 <p className="text-sm font-semibold text-slate-800">{currentUser.displayName}</p>
-                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-50 text-emerald-700">
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-ocean-light text-ocean">
                   <Shield className="w-3 h-3 mr-1" />
                   {currentUser.role}
                 </span>
               </div>
 
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-700 text-white flex items-center justify-center font-bold shadow-sm text-sm">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-ocean text-white flex items-center justify-center font-bold shadow-sm text-sm">
                 {currentUser.displayName ? currentUser.displayName.charAt(0).toUpperCase() : <UserIcon className="w-5 h-5" />}
               </div>
 

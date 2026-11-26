@@ -186,7 +186,7 @@ export const MasterDataPage: React.FC = () => {
         render: row => (
           <div className="flex items-center justify-end gap-2">
             {canManage && (
-              <button onClick={() => openForm(section.key, row)} className="px-2.5 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 rounded-lg hover:bg-emerald-100">
+              <button onClick={() => openForm(section.key, row)} className="px-2.5 py-1.5 text-xs font-semibold text-ocean bg-ocean-light rounded-lg hover:bg-ocean-light/70">
                 Ubah
               </button>
             )}
@@ -220,7 +220,7 @@ export const MasterDataPage: React.FC = () => {
           <div key={section.key} className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
             <div className="p-4 sm:p-5 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-ocean-light text-ocean-dark flex items-center justify-center shrink-0">
                   <SectionIcon className="w-5 h-5" />
                 </div>
                 <div className="min-w-0">
@@ -281,7 +281,7 @@ export const MasterDataPage: React.FC = () => {
               <textarea rows={3} value={form.description} onChange={event => setForm({ ...form, description: event.target.value })} className={inputClass} />
             </div>
             <label className="flex items-center gap-2 text-sm text-slate-700">
-              <input type="checkbox" checked={form.isActive} onChange={event => setForm({ ...form, isActive: event.target.checked })} className="w-4 h-4 accent-emerald-700" />
+              <input type="checkbox" checked={form.isActive} onChange={event => setForm({ ...form, isActive: event.target.checked })} className="w-4 h-4 accent-ocean" />
               Aktif
             </label>
             <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">

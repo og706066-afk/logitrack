@@ -57,7 +57,7 @@ const reportColumns: TableColumn<ReportRow>[] = [
   { key: 'tanggal', label: 'Tanggal', render: row => <span className="text-xs text-slate-500">{row.tanggal}</span> },
   { key: 'nomor', label: 'Nomor', render: row => <span className="font-medium text-slate-800">{row.nomor}</span> },
   { key: 'jenis', label: 'Jenis', render: row => <span>{row.jenis}</span> },
-  { key: 'pemasukan', label: 'Pemasukan', render: row => <span className="text-emerald-700">{row.pemasukan ? rupiah(row.pemasukan) : '-'}</span> },
+  { key: 'pemasukan', label: 'Pemasukan', render: row => <span className="text-ocean">{row.pemasukan ? rupiah(row.pemasukan) : '-'}</span> },
   { key: 'pengeluaran', label: 'Pengeluaran', render: row => <span className="text-red-600">{row.pengeluaran ? rupiah(row.pengeluaran) : '-'}</span> },
   { key: 'saldo', label: 'Saldo', render: row => <span className="font-semibold">{rupiah(row.saldo)}</span> },
   { key: 'keterangan', label: 'Keterangan', render: row => <span>{row.keterangan || '-'}</span> },
@@ -209,7 +209,7 @@ export const FinancePage: React.FC = () => {
       key: 'type',
       label: 'Jenis',
       render: row => (
-        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${row.type === 'Pemasukan' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
+        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${row.type === 'Pemasukan' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
           {row.type}
         </span>
       ),
@@ -344,7 +344,7 @@ export const FinancePage: React.FC = () => {
       <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="min-w-0">
           <h1 className="text-lg sm:text-xl font-bold text-slate-800 flex items-center">
-            <Wallet className="w-5 h-5 sm:w-6 sm:h-6 mr-2 shrink-0 text-emerald-600" />
+            <Wallet className="w-5 h-5 sm:w-6 sm:h-6 mr-2 shrink-0 text-ocean" />
             <span className="truncate">Buku Kas & Keuangan</span>
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
@@ -384,7 +384,7 @@ export const FinancePage: React.FC = () => {
       <AlertBox message={error} onClose={() => setError('')} />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <InfoCard title="Total Pemasukan" value={rupiah(income)} detail={`${filtered.filter(row => row.type === 'Pemasukan').length} transaksi`} icon={TrendingUp} color="bg-emerald-600" />
+        <InfoCard title="Total Pemasukan" value={rupiah(income)} detail={`${filtered.filter(row => row.type === 'Pemasukan').length} transaksi`} icon={TrendingUp} color="bg-ocean" />
         <InfoCard title="Total Pengeluaran" value={rupiah(expense)} detail={`${filtered.filter(row => row.type === 'Pengeluaran').length} transaksi`} icon={TrendingDown} color="bg-red-500" />
         <InfoCard title="Saldo Kas" value={rupiah(balance)} detail="Pemasukan - pengeluaran" icon={Wallet} color="bg-sky-600" />
       </div>
@@ -421,9 +421,9 @@ export const FinancePage: React.FC = () => {
           emptyLabel="Belum ada data laporan."
         />
         {reportRows.length > 0 && (
-          <div className="flex flex-wrap items-center gap-4 border-t border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-semibold text-slate-800">
+          <div className="flex flex-wrap items-center gap-4 border-t border-ocean/20 bg-ocean-light px-4 py-3 text-xs font-semibold text-slate-800">
             <span>Saldo akhir: {rupiah(balance)}</span>
-            <span className="text-emerald-700">Pemasukan: {rupiah(income)}</span>
+            <span className="text-green-700">Pemasukan: {rupiah(income)}</span>
             <span className="text-red-600">Pengeluaran: {rupiah(expense)}</span>
           </div>
         )}

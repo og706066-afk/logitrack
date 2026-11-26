@@ -125,7 +125,7 @@ export function ExcelImportButton({
       key: 'status',
       label: 'Status',
       filterable: false,
-      render: row => row.valid ? <span className="text-xs font-semibold text-emerald-700">Siap</span>
+      render: row => row.valid ? <span className="text-xs font-semibold text-ocean">Siap</span>
         : <span className="text-xs text-red-600">{row.errors.join('; ')}</span>,
     },
   ], [headers]);
@@ -280,7 +280,7 @@ export function ExcelImportButton({
             <div>
               <label className={labelClass}>File Excel/CSV</label>
               <div className={`${inputClass} flex items-center gap-2`}>
-                <UploadCloud className="w-4 h-4 text-emerald-600 shrink-0" />
+                <UploadCloud className="w-4 h-4 text-ocean shrink-0" />
                 <input type="file" accept=".xlsx,.csv" onChange={event => void handleFile(event)} className="w-full text-xs text-slate-600" />
               </div>
               {fileName && <p className="text-[11px] text-slate-500 mt-1">{fileName} · {parsed.length} baris terbaca</p>}

@@ -140,7 +140,7 @@ export const ReportsPage: React.FC = () => {
         icon={BarChart3}
         action={hasPermission('reports.export') ? (
           <div className="flex flex-wrap gap-2">
-            <button onClick={exportReport} className="inline-flex items-center px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold rounded-xl text-sm shadow-sm">
+            <button onClick={exportReport} className="inline-flex items-center px-4 py-2.5 bg-ocean hover:bg-ocean-dark text-white font-semibold rounded-xl text-sm shadow-sm">
               <Download className="w-4 h-4 mr-2" /> Ekspor Stok
             </button>
             <button onClick={exportTransactions} className="inline-flex items-center px-4 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold rounded-xl text-sm">
@@ -194,7 +194,7 @@ export const ReportsPage: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
           <div className="p-5 border-b border-slate-200">
-            <h3 className="font-bold text-slate-800 flex items-center text-sm"><ClipboardList className="w-4 h-4 mr-2 text-emerald-600" /> Ringkasan Permintaan Dapur</h3>
+            <h3 className="font-bold text-slate-800 flex items-center text-sm"><ClipboardList className="w-4 h-4 mr-2 text-ocean" /> Ringkasan Permintaan Dapur</h3>
           </div>
           <div className="p-5 space-y-3">
             {['Pending', 'Approved', 'Processing', 'Completed', 'Rejected'].map(status => (
@@ -207,7 +207,7 @@ export const ReportsPage: React.FC = () => {
         </div>
         <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
           <div className="p-5 border-b border-slate-200">
-            <h3 className="font-bold text-slate-800 flex items-center text-sm"><Send className="w-4 h-4 mr-2 text-emerald-600" /> Ringkasan Pengiriman</h3>
+            <h3 className="font-bold text-slate-800 flex items-center text-sm"><Send className="w-4 h-4 mr-2 text-ocean" /> Ringkasan Pengiriman</h3>
           </div>
           <div className="p-5 space-y-3">
             {['Assigned', 'On Delivery', 'Delivered', 'Confirmed'].map(status => (

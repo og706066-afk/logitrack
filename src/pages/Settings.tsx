@@ -22,11 +22,11 @@ export const SettingsPage: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200 shadow-xs">
-          <h3 className="font-bold text-slate-800 flex items-center text-sm mb-4"><Database className="w-4 h-4 mr-2 text-emerald-600" /> Status Lingkungan</h3>
+          <h3 className="font-bold text-slate-800 flex items-center text-sm mb-4"><Database className="w-4 h-4 mr-2 text-ocean" /> Status Lingkungan</h3>
           <div className="space-y-3 text-sm">
             <div className="flex justify-between items-center gap-3">
               <span className="text-slate-500">Status Koneksi</span>
-              <span className={`px-2.5 py-1 rounded-full text-xs font-semibold text-center ${isFirebaseConfigured ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+              <span className={`px-2.5 py-1 rounded-full text-xs font-semibold text-center ${isFirebaseConfigured ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
                 {isFirebaseConfigured ? 'Firebase Terhubung' : 'Firebase Belum Dikonfigurasi'}
               </span>
             </div>
@@ -40,13 +40,13 @@ export const SettingsPage: React.FC = () => {
             </div>
             <div className="flex justify-between items-center gap-3">
               <span className="text-slate-500">Penyimpanan Lokal</span>
-              <span className="font-semibold text-slate-800 flex items-center"><CheckCircle2 className="w-4 h-4 mr-1 text-emerald-600" /> Aktif</span>
+              <span className="font-semibold text-slate-800 flex items-center"><CheckCircle2 className="w-4 h-4 mr-1 text-ocean" /> Aktif</span>
             </div>
           </div>
         </div>
 
         <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200 shadow-xs">
-          <h3 className="font-bold text-slate-800 flex items-center text-sm mb-4"><Shield className="w-4 h-4 mr-2 text-emerald-600" /> Akun & Hak Akses</h3>
+          <h3 className="font-bold text-slate-800 flex items-center text-sm mb-4"><Shield className="w-4 h-4 mr-2 text-ocean" /> Akun & Hak Akses</h3>
           <div className="space-y-3 text-sm">
             <div className="flex justify-between gap-3">
               <span className="text-slate-500 shrink-0">Nama</span>
@@ -58,7 +58,7 @@ export const SettingsPage: React.FC = () => {
             </div>
             <div className="flex justify-between gap-3">
               <span className="text-slate-500 shrink-0">Role</span>
-              <span className="font-semibold text-emerald-700 text-right">{currentUser?.role || '-'}</span>
+              <span className="font-semibold text-ocean text-right">{currentUser?.role || '-'}</span>
             </div>
             <div className="flex justify-between gap-3">
               <span className="text-slate-500 shrink-0">Jumlah Permission</span>
