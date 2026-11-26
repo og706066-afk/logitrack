@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Boxes, Lock, Mail, AlertCircle, ArrowRight, UserPlus } from 'lucide-react';
+import { Lock, Mail, AlertCircle, ArrowRight, UserPlus } from 'lucide-react';
 import { LOGIN_DELAY_MS, wait } from '../utils/async';
+
+const APP_LOGO = '/Lencana%20Neon%20Silog%20Sistem%20Logistik%20(1).png';
 
 export const Login: React.FC = () => {
   const [mode, setMode] = useState<'login' | 'register'>('login');
@@ -49,8 +51,8 @@ export const Login: React.FC = () => {
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10 animate-slide-up">
         <div className="flex justify-center">
-          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-emerald-600 flex items-center justify-center text-white shadow-xl shadow-emerald-900/50">
-            <Boxes className="w-8 h-8 sm:w-9 sm:h-9" />
+          <div className="w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center">
+            <img src={APP_LOGO} alt="Logo SILOG" className="w-full h-full object-contain" />
           </div>
         </div>
         <h2 className="mt-5 sm:mt-6 text-center text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
@@ -174,8 +176,8 @@ export const Login: React.FC = () => {
       {loading && (
         <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
           <div className="w-full max-w-xs bg-white rounded-3xl shadow-2xl px-7 py-9 flex flex-col items-center animate-slide-up">
-            <div className="w-16 h-16 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-lg shadow-emerald-900/20 animate-pulse-soft">
-              <Boxes className="w-9 h-9" />
+            <div className="w-16 h-16 flex items-center justify-center animate-pulse-soft">
+              <img src={APP_LOGO} alt="Logo SILOG" className="w-full h-full object-contain" />
             </div>
             <div className="mt-6 w-11 h-11 border-4 border-emerald-100 border-t-emerald-600 rounded-full animate-spin" />
             <p className="mt-5 text-sm font-bold text-slate-800 text-center">

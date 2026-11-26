@@ -16,12 +16,13 @@ import {
   ShieldCheck, 
   Settings, 
   ScrollText,
-  Boxes,
   Wallet,
   MapPin,
   Building2
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+
+const APP_LOGO = '/Lencana%20Neon%20Silog%20Sistem%20Logistik%20(1).png';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -79,8 +80,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
       `}>
         {/* Brand header */}
         <div className="p-4 sm:p-6 border-b border-emerald-900/80 flex items-center space-x-3 min-w-0">
-          <div className="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center text-white shadow-md shrink-0">
-            <Boxes className="w-6 h-6" />
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0">
+            <img src={APP_LOGO} alt="Logo SILOG" className="w-10 h-10 object-contain" />
           </div>
           <div className="min-w-0">
             <h1 className="text-base sm:text-lg font-bold tracking-tight text-white truncate">SILOG PESANTREN</h1>
