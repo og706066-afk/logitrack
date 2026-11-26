@@ -26,6 +26,7 @@ interface ParsedRow {
 
 interface PreviewRecord {
   rowNumber: number;
+  cells: string[];
   values: Record<string, string>;
   valid: boolean;
   errors: string[];
@@ -114,19 +115,20 @@ export function ExcelImportButton({
   const invalidCount = results.length - validCount;
 
   const previewColumns = useMemo<TableColumn<PreviewRecord>[]>(() => [
-    { key: 'rowNumber', label: 'Baris' },
-    ...fields.map(field => ({
-      key: field.key,
-      label: field.label,
-      render: (row: PreviewRecord) => row.values[field.key] || '-',
+    { key: 'rowNumber', label: 'Baris', filterable: false },
+    ...headers.map((header, index) => ({
+      key: `excel_${index}`,
+      label: header || `Kolom ${index + 1}`,
+      render: (row: PreviewRecord) => row.cells[index] || '-',
     })),
     {
       key: 'status',
       label: 'Status',
+      filterable: false,
       render: row => row.valid ? <span className="text-xs font-semibold text-emerald-700">Siap</span>
         : <span className="text-xs text-red-600">{row.errors.join('; ')}</span>,
     },
-  ], [fields]);
+  ], [headers]);
 
   const close = () => {
     setOpen(false);
@@ -232,7 +234,7 @@ export function ExcelImportButton({
         else seen.get(key)?.add(value);
       });
 
-      return { rowNumber: row.rowNumber, values, valid: errors.length === 0, errors };
+      return { rowNumber: row.rowNumber, cells: row.values, values, valid: errors.length === 0, errors };
     });
 
     setResults(nextResults);
@@ -318,6 +320,7 @@ export function ExcelImportButton({
                   columns={previewColumns}
                   rows={results.slice(0, PREVIEW_LIMIT)}
                   rowKey={row => String(row.rowNumber)}
+                  standard={false}
                   emptyLabel="Klik Validasi Data untuk melihat preview hasil pemetaan."
                 />
               </div>
