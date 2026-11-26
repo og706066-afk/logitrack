@@ -1,6 +1,25 @@
 @import "tailwindcss";
 
 @theme {
+  --color-emerald-50: #eaf9ff;
+  --color-emerald-100: #cff2ff;
+  --color-emerald-200: #a3e6ff;
+  --color-emerald-300: #6bd6ff;
+  --color-emerald-400: #22c3ff;
+  --color-emerald-500: #00a9f5;
+  --color-emerald-600: #008ed1;
+  --color-emerald-700: #0070a8;
+  --color-emerald-800: #075b85;
+  --color-emerald-900: #0b4b70;
+  --color-emerald-950: #062d47;
+
+  --color-slate-950: #030814;
+  --color-slate-900: #06122a;
+  --color-slate-800: #0c1f3d;
+  --color-slate-700: #183354;
+  --color-slate-600: #2a4a6f;
+  --color-slate-500: #416590;
+
   --animate-fade-in: fade-in 0.25s ease-out both;
   --animate-slide-up: slide-up 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
   --animate-pulse-soft: pulse-soft 1.2s ease-in-out infinite;
