@@ -146,10 +146,39 @@ describe('SILOG Final Patch 3 Security Tests', () => {
     await expect(
       db.doc('users/new-named-user').set({
         uid: 'new-named-user',
-        name: 'Named User',
+        name: 'New User',
         email: 'named@silog.pesantren.id',
-        displayName: 'Named User',
+        displayName: 'New User',
         role: 'Viewer',
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+    ).resolves.toBeDefined();
+  });
+
+  it('6b. Super Admin creating another user with role and permissions -> ALLOW', async () => {
+    const ctx = testEnv.authenticatedContext('admin-create', { email: 'admin@silog.pesantren.id' });
+    const db = ctx.firestore();
+
+    await testEnv.withSecurityRulesDisabled(async (admin) => {
+      await admin.firestore().doc('users/admin-create').set({
+        uid: 'admin-create',
+        email: 'admin@silog.pesantren.id',
+        displayName: 'Admin',
+        role: 'Super Admin',
+        isActive: true
+      });
+    });
+
+    await expect(
+      db.doc('users/created-by-admin').set({
+        uid: 'created-by-admin',
+        name: 'Created User',
+        displayName: 'Created User',
+        email: 'created@silog.pesantren.id',
+        role: 'Manager',
+        permissions: ['dashboard.view', 'requests.view'],
         isActive: true,
         createdAt: new Date(),
         updatedAt: new Date()

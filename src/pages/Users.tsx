@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useDataVersion } from '../contexts/DataSyncContext';
-import { UsersRound, Check, X, AlertCircle, Edit2, Shield } from 'lucide-react';
+import { UsersRound, Check, X, AlertCircle, Edit2, Shield, Plus } from 'lucide-react';
 import type { UserProfile, Role } from '../types';
 import { getUsers, updateUserRoleAndStatus, getRoles } from '../services/rbacService';
+import { createUserByAdmin } from '../services/authService';
 import { LoadingOverlay } from '../components/ui';
 import { DataTable } from '../components/DataViews';
 import { ACTION_DELAY_MS, wait } from '../utils/async';
@@ -23,6 +24,9 @@ export const Users: React.FC = () => {
   const [newIsActive, setNewIsActive] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [createForm, setCreateForm] = useState({ name: '', email: '', password: '', role: '' });
+  const [creating, setCreating] = useState(false);
 
   const canManageUsers = currentUser?.role === 'Super Admin';
 
@@ -76,6 +80,50 @@ export const Users: React.FC = () => {
     }
   };
 
+  const handleOpenCreate = () => {
+    setError('');
+    setSuccess('');
+    setCreateForm({
+      name: '',
+      email: '',
+      password: '',
+      role: roles.find(r => r.name === 'Viewer' && r.isActive)?.name || roles.find(r => r.isActive)?.name || '',
+    });
+    setIsCreateOpen(true);
+  };
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser) return;
+    setError('');
+    setSuccess('');
+    if (!createForm.role) {
+      setError('Pilih role terlebih dahulu.');
+      return;
+    }
+    setCreating(true);
+
+    try {
+      await wait(ACTION_DELAY_MS);
+      const roleDef = roles.find(r => r.name === createForm.role);
+      await createUserByAdmin({
+        name: createForm.name,
+        email: createForm.email,
+        password: createForm.password,
+        role: createForm.role,
+        permissions: roleDef?.permissions || [],
+        actor: currentUser,
+      });
+      setSuccess(`Pengguna ${createForm.email} berhasil ditambahkan.`);
+      setIsCreateOpen(false);
+      await loadData();
+    } catch (err: any) {
+      setError(err.message || 'Gagal menambahkan pengguna');
+    } finally {
+      setCreating(false);
+    }
+  };
+
   return (
     <div className="space-y-4 sm:space-y-6">
       <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -88,6 +136,15 @@ export const Users: React.FC = () => {
             Atur penugasan role dan status aktif akun pengguna dalam sistem SILOG.
           </p>
         </div>
+        {canManageUsers && (
+          <button
+            onClick={handleOpenCreate}
+            className="inline-flex items-center self-start px-4 py-2.5 rounded-xl bg-ocean text-white text-sm font-semibold hover:bg-ocean-dark shadow-sm transition sm:self-end"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Tambah Pengguna
+          </button>
+        )}
       </div>
 
       {error && (
@@ -255,7 +312,93 @@ export const Users: React.FC = () => {
         </div>
       )}
 
+      {isCreateOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 z-50 flex items-center justify-center p-4 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden">
+            <div className="p-4 sm:p-6 border-b border-slate-200 flex items-center justify-between gap-3">
+              <h3 className="text-lg font-bold text-slate-800">Tambah Pengguna Baru</h3>
+              <button onClick={() => setIsCreateOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateUser} className="p-4 sm:p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">Nama Lengkap</label>
+                <input
+                  type="text"
+                  required
+                  value={createForm.name}
+                  onChange={(e) => setCreateForm(form => ({ ...form, name: e.target.value }))}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-ocean"
+                  placeholder="Nama pengguna"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">Email</label>
+                <input
+                  type="email"
+                  required
+                  value={createForm.email}
+                  onChange={(e) => setCreateForm(form => ({ ...form, email: e.target.value }))}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-ocean"
+                  placeholder="nama@silog.pesantren.id"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">Kata Sandi</label>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={createForm.password}
+                  onChange={(e) => setCreateForm(form => ({ ...form, password: e.target.value }))}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-ocean"
+                  placeholder="Minimal 6 karakter"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">Role</label>
+                <select
+                  required
+                  value={createForm.role}
+                  onChange={(e) => setCreateForm(form => ({ ...form, role: e.target.value }))}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-ocean"
+                >
+                  <option value="" disabled>Pilih role</option>
+                  {roles.filter(r => r.isActive).map(r => (
+                    <option key={r.id} value={r.name}>{r.name}</option>
+                  ))}
+                </select>
+                <p className="mt-2 text-xs text-slate-500">Permission akun mengikuti role yang dipilih dan statusnya aktif.</p>
+              </div>
+
+              <div className="flex items-center justify-end space-x-3 pt-4 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateOpen(false)}
+                  className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-50"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={creating}
+                  className="px-5 py-2 bg-ocean text-white rounded-xl text-sm font-semibold hover:bg-ocean-dark shadow-sm disabled:opacity-50"
+                >
+                  Tambah Pengguna
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {saving && <LoadingOverlay label="Menyimpan perubahan..." />}
+      {creating && <LoadingOverlay label="Menambahkan pengguna..." />}
     </div>
   );
 };

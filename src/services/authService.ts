@@ -1,13 +1,16 @@
+import { deleteApp, initializeApp } from 'firebase/app';
 import {
   createUserWithEmailAndPassword,
+  getAuth,
   signInWithEmailAndPassword,
   signOut,
   updateProfile,
 } from 'firebase/auth';
 import type { User as FirebaseUser } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { auth, db, isFirebaseConfigured } from './firebase';
+import { auth, db, firebaseConfig, isFirebaseConfigured } from './firebase';
 import type { UserProfile } from '../types';
+import { logAudit } from './rbacService';
 
 export const DEFAULT_USER_ROLE = 'Viewer';
 
@@ -125,6 +128,79 @@ export async function registerUser(name: string, email: string, password: string
   } catch (error) {
     await signOut(firebaseAuth);
     throw error;
+  }
+}
+
+export interface AdminCreateUserInput {
+  name: string;
+  email: string;
+  password: string;
+  role: string;
+  permissions: string[];
+  actor: UserProfile;
+}
+
+export async function createUserByAdmin(input: AdminCreateUserInput): Promise<UserProfile> {
+  const { db: firestore } = getFirebaseContext();
+  if (input.actor.role !== 'Super Admin') {
+    throw new Error('Hanya Super Admin yang dapat menambahkan pengguna.');
+  }
+
+  const cleanName = input.name.trim();
+  const cleanEmail = input.email.trim().toLowerCase();
+  if (!cleanName || !cleanEmail || !input.password) {
+    throw new Error('Nama, email, dan kata sandi wajib diisi.');
+  }
+  if (input.password.length < 6) {
+    throw new Error('Kata sandi minimal 6 karakter.');
+  }
+
+  const tempApp = initializeApp(firebaseConfig, `silog-admin-create-${Date.now()}`);
+
+  try {
+    const tempAuth = getAuth(tempApp);
+    let credential;
+    try {
+      credential = await createUserWithEmailAndPassword(tempAuth, cleanEmail, input.password);
+    } catch (error) {
+      throw new Error(authErrorMessage(error, 'Gagal membuat akun. Coba lagi.'));
+    }
+
+    try {
+      await updateProfile(credential.user, { displayName: cleanName });
+    } catch {}
+
+    const now = new Date();
+    const profile: UserProfile = {
+      uid: credential.user.uid,
+      name: cleanName,
+      displayName: cleanName,
+      email: cleanEmail,
+      role: input.role,
+      permissions: input.permissions,
+      isActive: true,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    try {
+      await setDoc(doc(firestore, 'users', profile.uid), profile);
+    } catch {
+      await credential.user.delete().catch(() => undefined);
+      throw new Error('Gagal menyimpan profil pengguna. Pastikan aturan Firestore sudah diperbarui.');
+    }
+
+    await logAudit({
+      userId: input.actor.uid,
+      userName: input.actor.displayName,
+      action: 'CREATE_USER',
+      module: 'Pengguna',
+      description: `Menambahkan pengguna ${cleanEmail} dengan role ${input.role}`,
+    });
+
+    return profile;
+  } finally {
+    await deleteApp(tempApp);
   }
 }
 

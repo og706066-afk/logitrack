@@ -73,15 +73,23 @@ service cloud.firestore {
         getUserRole() in ['Manager', 'Staf Gudang', 'Staf Logistik', 'Kepala Gudang']
       );
 
-      allow create: if isAuthenticated() && 
-                    request.auth.uid == userId && 
-                    request.resource.data.uid == request.auth.uid &&
-                    request.resource.data.role == 'Viewer' &&
-                    request.resource.data.isActive == true &&
-                    request.resource.data.email == request.auth.token.email &&
-                    !request.resource.data.keys().hasAny(['permissions']) &&
-                    request.resource.data.keys().hasAll(['uid', 'displayName', 'email', 'role', 'isActive', 'createdAt', 'updatedAt']) &&
-                    request.resource.data.keys().hasOnly(['uid', 'name', 'displayName', 'email', 'role', 'isActive', 'createdAt', 'updatedAt', 'phoneNumber']);
+      allow create: if isAuthenticated() && (
+        getUserRole() == 'Super Admin' &&
+        request.resource.data.uid == userId &&
+        request.resource.data.isActive == true &&
+        request.resource.data.keys().hasAll(['uid', 'displayName', 'email', 'role', 'isActive', 'createdAt', 'updatedAt']) &&
+        request.resource.data.keys().hasOnly(['uid', 'name', 'displayName', 'email', 'role', 'permissions', 'isActive', 'createdAt', 'updatedAt', 'phoneNumber'])
+      ) || (
+        isAuthenticated() && 
+        request.auth.uid == userId && 
+        request.resource.data.uid == request.auth.uid &&
+        request.resource.data.role == 'Viewer' &&
+        request.resource.data.isActive == true &&
+        request.resource.data.email == request.auth.token.email &&
+        !request.resource.data.keys().hasAny(['permissions']) &&
+        request.resource.data.keys().hasAll(['uid', 'displayName', 'email', 'role', 'isActive', 'createdAt', 'updatedAt']) &&
+        request.resource.data.keys().hasOnly(['uid', 'name', 'displayName', 'email', 'role', 'isActive', 'createdAt', 'updatedAt', 'phoneNumber'])
+      );
 
       allow update: if getUserRole() == 'Super Admin' || (
         isAuthenticated() && 
