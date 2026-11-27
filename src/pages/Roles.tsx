@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useDataVersion } from '../contexts/DataSyncContext';
 import { ShieldCheck, Plus, Edit2, Trash2, Check, X, AlertCircle } from 'lucide-react';
-import type { Role } from '../types';
+import type { Permission, Role } from '../types';
 import { getRoles, saveRole, deleteRole, MASTER_PERMISSIONS, WAREHOUSE_ROLE_GROUPS } from '../services/rbacService';
 import { LoadingOverlay } from '../components/ui';
 import { ACTION_DELAY_MS, wait } from '../utils/async';
@@ -11,6 +11,24 @@ const roleGroupByName = new Map<string, string>(
   WAREHOUSE_ROLE_GROUPS.flatMap(group => group.roles.map(name => [name, group.name] as [string, string]))
 );
 const roleGroupOrder = [...WAREHOUSE_ROLE_GROUPS.map(group => group.name), 'Lainnya'];
+const permissionById = new Map(MASTER_PERMISSIONS.map(permission => [permission.id, permission]));
+
+function groupRolePermissions(ids: string[]): { module: string; items: Permission[] }[] {
+  const groups = new Map<string, Permission[]>();
+  ids.forEach(id => {
+    const permission = permissionById.get(id) || {
+      id,
+      module: 'Lainnya',
+      action: '',
+      name: id,
+      description: id,
+    };
+    const items = groups.get(permission.module) || [];
+    items.push(permission);
+    groups.set(permission.module, items);
+  });
+  return Array.from(groups.entries()).map(([module, items]) => ({ module, items }));
+}
 
 export const Roles: React.FC = () => {
   const { currentUser, hasPermission, refreshUserData } = useAuth();
@@ -220,11 +238,19 @@ export const Roles: React.FC = () => {
 
                         <div className="mb-4">
                           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Hak Akses ({role.permissions.length} Permission)</p>
-                          <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto custom-scrollbar p-1">
-                            {role.permissions.map((pId) => (
-                              <span key={pId} className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-[11px] font-medium">
-                                {pId}
-                              </span>
+                          <div className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar p-1">
+                            {groupRolePermissions(role.permissions).map(group => (
+                              <div key={group.module}>
+                                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{group.module}</p>
+                                <div className="mt-1 space-y-0.5">
+                                  {group.items.map(permission => (
+                                    <p key={permission.id} className="text-[11px] leading-tight text-slate-500">
+                                      <span className="font-semibold text-slate-700">{permission.name}</span>
+                                      {' — '}{permission.description}
+                                    </p>
+                                  ))}
+                                </div>
+                              </div>
                             ))}
                           </div>
                         </div>
