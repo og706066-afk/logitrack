@@ -44,9 +44,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
     { title: 'Pengiriman', path: '/deliveries', icon: Send, permission: 'deliveries.view' },
     { title: 'Data Driver', path: '/drivers', icon: UserCheck, permission: 'vehicles.view' },
     { title: 'Laporan', path: '/reports', icon: BarChart3, permission: 'reports.view' },
-    { title: 'Manajemen Pengguna', path: '/users', icon: UsersRound, permission: 'users.view' },
-    { title: 'Manajemen Role', path: '/roles', icon: ShieldCheck, permission: 'roles.view' },
-    { title: 'Pengaturan Sistem', path: '/settings', icon: Settings, permission: 'users.view' },
     { title: 'Audit Log', path: '/audit-logs', icon: ScrollText, permission: 'users.view' },
     { title: 'Kebutuhan Barang', path: '/needs', icon: ClipboardList, permission: 'needsRequests.view' },
     { title: 'Pengiriman Terpadu', path: '/shipments', icon: Send, permission: 'shipments.view' },
@@ -57,10 +54,42 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
     { title: 'Wilayah & Penerima', path: '/regions', icon: MapPin, permission: 'regions.view' },
   ];
 
+  const adminMenuItems = [
+    { title: 'Manajemen Pengguna', path: '/users', icon: UsersRound, permission: 'users.view' },
+    { title: 'Manajemen Role', path: '/roles', icon: ShieldCheck, permission: 'roles.view' },
+    { title: 'Pengaturan Sistem', path: '/settings', icon: Settings, permission: 'users.view' },
+  ];
+
   // Filter items based on permission
-  const filteredMenu = menuItems.filter(item => {
+  const filterMenu = (items: typeof menuItems) => items.filter(item => {
     if (!item.permission) return true;
     return hasPermission(item.permission);
+  });
+  const filteredMenu = filterMenu(menuItems);
+  const filteredAdminMenu = filterMenu(adminMenuItems);
+
+  const renderMenuItems = (items: typeof menuItems) => items.map((item) => {
+    const Icon = item.icon;
+    return (
+      <NavLink
+        key={item.path}
+        to={item.path}
+        onClick={() => setIsOpen(false)}
+        className={({ isActive }) => `
+          flex items-center space-x-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl font-medium text-sm transition-all
+          ${isActive 
+            ? 'bg-ocean text-white shadow-sm font-semibold ring-1 ring-cyan/30' 
+            : 'text-sky-100/80 hover:bg-slate-navy hover:text-white'}
+        `}
+      >
+        {({ isActive }) => (
+          <>
+            <Icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-cyan' : 'text-cyan/70'}`} />
+            <span className="truncate">{item.title}</span>
+          </>
+        )}
+      </NavLink>
+    );
   });
 
   return (
@@ -91,29 +120,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
 
         {/* Navigation list */}
         <nav className="flex-1 overflow-y-auto px-3 sm:px-4 py-4 sm:py-6 space-y-1 custom-scrollbar">
-          {filteredMenu.map((item) => {
-            const Icon = item.icon;
-            return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                onClick={() => setIsOpen(false)}
-                className={({ isActive }) => `
-                  flex items-center space-x-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl font-medium text-sm transition-all
-                  ${isActive 
-                    ? 'bg-ocean text-white shadow-sm font-semibold ring-1 ring-cyan/30' 
-                    : 'text-sky-100/80 hover:bg-slate-navy hover:text-white'}
-                `}
-              >
-                {({ isActive }) => (
-                  <>
-                    <Icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-cyan' : 'text-cyan/70'}`} />
-                    <span className="truncate">{item.title}</span>
-                  </>
-                )}
-              </NavLink>
-            );
-          })}
+          {renderMenuItems(filteredMenu)}
+          {filteredAdminMenu.length > 0 && (
+            <div className="mt-5 pt-4 border-t border-white/10 space-y-1">
+              {renderMenuItems(filteredAdminMenu)}
+            </div>
+          )}
         </nav>
 
         {/* User Role Badge Footer */}

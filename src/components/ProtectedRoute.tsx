@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { CarLoader } from './ui';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -13,8 +14,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requir
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 text-ocean-dark">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="w-12 h-12 border-4 border-ocean border-t-transparent rounded-full animate-spin"></div>
+        <div className="flex flex-col items-center space-y-4 w-full max-w-xs">
+          <CarLoader />
           <p className="font-medium text-slate-600">Memuat Sistem SILOG...</p>
         </div>
       </div>

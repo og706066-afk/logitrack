@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Lock, Mail, AlertCircle, ArrowRight, UserPlus, Truck, PackageCheck, Warehouse, MapPin, Boxes, ClipboardList, Sun, Moon } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { LOGIN_DELAY_MS, wait } from '../utils/async';
+import { CarLoader } from '../components/ui';
 
 const APP_LOGO = '/Lencana%20Neon%20Silog%20Sistem%20Logistik%20(1).png';
 
@@ -268,7 +269,9 @@ export const Login: React.FC = () => {
             <div className="w-16 h-16 rounded-full bg-ocean-light/60 border border-ocean/20 p-1 flex items-center justify-center animate-pulse-soft">
               <img src={APP_LOGO} alt="Logo SILOG" className="w-full h-full object-contain rounded-full" />
             </div>
-            <div className="mt-6 w-11 h-11 border-4 border-ocean-light border-t-ocean rounded-full animate-spin" />
+            <div className="mt-6 w-full">
+              <CarLoader />
+            </div>
             <p className="mt-5 text-sm font-bold text-slate-800 text-center">
               {isRegister ? 'Sedang membuat akun...' : 'Sedang masuk ke sistem...'}
             </p>

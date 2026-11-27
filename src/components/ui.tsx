@@ -1,6 +1,6 @@
 import React from 'react';
 import type { LucideIcon } from 'lucide-react';
-import { AlertCircle, Check } from 'lucide-react';
+import { AlertCircle, Car, Check } from 'lucide-react';
 
 interface PageHeaderProps {
   title: string;
@@ -113,6 +113,17 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({ message, onConfirm
   </div>
 );
 
+export const CarLoader: React.FC = () => (
+  <div className="relative w-full h-10 overflow-hidden" aria-hidden="true">
+    <svg className="absolute inset-x-0 top-1/2 w-full h-4 -translate-y-1/2 text-ocean/35" viewBox="0 0 200 16" preserveAspectRatio="none">
+      <path d="M2 8 H198" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="8 8" strokeLinecap="round" className="animate-route-dash" />
+    </svg>
+    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-10 h-10 rounded-xl bg-ocean text-white flex items-center justify-center shadow-lg shadow-ocean/30 animate-car-drive">
+      <Car className="w-5 h-5 animate-car-bounce" />
+    </div>
+  </div>
+);
+
 interface LoadingOverlayProps {
   label?: string;
 }
@@ -120,7 +131,7 @@ interface LoadingOverlayProps {
 export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ label = 'Memproses...' }) => (
   <div className="fixed inset-0 z-[60] bg-slate-900/45 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in" role="status" aria-live="polite">
     <div className="bg-white rounded-2xl px-8 py-7 shadow-2xl flex flex-col items-center space-y-4 min-w-[220px] max-w-[90vw] animate-slide-up">
-      <div className="w-12 h-12 border-4 border-ocean-light border-t-ocean rounded-full animate-spin" />
+      <CarLoader />
       <p className="text-sm font-semibold text-slate-700 text-center">{label}</p>
       <p className="text-xs text-slate-500 text-center">Mohon tunggu sebentar</p>
     </div>
