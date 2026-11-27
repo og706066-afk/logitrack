@@ -90,6 +90,7 @@ interface DataTableProps<T> {
   onSelectionChange?: (rows: T[]) => void;
   clearSelectionToken?: number;
   emptyLabel?: string;
+  hideCheckboxFilter?: boolean;
 }
 
 export function DataTable<T>({
@@ -108,6 +109,7 @@ export function DataTable<T>({
   onSelectionChange,
   clearSelectionToken,
   emptyLabel = 'Belum ada data.',
+  hideCheckboxFilter = false,
 }: DataTableProps<T>) {
   const [open, setOpen] = useState(false);
   const [filters, setFilters] = useState<Record<string, string[]>>({});
@@ -156,6 +158,7 @@ export function DataTable<T>({
   };
 
   const activeCount = filterGroups.filter(group => isGroupActive(group.column.key, group.options.length)).length;
+  const showCheckboxFilter = !hideCheckboxFilter && filterGroups.length > 0;
 
   const visibleRows = useMemo(() => rows.filter(row => filterGroups.every(group => {
     const selected = filters[group.column.key] ?? [];
@@ -230,7 +233,7 @@ export function DataTable<T>({
 
   return (
     <div>
-      {filterGroups.length > 0 && (
+      {showCheckboxFilter && (
         <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 pt-3">
           <button
             type="button"
@@ -257,7 +260,7 @@ export function DataTable<T>({
         </div>
       )}
 
-      {open && filterGroups.length > 0 && (
+      {open && showCheckboxFilter && (
         <div className="mx-3 sm:mx-4 mt-2 mb-1 p-3 rounded-xl border border-slate-200 bg-slate-50/80 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {filterGroups.map(group => {
             const selected = filters[group.column.key] ?? [];

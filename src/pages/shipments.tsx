@@ -675,6 +675,7 @@ export const ShipmentsPage: React.FC = () => {
           rowKey={row => row.id}
           headerGroups={LOGISTICS_HEADER_GROUPS}
           indexOffset={(currentPage - 1) * 10}
+          hideCheckboxFilter
           emptyLabel={shipments.length === 0 ? (isDriver ? 'Belum ada pengiriman yang ditugaskan kepada Anda.' : 'Belum ada data pengiriman.') : 'Tidak ada pengiriman yang cocok dengan filter.'}
         />
         {filteredShipments.length > 10 && (
