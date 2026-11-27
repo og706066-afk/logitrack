@@ -135,7 +135,7 @@ export const SettingsPage: React.FC = () => {
           <div className="mt-4 space-y-3 text-sm">
             <div className="flex justify-between gap-3">
               <span className="text-slate-500">Pengembang</span>
-              <span className="font-semibold text-slate-800 text-right">Tim Pengembang SILOG</span>
+              <span className="font-semibold text-slate-800 text-right">Devora Studio</span>
             </div>
             <div className="flex justify-between gap-3">
               <span className="text-slate-500">Platform</span>
