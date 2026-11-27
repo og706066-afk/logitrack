@@ -29,7 +29,7 @@ import {
 } from 'recharts';
 import { useAuth } from '../contexts/AuthContext';
 import { useDataVersion } from '../contexts/DataSyncContext';
-import { AlertBox, InfoCard, LoadingOverlay } from '../components/ui';
+import { InfoCard, LoadingOverlay } from '../components/ui';
 import { inputClass } from '../components/DataViews';
 import {
   dateString,
@@ -81,7 +81,6 @@ export const Dashboard: React.FC = () => {
   const [period, setPeriod] = useState<PeriodKey>('30');
   const [category, setCategory] = useState('');
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
 
   const todayTime = useMemo(() => Date.parse(todayString()), []);
 
@@ -103,9 +102,6 @@ export const Dashboard: React.FC = () => {
       setNeeds(value<NeedRequest>(3));
       setShipments(value<Shipment>(4));
       setActivities(value<ActivityLog>(5));
-      if (results.some(result => result.status === 'rejected')) {
-        setError('Sebagian data tidak dapat dimuat sesuai hak akses Anda.');
-      }
       setLoading(false);
     });
     return () => { active = false; };
@@ -273,8 +269,6 @@ export const Dashboard: React.FC = () => {
           </p>
         </div>
       </div>
-
-      <AlertBox message={error} onClose={() => setError('')} />
 
       <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-end gap-4">
         <div className="flex-1 sm:max-w-xs">
