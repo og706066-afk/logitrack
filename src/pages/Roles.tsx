@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useDataVersion } from '../contexts/DataSyncContext';
 import { ShieldCheck, Plus, Edit2, Trash2, Check, X, AlertCircle } from 'lucide-react';
 import type { Role } from '../types';
 import { getRoles, saveRole, deleteRole, MASTER_PERMISSIONS, WAREHOUSE_ROLE_GROUPS } from '../services/rbacService';
@@ -13,6 +14,7 @@ const roleGroupOrder = [...WAREHOUSE_ROLE_GROUPS.map(group => group.name), 'Lain
 
 export const Roles: React.FC = () => {
   const { currentUser, hasPermission, refreshUserData } = useAuth();
+  const dataVersion = useDataVersion('roles');
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -30,8 +32,8 @@ export const Roles: React.FC = () => {
   const canManageRoles = currentUser?.role === 'Super Admin' || hasPermission('roles.create');
 
   useEffect(() => {
-    loadData();
-  }, []);
+    void loadData();
+  }, [dataVersion]);
 
   const loadData = async () => {
     try {

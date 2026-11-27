@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ArrowDown, ArrowUp } from 'lucide-react';
 import { ResourceManager, type ResourceField } from '../components/ResourceManager';
 import { useAuth } from '../contexts/AuthContext';
+import { useDataVersion } from '../contexts/DataSyncContext';
 import {
   asNumber,
   deleteRow,
@@ -27,6 +28,7 @@ function defaultExpiry(date: string): string {
 
 export const StockInPage: React.FC = () => {
   const { currentUser } = useAuth();
+  const dataVersion = useDataVersion('products', 'suppliers', 'stock_in');
   const [products, setProducts] = useState<DataRow[]>([]);
   const [suppliers, setSuppliers] = useState<DataRow[]>([]);
 
@@ -35,7 +37,7 @@ export const StockInPage: React.FC = () => {
       setProducts(productRows);
       setSuppliers(supplierRows);
     });
-  }, []);
+  }, [dataVersion]);
 
   const recordStockChange = async (row: DataRow, delta: number, isNew: boolean) => {
     if (delta === 0 && !isNew) return;
@@ -186,11 +188,12 @@ export const StockInPage: React.FC = () => {
 
 export const StockOutPage: React.FC = () => {
   const { currentUser } = useAuth();
+  const dataVersion = useDataVersion('products', 'stock_out');
   const [products, setProducts] = useState<DataRow[]>([]);
 
   useEffect(() => {
     void getRows('products').then(setProducts);
-  }, []);
+  }, [dataVersion]);
 
   const recordOutbound = async (row: DataRow, delta: number, isNew: boolean) => {
     const item = await getDocument<Item>('products', String(row.productId));

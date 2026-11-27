@@ -5,6 +5,7 @@ import { archiveAuditLogs, getArchivedAuditLogs, getAuditLogs } from '../service
 import { DataTable, type TableColumn } from '../components/DataViews';
 import { AlertBox, LoadingOverlay } from '../components/ui';
 import { useAuth } from '../contexts/AuthContext';
+import { useDataVersion } from '../contexts/DataSyncContext';
 
 type TabKey = 'active' | 'archived';
 
@@ -23,6 +24,7 @@ function formatDateTime(value: any): string {
 
 export const AuditLogs: React.FC = () => {
   const { currentUser } = useAuth();
+  const dataVersion = useDataVersion('audit_logs', 'audit_log_archives');
   const isSuperAdmin = currentUser?.role === 'Super Admin';
 
   const [tab, setTab] = useState<TabKey>('active');
@@ -61,7 +63,7 @@ export const AuditLogs: React.FC = () => {
 
   useEffect(() => {
     void loadLogs();
-  }, [loadLogs]);
+  }, [loadLogs, dataVersion]);
 
   const filteredLogs = useMemo(() => {
     const q = search.trim().toLowerCase();

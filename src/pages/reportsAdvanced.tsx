@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { BarChart3, Download, FileText, Printer } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useDataVersion } from '../contexts/DataSyncContext';
 import {
   LOGISTICS_EXPORT_GROUPS,
   LOGISTICS_HEADER_GROUPS,
@@ -98,6 +99,7 @@ function uniqueSorted(values: string[]): string[] {
 
 export const ReportsAdvancedPage: React.FC = () => {
   const { hasPermission } = useAuth();
+  const dataVersion = useDataVersion('products', 'categories', 'regions', 'stockTransactions', 'needsRequests', 'shipments', 'distributions', 'activityLogs');
   const [products, setProducts] = useState<Item[]>([]);
   const [categories, setCategories] = useState<MasterData[]>([]);
   const [regions, setRegions] = useState<Region[]>([]);
@@ -158,7 +160,7 @@ export const ReportsAdvancedPage: React.FC = () => {
       if (active) setLoading(false);
     });
     return () => { active = false; };
-  }, [canView]);
+  }, [canView, dataVersion]);
 
   const categoryById = useMemo(
     () => new Map(categories.map(item => [item.id, item.name])),

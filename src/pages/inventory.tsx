@@ -5,6 +5,7 @@ import { AlertBox, ConfirmDialog, LoadingOverlay, PageHeader, StatusBadge } from
 import { DataTable, FilterBar, Modal, Toast, inputClass, primaryButtonClass, secondaryButtonClass } from '../components/DataViews';
 import { ExcelImportButton, type ExcelImportField } from '../components/ExcelImport';
 import { useAuth } from '../contexts/AuthContext';
+import { useDataVersion } from '../contexts/DataSyncContext';
 import { getRows, today, type DataRow } from '../services/logisticsService';
 import { createItem, getCollection, nextNumber, removeDocument, toNumber, updateItem } from '../services/logitrackService';
 import type { Item } from '../types/logitrack';
@@ -55,6 +56,7 @@ export const CategoriesPage: React.FC = () => {
 
 export const ProductsPage: React.FC = () => {
   const { currentUser, hasPermission } = useAuth();
+  const dataVersion = useDataVersion('products', 'categories', 'warehouses');
   const [items, setItems] = useState<Item[]>([]);
   const [categories, setCategories] = useState<DataRow[]>([]);
   const [warehouses, setWarehouses] = useState<DataRow[]>([]);
@@ -91,7 +93,7 @@ export const ProductsPage: React.FC = () => {
     }
   }, []);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => { void load(); }, [load, dataVersion]);
 
   const filtered = useMemo(() => {
     const needle = search.trim().toLowerCase();
@@ -333,6 +335,7 @@ export const SuppliersPage: React.FC = () => {
 
 export const WarehouseStockPage: React.FC = () => {
   const { hasPermission } = useAuth();
+  const dataVersion = useDataVersion('products', 'suppliers', 'warehouses', 'stock_batches');
   const [products, setProducts] = useState<DataRow[]>([]);
   const [suppliers, setSuppliers] = useState<DataRow[]>([]);
   const [warehouses, setWarehouses] = useState<DataRow[]>([]);
@@ -347,7 +350,7 @@ export const WarehouseStockPage: React.FC = () => {
       setSuppliers(supplierRows);
       setWarehouses(warehouseRows);
     });
-  }, []);
+  }, [dataVersion]);
 
   if (!hasPermission('warehouses.view') && !hasPermission('stock_batches.view')) {
     return <AlertBox message="Anda tidak memiliki izin untuk melihat stok gudang." />;

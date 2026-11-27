@@ -10,6 +10,7 @@ import {
   X,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useDataVersion } from '../contexts/DataSyncContext';
 import { AlertBox, LoadingOverlay, PageHeader, StatusBadge } from '../components/ui';
 import { ResourceManager, type ResourceField } from '../components/ResourceManager';
 import { DataTable } from '../components/DataViews';
@@ -57,6 +58,7 @@ function parseItems(text: string, products: DataRow[]): { productId: string; pro
 
 export const KitchenRequestsPage: React.FC = () => {
   const { currentUser, hasPermission } = useAuth();
+  const dataVersion = useDataVersion('requests', 'request_details', 'products');
   const [rows, setRows] = useState<DataRow[]>([]);
   const [details, setDetails] = useState<DataRow[]>([]);
   const [products, setProducts] = useState<DataRow[]>([]);
@@ -83,7 +85,7 @@ export const KitchenRequestsPage: React.FC = () => {
 
   useEffect(() => {
     void load();
-  }, [load]);
+  }, [load, dataVersion]);
 
   const fulfillRequest = async (request: DataRow) => {
     const items = details.filter(item => item.requestId === request.id);
@@ -375,6 +377,7 @@ export const KitchenRequestsPage: React.FC = () => {
 
 export const DeliveriesPage: React.FC = () => {
   const { currentUser, hasPermission } = useAuth();
+  const dataVersion = useDataVersion('deliveries', 'requests', 'delivery_details', 'vehicles', 'users');
   const isDriver = currentUser?.role === 'Driver';
   const [rows, setRows] = useState<DataRow[]>([]);
   const [requests, setRequests] = useState<DataRow[]>([]);
@@ -407,7 +410,7 @@ export const DeliveriesPage: React.FC = () => {
 
   useEffect(() => {
     void load();
-  }, [load]);
+  }, [load, dataVersion]);
 
   const drivers = users.filter(user => user.role === 'Driver' && user.isActive);
 
@@ -622,6 +625,7 @@ export const DeliveriesPage: React.FC = () => {
 
 export const DriversPage: React.FC = () => {
   const { currentUser, refreshUserData } = useAuth();
+  const dataVersion = useDataVersion('users', 'deliveries');
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [deliveries, setDeliveries] = useState<DataRow[]>([]);
   const [error, setError] = useState('');
@@ -640,7 +644,7 @@ export const DriversPage: React.FC = () => {
 
   useEffect(() => {
     void load();
-  }, [load]);
+  }, [load, dataVersion]);
 
   const assignDriver = async (user: UserProfile) => {
     if (!currentUser || currentUser.role !== 'Super Admin') return;

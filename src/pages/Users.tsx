@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useDataVersion } from '../contexts/DataSyncContext';
 import { UsersRound, Check, X, AlertCircle, Edit2, Shield } from 'lucide-react';
 import type { UserProfile, Role } from '../types';
 import { getUsers, updateUserRoleAndStatus, getRoles } from '../services/rbacService';
@@ -9,6 +10,7 @@ import { ACTION_DELAY_MS, wait } from '../utils/async';
 
 export const Users: React.FC = () => {
   const { currentUser, refreshUserData } = useAuth();
+  const dataVersion = useDataVersion('users', 'roles');
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,8 +27,8 @@ export const Users: React.FC = () => {
   const canManageUsers = currentUser?.role === 'Super Admin';
 
   useEffect(() => {
-    loadData();
-  }, []);
+    void loadData();
+  }, [dataVersion]);
 
   const loadData = async () => {
     try {

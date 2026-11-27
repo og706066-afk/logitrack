@@ -28,6 +28,7 @@ import {
   YAxis,
 } from 'recharts';
 import { useAuth } from '../contexts/AuthContext';
+import { useDataVersion } from '../contexts/DataSyncContext';
 import { AlertBox, InfoCard, LoadingOverlay } from '../components/ui';
 import { inputClass } from '../components/DataViews';
 import {
@@ -70,6 +71,7 @@ const SHIPMENT_STATUSES: Shipment['status'][] = [
 
 export const Dashboard: React.FC = () => {
   const { currentUser } = useAuth();
+  const dataVersion = useDataVersion('products', 'categories', 'stockTransactions', 'needsRequests', 'shipments', 'activityLogs');
   const [products, setProducts] = useState<Item[]>([]);
   const [categories, setCategories] = useState<MasterData[]>([]);
   const [stockTransactions, setStockTransactions] = useState<StockTransaction[]>([]);
@@ -107,7 +109,7 @@ export const Dashboard: React.FC = () => {
       setLoading(false);
     });
     return () => { active = false; };
-  }, [currentUser]);
+  }, [currentUser, dataVersion]);
 
   const categoryById = useMemo(
     () => new Map(categories.map(item => [item.id, item.name])),

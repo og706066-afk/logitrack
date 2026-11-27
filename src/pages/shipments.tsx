@@ -34,6 +34,7 @@ import {
 } from '../components/logisticsColumns';
 import { AlertBox, ConfirmDialog, InfoCard, LoadingOverlay, PageHeader } from '../components/ui';
 import { useAuth } from '../contexts/AuthContext';
+import { useDataVersion } from '../contexts/DataSyncContext';
 import {
   createShipment,
   dateString,
@@ -220,6 +221,7 @@ function validateShipmentForm(form: ShipmentForm, products: Item[]): string | nu
 
 export const ShipmentsPage: React.FC = () => {
   const { currentUser, hasPermission } = useAuth();
+  const dataVersion = useDataVersion('shipments', 'kordas', 'products', 'users');
   const isDriver = currentUser?.role === 'Driver';
   const canView = hasPermission('shipments.view');
   const canCreate = hasPermission('shipments.create') && !isDriver;
@@ -280,7 +282,7 @@ export const ShipmentsPage: React.FC = () => {
 
   useEffect(() => {
     void load();
-  }, [load]);
+  }, [load, dataVersion]);
 
   const showToast = (message: string, kind: ToastState['kind'] = 'success') => setToast({ message, kind });
 

@@ -1,10 +1,12 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import type { User as FirebaseUser } from 'firebase/auth';
-import { auth, isFirebaseConfigured } from '../services/firebase';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { auth, db, isFirebaseConfigured } from '../services/firebase';
 import type { UserProfile, Role } from '../types';
 import { getRoles } from '../services/rbacService';
 import { fetchUserProfile, loginUser, logoutUser, registerUser } from '../services/authService';
+import { useDataVersion } from './DataSyncContext';
 
 interface AuthContextType {
   currentUser: UserProfile | null;
@@ -39,6 +41,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [rolesList, setRolesList] = useState<Role[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const rolesVersion = useDataVersion('roles');
 
   const loadRoles = async () => {
     try {
@@ -62,6 +65,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     void loadRoles();
+  }, [rolesVersion]);
+
+  useEffect(() => {
+    if (!db || !firebaseUser) return;
+    return onSnapshot(doc(db, 'users', firebaseUser.uid), snapshot => {
+      if (!snapshot.exists()) return;
+      const updated = { ...(snapshot.data() as UserProfile), uid: firebaseUser.uid };
+      if (!updated.isActive) {
+        void logoutUser();
+        setCurrentUser(null);
+        return;
+      }
+      setCurrentUser(updated);
+    }, () => undefined);
+  }, [firebaseUser]);
+
+  useEffect(() => {
     if (!isFirebaseConfigured || !auth) {
       setLoading(false);
       return;

@@ -14,6 +14,7 @@ import {
   YAxis,
 } from 'recharts';
 import { useAuth } from '../contexts/AuthContext';
+import { useDataVersion } from '../contexts/DataSyncContext';
 import { AlertBox, InfoCard, LoadingOverlay, PageHeader, StatusBadge } from '../components/ui';
 import { DataTable } from '../components/DataViews';
 import { getAuditLogs } from '../services/rbacService';
@@ -40,6 +41,7 @@ function downloadCsv<T extends object>(filename: string, rows: T[], columns: str
 
 export const ReportsPage: React.FC = () => {
   const { hasPermission } = useAuth();
+  const dataVersion = useDataVersion('products', 'stock_batches', 'stock_in', 'stock_out', 'requests', 'deliveries', 'audit_logs');
   const [products, setProducts] = useState<DataRow[]>([]);
   const [batches, setBatches] = useState<DataRow[]>([]);
   const [stockIn, setStockIn] = useState<DataRow[]>([]);
@@ -70,7 +72,7 @@ export const ReportsPage: React.FC = () => {
       setLogs(logRows);
     }).catch((e: any) => setError(e.message || 'Gagal memuat laporan'))
       .finally(() => setLoading(false));
-  }, []);
+  }, [dataVersion]);
 
   const categoryData = useMemo(() => {
     const totals = new Map<string, number>();

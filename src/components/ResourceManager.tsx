@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Check, Plus, Search, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useDataVersion } from '../contexts/DataSyncContext';
 import { AlertBox, ConfirmDialog, LoadingOverlay, PageHeader } from './ui';
 import { DataTable, type TableColumn } from './DataViews';
 import { ExcelImportButton, type ExcelImportField } from './ExcelImport';
@@ -61,6 +62,7 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({
   onDeleted,
 }) => {
   const { currentUser, hasPermission } = useAuth();
+  const dataVersion = useDataVersion(collection);
   const canView = hasPermission(permissions.view);
   const [rows, setRows] = useState<DataRow[]>([]);
   const [loading, setLoading] = useState(canView);
@@ -126,7 +128,7 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({
 
   useEffect(() => {
     if (canView) void load();
-  }, [canView, load]);
+  }, [canView, load, dataVersion]);
 
   const visibleColumns = useMemo(() => columns || fields.map(field => field.key), [columns, fields]);
 

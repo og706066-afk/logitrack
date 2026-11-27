@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Download, FileText, Plus, TrendingDown, TrendingUp, Wallet } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useDataVersion } from '../contexts/DataSyncContext';
 import { AlertBox, InfoCard, LoadingOverlay } from '../components/ui';
 import {
   DataTable,
@@ -113,6 +114,7 @@ async function fetchFinanceTransactions(): Promise<FinanceTransaction[]> {
 
 export const FinancePage: React.FC = () => {
   const { currentUser, hasPermission } = useAuth();
+  const dataVersion = useDataVersion('financeTransactions');
   const [transactions, setTransactions] = useState<FinanceTransaction[]>([]);
   const [search, setSearch] = useState('');
   const [from, setFrom] = useState('');
@@ -151,7 +153,7 @@ export const FinancePage: React.FC = () => {
       if (active) setLoading(false);
     });
     return () => { active = false; };
-  }, [canView]);
+  }, [canView, dataVersion]);
 
   const filtered = useMemo(() => {
     const needle = search.trim().toLowerCase();

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { MapPin, Plus, Send, Users } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useDataVersion } from '../contexts/DataSyncContext';
 import { AlertBox, ConfirmDialog, InfoCard, LoadingOverlay, PageHeader, StatusBadge } from '../components/ui';
 import {
   DataTable,
@@ -71,6 +72,7 @@ function emptyRecipientDraft(): RecipientDraft {
 
 export const RegionsPage: React.FC = () => {
   const { currentUser, hasPermission } = useAuth();
+  const dataVersion = useDataVersion('regions', 'recipients', 'distributions');
   const [regions, setRegions] = useState<Region[]>([]);
   const [recipients, setRecipients] = useState<Recipient[]>([]);
   const [distributions, setDistributions] = useState<DistributionRow[]>([]);
@@ -107,7 +109,7 @@ export const RegionsPage: React.FC = () => {
       if (active) setLoading(false);
     });
     return () => { active = false; };
-  }, [canView]);
+  }, [canView, dataVersion]);
 
   const recipientCountByRegion = useMemo(() => {
     const counts = new Map<string, number>();

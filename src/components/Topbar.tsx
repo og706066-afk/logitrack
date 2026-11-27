@@ -4,6 +4,7 @@ import { getCollection, getShipments } from '../services/logitrackService';
 import type { Item, NeedRequest } from '../types/logitrack';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { useDataVersion } from '../contexts/DataSyncContext';
 import { ConfirmDialog, LoadingOverlay } from './ui';
 import { ACTION_DELAY_MS, wait } from '../utils/async';
 
@@ -14,6 +15,7 @@ interface TopbarProps {
 export const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
   const { currentUser, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const dataVersion = useDataVersion('needsRequests', 'products', 'shipments');
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -40,7 +42,7 @@ export const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
     };
     void load();
     return () => { active = false; };
-  }, [currentUser]);
+  }, [currentUser, dataVersion]);
 
   const handleLogout = async () => {
     setConfirmLogout(false);

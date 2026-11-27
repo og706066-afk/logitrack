@@ -4,6 +4,7 @@ import { DataTable, Toast, inputClass, primaryButtonClass, secondaryButtonClass,
 import { ExcelImportButton, type ExcelImportField } from '../components/ExcelImport';
 import { AlertBox, ConfirmDialog, LoadingOverlay, PageHeader, StatusBadge } from '../components/ui';
 import { useAuth } from '../contexts/AuthContext';
+import { useDataVersion } from '../contexts/DataSyncContext';
 import { createMasterData, getCollection, updateMasterData } from '../services/logitrackService';
 import type { MasterData } from '../types/logitrack';
 
@@ -65,6 +66,7 @@ function errorMessage(error: unknown): string {
 
 export const MasterDataPage: React.FC = () => {
   const { currentUser, hasPermission } = useAuth();
+  const dataVersion = useDataVersion('kordas', 'departments');
   const [rows, setRows] = useState<Record<SectionKey, MasterData[]>>({ kordas: [], departments: [] });
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState<MasterForm | null>(null);
@@ -92,7 +94,7 @@ export const MasterDataPage: React.FC = () => {
 
   useEffect(() => {
     void load();
-  }, [load]);
+  }, [load, dataVersion]);
 
   const openForm = (section: SectionKey, row?: MasterData) => {
     setError('');

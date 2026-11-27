@@ -24,6 +24,7 @@ import {
 import { ExcelImportButton, type ExcelImportField } from '../components/ExcelImport';
 import { AlertBox, InfoCard, LoadingOverlay, PageHeader, StatusBadge } from '../components/ui';
 import { useAuth } from '../contexts/AuthContext';
+import { useDataVersion } from '../contexts/DataSyncContext';
 import {
   createNeedRequest,
   dateString,
@@ -104,6 +105,7 @@ function validateNeedForm(form: NeedForm, products: Item[]): string | null {
 
 export const NeedsPage: React.FC = () => {
   const { currentUser, hasPermission } = useAuth();
+  const dataVersion = useDataVersion('needsRequests', 'products', 'categories', 'kordas', 'departments');
   const canView = hasPermission('needsRequests.view');
   const canCreate = hasPermission('needsRequests.create');
   const canEdit = hasPermission('needsRequests.edit');
@@ -156,7 +158,7 @@ export const NeedsPage: React.FC = () => {
 
   useEffect(() => {
     void load();
-  }, [load]);
+  }, [load, dataVersion]);
 
   const showToast = (message: string, kind: ToastState['kind'] = 'success') => setToast({ message, kind });
 

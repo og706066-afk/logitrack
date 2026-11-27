@@ -13,6 +13,7 @@ import {
 import { ExcelImportButton, type ExcelImportField } from '../components/ExcelImport';
 import { AlertBox, ConfirmDialog, InfoCard, LoadingOverlay, PageHeader, StatusBadge } from '../components/ui';
 import { useAuth } from '../contexts/AuthContext';
+import { useDataVersion } from '../contexts/DataSyncContext';
 import { getUsers } from '../services/rbacService';
 import {
   confirmStockTransaction,
@@ -168,6 +169,7 @@ function validateForm(form: StockForm, products: Item[], transactions: StockTran
 
 export const StockControlPage: React.FC = () => {
   const { currentUser, hasPermission } = useAuth();
+  const dataVersion = useDataVersion('products', 'stockTransactions', 'categories', 'warehouses', 'kordas', 'users');
   const [products, setProducts] = useState<Item[]>([]);
   const [transactions, setTransactions] = useState<StockTransaction[]>([]);
   const [categories, setCategories] = useState<CategoryRow[]>([]);
@@ -212,7 +214,7 @@ export const StockControlPage: React.FC = () => {
 
   useEffect(() => {
     void load();
-  }, []);
+  }, [dataVersion]);
 
   useEffect(() => {
     setPage(1);
