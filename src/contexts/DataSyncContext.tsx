@@ -1,9 +1,10 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, doc, getDoc, onSnapshot, query, where } from 'firebase/firestore';
+import type { Query } from 'firebase/firestore';
 import { auth, db } from '../services/firebase';
 
-const LIVE_COLLECTIONS = [
+const BASE_COLLECTIONS = [
   'products',
   'categories',
   'suppliers',
@@ -13,26 +14,21 @@ const LIVE_COLLECTIONS = [
   'stock_out',
   'requests',
   'request_details',
-  'deliveries',
-  'delivery_details',
   'vehicles',
   'stock_movements',
   'kordas',
   'departments',
   'needsRequests',
-  'shipments',
-  'stockTransactions',
-  'distributions',
-  'financeTransactions',
-  'regions',
-  'recipients',
   'activityLogs',
-  'notifications',
   'roles',
-  'users',
   'audit_logs',
-  'audit_log_archives',
+  'notifications',
 ] as const;
+
+interface SyncProfile {
+  role?: string;
+  permissions?: string[];
+}
 
 interface DataSyncContextType {
   versions: Record<string, number>;
@@ -45,6 +41,35 @@ export const useDataVersion = (...names: string[]): number => {
   return names.reduce((total, name) => total + (versions[name] || 0), 0);
 };
 
+function hasReadPermission(profile: SyncProfile, permission: string): boolean {
+  return profile.role === 'Super Admin' ||
+    profile.permissions?.includes('*') === true ||
+    profile.permissions?.includes(permission) === true;
+}
+
+function getListenerNames(profile: SyncProfile): string[] {
+  const names: string[] = [...BASE_COLLECTIONS];
+  const role = profile.role || '';
+  const isSuperAdmin = role === 'Super Admin';
+  const canReadUsers = isSuperAdmin || ['Manager', 'Staf Gudang', 'Staf Logistik', 'Kepala Gudang'].includes(role);
+
+  if (canReadUsers) names.push('users');
+  if (isSuperAdmin) names.push('audit_log_archives');
+
+  if (role !== 'Driver') {
+    names.push('deliveries', 'delivery_details', 'shipments');
+  } else {
+    names.push('deliveries', 'shipments');
+  }
+
+  if (hasReadPermission(profile, 'stockTransactions.view')) names.push('stockTransactions');
+  if (hasReadPermission(profile, 'distributions.view')) names.push('distributions');
+  if (hasReadPermission(profile, 'finance.view')) names.push('financeTransactions');
+  if (hasReadPermission(profile, 'regions.view')) names.push('regions', 'recipients');
+
+  return names;
+}
+
 export const DataSyncProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [versions, setVersions] = useState<Record<string, number>>({});
 
@@ -55,6 +80,7 @@ export const DataSyncProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const pending = new Set<string>();
     let timer: ReturnType<typeof setTimeout> | undefined;
     let unsubscribers: (() => void)[] = [];
+    let generation = 0;
 
     const queueChange = (name: string) => {
       pending.add(name);
@@ -72,15 +98,38 @@ export const DataSyncProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     };
 
     const unsubscribeAuth = onAuthStateChanged(auth, firebaseUser => {
+      generation += 1;
+      const currentGeneration = generation;
+
       unsubscribers.forEach(unsubscribe => unsubscribe());
       unsubscribers = [];
       if (!firebaseUser) return;
-      unsubscribers = LIVE_COLLECTIONS.map(name =>
-        onSnapshot(collection(firestore, name), () => queueChange(name), () => undefined)
-      );
+
+      const uid = firebaseUser.uid;
+
+      void (async () => {
+        let profile: SyncProfile = {};
+        try {
+          const snapshot = await getDoc(doc(firestore, 'users', uid));
+          if (snapshot.exists()) profile = snapshot.data() as SyncProfile;
+        } catch {}
+
+        if (currentGeneration !== generation) return;
+
+        unsubscribers = getListenerNames(profile).map(name => {
+          let source: Query = collection(firestore, name);
+          if (name === 'notifications') {
+            source = query(source, where('userId', '==', uid));
+          } else if ((name === 'deliveries' || name === 'shipments') && profile.role === 'Driver') {
+            source = query(source, where('driverId', '==', uid));
+          }
+          return onSnapshot(source, () => queueChange(name), () => undefined);
+        });
+      })();
     });
 
     return () => {
+      generation += 1;
       unsubscribeAuth();
       unsubscribers.forEach(unsubscribe => unsubscribe());
       if (timer) clearTimeout(timer);
