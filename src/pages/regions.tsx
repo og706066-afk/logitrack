@@ -23,6 +23,7 @@ import {
   updateMasterData,
 } from '../services/logitrackService';
 import type { Distribution, Recipient, Region } from '../types/logitrack';
+import { friendlyActionError } from '../utils/async';
 
 interface RegionDraft {
   id?: string;
@@ -262,7 +263,7 @@ export const RegionsPage: React.FC = () => {
       setSuccess(`${deletion.label} berhasil dinonaktifkan.`);
       setDeletion(null);
     } catch (reason: unknown) {
-      setError(reason instanceof Error ? reason.message : 'Gagal menonaktifkan data.');
+      setError(friendlyActionError(reason, 'Gagal menonaktifkan data.'));
     } finally {
       setSaving(false);
     }

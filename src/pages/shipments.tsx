@@ -53,6 +53,7 @@ import {
 import type { UserProfile } from '../types';
 import type { Item, MasterData, Shipment, ShipmentStatus } from '../types/logitrack';
 import { exportToExcel } from '../utils/exports';
+import { friendlyActionError } from '../utils/async';
 
 interface ShipmentForm {
   id: string;
@@ -468,7 +469,7 @@ export const ShipmentsPage: React.FC = () => {
       showToast('Pengiriman berhasil dihapus.');
       await load();
     } catch (error) {
-      showToast(error instanceof Error ? error.message : 'Gagal menghapus pengiriman.', 'error');
+      showToast(friendlyActionError(error, 'Gagal menghapus pengiriman.'), 'error');
     } finally {
       setProcessing('');
     }

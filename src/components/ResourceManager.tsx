@@ -15,7 +15,7 @@ import {
   type CollectionName,
   type DataRow,
 } from '../services/logisticsService';
-import { ACTION_DELAY_MS, wait } from '../utils/async';
+import { ACTION_DELAY_MS, friendlyActionError, wait } from '../utils/async';
 
 export interface ResourceField {
   key: string;
@@ -223,7 +223,7 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({
       setSuccess('Data berhasil dihapus.');
       await load();
     } catch (e: any) {
-      setError(e.message || 'Gagal menghapus data');
+      setError(friendlyActionError(e, 'Gagal menghapus data'));
     } finally {
       setDeleting(false);
       setDeleteId(null);

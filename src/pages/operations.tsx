@@ -27,7 +27,7 @@ import {
   type DataRow,
 } from '../services/logisticsService';
 import type { UserProfile } from '../types';
-import { ACTION_DELAY_MS, wait } from '../utils/async';
+import { ACTION_DELAY_MS, friendlyActionError, wait } from '../utils/async';
 import { createStockTransaction } from '../services/logitrackService';
 
 function parseItems(text: string, products: DataRow[]): { productId: string; productName: string; requestedQty: number; unit: string }[] {
@@ -212,6 +212,8 @@ export const KitchenRequestsPage: React.FC = () => {
       await Promise.all(related.map(item => deleteRow('request_details', item.id, currentUser)));
       await deleteRow('requests', row.id, currentUser);
       await load();
+    } catch (e: any) {
+      setError(friendlyActionError(e, 'Gagal menghapus permintaan'));
     } finally {
       setProcessing('');
     }
@@ -478,6 +480,8 @@ export const DeliveriesPage: React.FC = () => {
       await Promise.all(related.map(item => deleteRow('delivery_details', item.id, currentUser)));
       await deleteRow('deliveries', row.id, currentUser);
       await load();
+    } catch (e: any) {
+      setError(friendlyActionError(e, 'Gagal menghapus pengiriman'));
     } finally {
       setProcessing('');
     }

@@ -9,6 +9,7 @@ import { useDataVersion } from '../contexts/DataSyncContext';
 import { getRows, today, type DataRow } from '../services/logisticsService';
 import { createItem, getCollection, nextNumber, removeDocument, toNumber, updateItem } from '../services/logitrackService';
 import type { Item } from '../types/logitrack';
+import { friendlyActionError } from '../utils/async';
 
 function toOptions(rows: DataRow[], labelKey = 'name'): { value: string; label: string }[] {
   return rows.map(row => ({ value: row.id, label: String(row[labelKey] ?? row.id) }));
@@ -73,7 +74,7 @@ export const ProductsPage: React.FC = () => {
 
   const canCreate = hasPermission('items.create') || hasPermission('products.create');
   const canEdit = hasPermission('items.edit') || hasPermission('products.edit');
-  const canDelete = hasPermission('items.delete') || hasPermission('products.delete') || canCreate;
+  const canDelete = hasPermission('items.delete') || hasPermission('products.delete') || hasPermission('items.create');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -171,7 +172,7 @@ export const ProductsPage: React.FC = () => {
       setDeleteIds([]);
       await load();
     } catch (e: any) {
-      setError(e.message || 'Gagal menghapus barang.');
+      setError(friendlyActionError(e, 'Gagal menghapus barang.'));
       setDeleteIds([]);
     } finally {
       setSaving(false);

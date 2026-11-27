@@ -5,7 +5,7 @@ import { ShieldCheck, Plus, Edit2, Trash2, Check, X, AlertCircle } from 'lucide-
 import type { Permission, Role } from '../types';
 import { getRoles, saveRole, deleteRole, MASTER_PERMISSIONS, WAREHOUSE_ROLE_GROUPS } from '../services/rbacService';
 import { LoadingOverlay } from '../components/ui';
-import { ACTION_DELAY_MS, wait } from '../utils/async';
+import { ACTION_DELAY_MS, friendlyActionError, wait } from '../utils/async';
 
 const roleGroupByName = new Map<string, string>(
   WAREHOUSE_ROLE_GROUPS.flatMap(group => group.roles.map(name => [name, group.name] as [string, string]))
@@ -142,7 +142,7 @@ export const Roles: React.FC = () => {
       await refreshUserData();
       await loadData();
     } catch (err: any) {
-      setError(err.message || 'Gagal menghapus role');
+      setError(friendlyActionError(err, 'Gagal menghapus role'));
     } finally {
       setDeleting(false);
     }
@@ -265,7 +265,7 @@ export const Roles: React.FC = () => {
                           >
                             <Edit2 className="w-4 h-4" />
                           </button>
-                          {!role.isSystem && (
+                          {currentUser?.role === 'Super Admin' && !role.isSystem && (
                             <button
                               onClick={() => handleDelete(role.id)}
                               className="p-2 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
