@@ -1,16 +1,15 @@
-import React from 'react';
-import { Settings as SettingsIcon, Shield, Database, CheckCircle2, Info, Code2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Settings as SettingsIcon, Shield, Database, CheckCircle2, Info, Code2, LogOut } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { AlertBox, PageHeader } from '../components/ui';
+import { ConfirmDialog, LoadingOverlay, PageHeader } from '../components/ui';
 import { isFirebaseConfigured } from '../services/firebase';
 import { MASTER_PERMISSIONS } from '../services/rbacService';
+import { ACTION_DELAY_MS, wait } from '../utils/async';
 
 export const SettingsPage: React.FC = () => {
-  const { currentUser, hasPermission, rolesList } = useAuth();
-
-  if (!hasPermission('users.view')) {
-    return <AlertBox message="Anda tidak memiliki izin untuk mengakses pengaturan sistem." />;
-  }
+  const { currentUser, rolesList, logout } = useAuth();
+  const [confirmLogout, setConfirmLogout] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const permissions = currentUser?.role === 'Super Admin'
     ? MASTER_PERMISSIONS.map(item => item.id)
@@ -26,6 +25,17 @@ export const SettingsPage: React.FC = () => {
     module,
     items: permissionDetails.filter(item => item.module === module),
   }));
+
+  const handleLogout = async () => {
+    setConfirmLogout(false);
+    setLoggingOut(true);
+    try {
+      await wait(ACTION_DELAY_MS);
+      await logout();
+    } finally {
+      setLoggingOut(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -138,6 +148,29 @@ export const SettingsPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <div className="bg-white rounded-2xl p-5 sm:p-6 border border-red-200 shadow-xs">
+        <h3 className="font-bold text-slate-800 flex items-center text-sm mb-2"><LogOut className="w-4 h-4 mr-2 text-red-600" /> Sesi Akun</h3>
+        <p className="text-sm text-slate-600">Akhiri sesi Anda dan kembali ke halaman masuk.</p>
+        <button
+          onClick={() => setConfirmLogout(true)}
+          disabled={loggingOut}
+          className="mt-4 inline-flex items-center px-4 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition disabled:opacity-50"
+        >
+          <LogOut className="w-4 h-4 mr-2" /> Keluar dari Sistem
+        </button>
+      </div>
+
+      {confirmLogout && !loggingOut && (
+        <ConfirmDialog
+          message="Apakah Anda yakin ingin keluar dari sistem?"
+          confirmLabel="Ya, Keluar"
+          cancelLabel="Tidak"
+          onConfirm={() => void handleLogout()}
+          onCancel={() => setConfirmLogout(false)}
+        />
+      )}
+      {loggingOut && <LoadingOverlay label="Keluar dari sistem..." />}
     </div>
   );
 };

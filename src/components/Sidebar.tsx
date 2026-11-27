@@ -57,7 +57,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
   const adminMenuItems = [
     { title: 'Manajemen Pengguna', path: '/users', icon: UsersRound, permission: 'users.view' },
     { title: 'Manajemen Role', path: '/roles', icon: ShieldCheck, permission: 'roles.view' },
-    { title: 'Pengaturan Sistem', path: '/settings', icon: Settings, permission: 'users.view' },
+    { title: 'Pengaturan Sistem', path: '/settings', icon: Settings, permission: '' },
   ];
 
   // Filter items based on permission

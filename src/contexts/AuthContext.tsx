@@ -27,13 +27,15 @@ const ROLE_FALLBACK_PERMISSIONS: Record<string, string[]> = {
     'dashboard.view', 'items.view', 'needsRequests.view', 'needsRequests.approve', 'needsRequests.reject',
     'shipments.view', 'shipments.edit', 'stockTransactions.view', 'stockTransactions.confirm',
     'distributions.view', 'kordas.view', 'departments.view', 'reports.view', 'reports.export',
+    'requests.view', 'requests.create', 'needsRequests.view', 'needsRequests.create',
   ],
-  Driver: ['dashboard.view', 'shipments.view', 'shipments.edit', 'shipments.confirm', 'shipments.upload'],
+  Driver: ['dashboard.view', 'shipments.view', 'shipments.edit', 'shipments.confirm', 'shipments.upload', 'requests.view', 'requests.create', 'needsRequests.view', 'needsRequests.create'],
   'Staf Gudang': [
     'dashboard.view', 'items.view', 'items.create', 'items.edit', 'needsRequests.view', 'needsRequests.create',
-    'shipments.view', 'stockTransactions.view', 'stockTransactions.create', 'stockTransactions.confirm',
-    'distributions.view', 'distributions.create', 'kordas.view', 'departments.view', 'reports.view',
-  ],
+      'shipments.view', 'stockTransactions.view', 'stockTransactions.create', 'stockTransactions.confirm',
+      'distributions.view', 'distributions.create', 'kordas.view', 'departments.view', 'reports.view',
+      'requests.view', 'requests.create', 'needsRequests.view', 'needsRequests.create',
+    ],
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {

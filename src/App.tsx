@@ -50,7 +50,7 @@ export function App() {
                         <Route path="/reports" element={<ProtectedRoute requiredPermission="reports.view"><ReportsPage /></ProtectedRoute>} />
                         <Route path="/users" element={<ProtectedRoute requiredPermission="users.view"><Users /></ProtectedRoute>} />
                         <Route path="/roles" element={<ProtectedRoute requiredPermission="roles.view"><Roles /></ProtectedRoute>} />
-                        <Route path="/settings" element={<ProtectedRoute requiredPermission="users.view"><SettingsPage /></ProtectedRoute>} />
+                        <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
                         <Route path="/audit-logs" element={<ProtectedRoute requiredPermission="users.view"><AuditLogs /></ProtectedRoute>} />
                         <Route path="/needs" element={<ProtectedRoute requiredPermission="needsRequests.view"><NeedsPage /></ProtectedRoute>} />
                         <Route path="/shipments" element={<ProtectedRoute requiredPermission="shipments.view"><ShipmentsPage /></ProtectedRoute>} />

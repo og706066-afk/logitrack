@@ -154,6 +154,17 @@ const WAREHOUSE_VIEW_BASE = [
   'stock_movements.view',
 ];
 
+const REQUEST_FEATURE_PERMISSIONS = [
+  'requests.view',
+  'requests.create',
+  'needsRequests.view',
+  'needsRequests.create',
+];
+
+function withRequestFeatures(permissions: string[]): string[] {
+  return [...new Set([...permissions, ...REQUEST_FEATURE_PERMISSIONS])];
+}
+
 export const WAREHOUSE_ROLE_PRESETS: Role[] = [
   {
     id: 'role-kepala-gudang',
@@ -348,7 +359,9 @@ export const ADDITIONAL_ROLE_PRESETS: Role[] = [
   },
 ];
 
-const SYSTEM_ROLE_PRESETS = [...WAREHOUSE_ROLE_PRESETS, ...ADDITIONAL_ROLE_PRESETS];
+const SYSTEM_ROLE_PRESETS = [...WAREHOUSE_ROLE_PRESETS, ...ADDITIONAL_ROLE_PRESETS].map(role =>
+  role.name === 'Viewer' ? role : { ...role, permissions: withRequestFeatures(role.permissions) }
+);
 
 async function syncWarehouseRoles(roles: Role[]): Promise<Role[]> {
   if (roles.length > 0) return roles;
@@ -386,7 +399,23 @@ export async function getRoles(): Promise<Role[]> {
     }
   }
 
-  return syncWarehouseRoles(roles);
+  const normalized = roles.map(role =>
+    role.name === 'Viewer' || REQUEST_FEATURE_PERMISSIONS.every(id => role.permissions?.includes(id))
+      ? role
+      : { ...role, permissions: withRequestFeatures(role.permissions || []) }
+  );
+  const changedRoles = normalized.filter((role, index) => role !== roles[index]);
+  if (changedRoles.length > 0) {
+    localStorage.setItem(STORAGE_ROLES_KEY, JSON.stringify(normalized));
+    if (isFirebaseConfigured && db) {
+      await Promise.allSettled(changedRoles.map(role => updateDoc(doc(db!, 'roles', role.id), {
+        permissions: role.permissions,
+        updatedAt: serverTimestamp(),
+      })));
+    }
+  }
+
+  return syncWarehouseRoles(normalized);
 }
 
 async function syncRoleToUsers(savedRole: Role, previousName?: string): Promise<void> {
@@ -420,6 +449,7 @@ export async function saveRole(roleData: Partial<Role>, currentUser: UserProfile
       ...roleData,
       updatedAt: new Date()
     };
+    if (savedRole.name !== 'Viewer') savedRole.permissions = withRequestFeatures(savedRole.permissions || []);
     const updatedRoles = roles.map(r => r.id === savedRole.id ? savedRole : r);
     localStorage.setItem(STORAGE_ROLES_KEY, JSON.stringify(updatedRoles));
 
@@ -441,7 +471,7 @@ export async function saveRole(roleData: Partial<Role>, currentUser: UserProfile
       id: newId,
       name: roleData.name || 'Role Baru',
       description: roleData.description || '',
-      permissions: roleData.permissions || [],
+      permissions: roleData.name === 'Viewer' ? roleData.permissions || [] : withRequestFeatures(roleData.permissions || []),
       isSystem: false,
       isActive: roleData.isActive ?? true,
       createdAt: new Date(),

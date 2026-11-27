@@ -1,23 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { Menu, Bell, LogOut, User as UserIcon, Shield, ClipboardList, AlertTriangle, Truck, Sun, Moon } from 'lucide-react';
+import { Menu, Bell, User as UserIcon, Shield, ClipboardList, AlertTriangle, Truck, Sun, Moon } from 'lucide-react';
 import { getCollection, getShipments } from '../services/logitrackService';
 import type { Item, NeedRequest } from '../types/logitrack';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useDataVersion } from '../contexts/DataSyncContext';
-import { ConfirmDialog, LoadingOverlay } from './ui';
-import { ACTION_DELAY_MS, wait } from '../utils/async';
 
 interface TopbarProps {
   setSidebarOpen: (open: boolean | ((prev: boolean) => boolean)) => void;
 }
 
 export const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
-  const { currentUser, logout } = useAuth();
+  const { currentUser } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const dataVersion = useDataVersion('needsRequests', 'products', 'shipments');
-  const [confirmLogout, setConfirmLogout] = useState(false);
-  const [loggingOut, setLoggingOut] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState({ pending: 0, lowStock: 0, issues: 0 });
 
@@ -43,17 +39,6 @@ export const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
     void load();
     return () => { active = false; };
   }, [currentUser, dataVersion]);
-
-  const handleLogout = async () => {
-    setConfirmLogout(false);
-    setLoggingOut(true);
-    try {
-      await wait(ACTION_DELAY_MS);
-      await logout();
-    } finally {
-      setLoggingOut(false);
-    }
-  };
 
   return (
     <>
@@ -123,28 +108,10 @@ export const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
                 {currentUser.displayName ? currentUser.displayName.charAt(0).toUpperCase() : <UserIcon className="w-5 h-5" />}
               </div>
 
-              <button
-                onClick={() => setConfirmLogout(true)}
-                disabled={loggingOut}
-                className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition disabled:opacity-50"
-                title="Keluar (Logout)"
-              >
-                <LogOut className="w-5 h-5" />
-              </button>
             </div>
           )}
         </div>
       </header>
-      {confirmLogout && !loggingOut && (
-        <ConfirmDialog
-          message="Apakah Anda yakin ingin keluar dari sistem?"
-          confirmLabel="Ya, Keluar"
-          cancelLabel="Tidak"
-          onConfirm={() => void handleLogout()}
-          onCancel={() => setConfirmLogout(false)}
-        />
-      )}
-      {loggingOut && <LoadingOverlay label="Keluar dari sistem..." />}
     </>
   );
 };
