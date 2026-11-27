@@ -21,6 +21,7 @@ import {
   dateString,
   displayDate,
   getCollection,
+  getShipments,
   getStockAlerts,
   shortageAmount,
   toNumber,
@@ -98,7 +99,7 @@ function uniqueSorted(values: string[]): string[] {
 }
 
 export const ReportsAdvancedPage: React.FC = () => {
-  const { hasPermission } = useAuth();
+  const { currentUser, hasPermission } = useAuth();
   const dataVersion = useDataVersion('products', 'categories', 'regions', 'stockTransactions', 'needsRequests', 'shipments', 'distributions', 'activityLogs');
   const [products, setProducts] = useState<Item[]>([]);
   const [categories, setCategories] = useState<MasterData[]>([]);
@@ -122,6 +123,9 @@ export const ReportsAdvancedPage: React.FC = () => {
 
   const canView = hasPermission('reports.view');
   const canExport = hasPermission('reports.export');
+  const canViewRegions = hasPermission('regions.view');
+  const canViewStock = hasPermission('stockTransactions.view');
+  const canViewDistributions = hasPermission('distributions.view');
 
   useEffect(() => {
     if (!canView) return;
@@ -129,11 +133,11 @@ export const ReportsAdvancedPage: React.FC = () => {
     void Promise.all([
       getCollection<Item>('products'),
       getCollection<MasterData>('categories'),
-      getCollection<Region>('regions'),
-      getCollection<StockTransaction>('stockTransactions'),
+      canViewRegions ? getCollection<Region>('regions') : Promise.resolve([] as Region[]),
+      canViewStock ? getCollection<StockTransaction>('stockTransactions') : Promise.resolve([] as StockTransaction[]),
       getCollection<NeedRequest>('needsRequests'),
-      getCollection<ShipmentRow>('shipments'),
-      getCollection<DistributionRow>('distributions'),
+      getShipments(currentUser),
+      canViewDistributions ? getCollection<DistributionRow>('distributions') : Promise.resolve([] as DistributionRow[]),
       getCollection<ActivityLog>('activityLogs'),
     ]).then(([
       productRows,
@@ -160,7 +164,7 @@ export const ReportsAdvancedPage: React.FC = () => {
       if (active) setLoading(false);
     });
     return () => { active = false; };
-  }, [canView, dataVersion]);
+  }, [canView, canViewRegions, canViewStock, canViewDistributions, currentUser, dataVersion]);
 
   const categoryById = useMemo(
     () => new Map(categories.map(item => [item.id, item.name])),
