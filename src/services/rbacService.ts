@@ -663,6 +663,7 @@ function formatArchiveApiError(status: number, payload: any): string {
   if (status === 400) return message || 'Permintaan arsip tidak valid. Periksa data yang dipilih.';
   if (status === 401) return 'Sesi Anda tidak valid atau kedaluwarsa. Silakan login ulang.';
   if (status === 403) return 'Anda tidak memiliki izin untuk mengarsipkan aktivitas.';
+  if (status === 404) return 'Endpoint arsip tidak ditemukan. Pastikan backend arsip aktif dan VITE_API_URL dikonfigurasi dengan benar.';
   if (status === 409) return message || 'Sebagian aktivitas sudah diarsipkan atau tidak ditemukan. Muat ulang data.';
   if (status === 429) return message || 'Terlalu banyak permintaan arsip. Coba lagi beberapa menit lagi.';
   if (status >= 500) return 'Server gagal memproses arsip. Coba lagi beberapa saat.';
@@ -698,8 +699,15 @@ export async function archiveAuditLogs(logIds: string[], archiveReason?: string)
     throw new Error('Backend arsip tidak tersedia. Pastikan server aktif atau VITE_API_URL sudah dikonfigurasi.');
   }
 
-  const payload = await response.json().catch(() => null);
+  const contentType = response.headers.get('content-type') || '';
+  const payload = contentType.includes('application/json')
+    ? await response.json().catch(() => null)
+    : null;
+
   if (!response.ok || !payload?.success) {
+    if (response.ok && !payload) {
+      throw new Error('Respons arsip tidak valid. Pastikan endpoint /api/audit-logs/archive mengarah ke backend, bukan frontend.');
+    }
     throw new Error(formatArchiveApiError(response.status, payload));
   }
 

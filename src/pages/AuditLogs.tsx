@@ -160,7 +160,7 @@ export const AuditLogs: React.FC = () => {
   };
 
   const handleArchiveConfirm = async () => {
-    if (!isSuperAdmin || selectedLogs.length === 0) return;
+    if (!isSuperAdmin || selectedLogs.length === 0 || archiving) return;
     setConfirmArchive(false);
     setArchiving(true);
     setError('');
@@ -301,9 +301,9 @@ export const AuditLogs: React.FC = () => {
               placeholder="Contoh: Pembersihan log rutin bulan ini"
             />
             <div className="flex justify-end gap-3 mt-5">
-              <button onClick={() => setConfirmArchive(false)} className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-50">Batal</button>
-              <button onClick={() => void handleArchiveConfirm()} className="px-4 py-2 bg-amber-600 text-white rounded-xl text-sm font-semibold hover:bg-amber-700 inline-flex items-center gap-2">
-                <Archive className="w-4 h-4" /> Arsipkan
+              <button onClick={() => setConfirmArchive(false)} disabled={archiving} className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-50 disabled:opacity-60">Batal</button>
+              <button onClick={() => void handleArchiveConfirm()} disabled={archiving} className="px-4 py-2 bg-amber-600 text-white rounded-xl text-sm font-semibold hover:bg-amber-700 inline-flex items-center gap-2 disabled:opacity-60">
+                <Archive className="w-4 h-4" /> {archiving ? 'Mengarsipkan...' : 'Arsipkan'}
               </button>
             </div>
           </div>

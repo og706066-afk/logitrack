@@ -238,6 +238,7 @@ export const ShipmentsPage: React.FC = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
+  const [partialLoadWarning, setPartialLoadWarning] = useState('');
   const [toast, setToast] = useState<ToastState>({ message: '', kind: 'success' });
   const [processing, setProcessing] = useState('');
   const [form, setForm] = useState<ShipmentForm | null>(null);
@@ -259,13 +260,24 @@ export const ShipmentsPage: React.FC = () => {
     if (!canView) return;
     setLoading(true);
     setLoadError('');
+    setPartialLoadWarning('');
     try {
-      const [shipmentRows, kordaRows, productRows, userRows] = await Promise.all([
+      const [shipmentResult, kordaResult, productResult, userResult] = await Promise.allSettled([
         getShipments(currentUser),
         getCollection<MasterData>('kordas'),
         getCollection<Item>('products'),
-        getCollection<UserProfile>('users' as NewCollection),
+        isDriver ? Promise.resolve([] as UserProfile[]) : getCollection<UserProfile>('users' as NewCollection),
       ]);
+
+      if (shipmentResult.status === 'rejected') {
+        throw shipmentResult.reason;
+      }
+
+      const shipmentRows = shipmentResult.value;
+      const kordaRows = kordaResult.status === 'fulfilled' ? kordaResult.value : [];
+      const productRows = productResult.status === 'fulfilled' ? productResult.value : [];
+      const userRows = userResult.status === 'fulfilled' ? userResult.value : [];
+
       const visibleRows = isDriver ? shipmentRows.filter(row => row.driverId === currentUser?.uid) : shipmentRows;
       setShipments([...visibleRows].sort((a, b) => {
         const byDate = dateString(b.shipmentDate).localeCompare(dateString(a.shipmentDate));
@@ -274,8 +286,17 @@ export const ShipmentsPage: React.FC = () => {
       setKordas(kordaRows);
       setProducts(productRows);
       setUsers(userRows);
+
+      const partialErrors: string[] = [];
+      if (kordaResult.status === 'rejected') partialErrors.push('data KORDA');
+      if (productResult.status === 'rejected') partialErrors.push('data barang');
+      if (userResult.status === 'rejected') partialErrors.push('data pengguna/driver');
+      if (partialErrors.length > 0) {
+        setPartialLoadWarning(`Sebagian data pendukung gagal dimuat (${partialErrors.join(', ')}). Data pengiriman tetap ditampilkan.`);
+      }
     } catch (error) {
       setLoadError(error instanceof Error ? error.message : 'Gagal memuat data pengiriman.');
+      setShipments([]);
     } finally {
       setLoading(false);
     }
@@ -649,6 +670,7 @@ export const ShipmentsPage: React.FC = () => {
         ) : undefined}
       />
       <AlertBox message={loadError} onClose={() => setLoadError('')} />
+      <AlertBox message={partialLoadWarning} onClose={() => setPartialLoadWarning('')} />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <InfoCard title="Total Pengiriman" value={String(shipments.length)} detail="Semua" icon={ClipboardList} />
@@ -659,11 +681,11 @@ export const ShipmentsPage: React.FC = () => {
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         <FilterBar search={search} onSearch={value => { setSearch(value); setPage(1); }}>
-          <select value={kordaFilter} onChange={event => { setKordaFilter(event.target.value); setPage(1); }} className={`${inputClass} w-auto`}>
+          <select value={kordaFilter} onChange={event => { setKordaFilter(event.target.value); setPage(1); }} className={`${inputClass} w-full sm:w-auto min-w-[160px]`} aria-label="Filter KORDA">
             <option value="">Semua KORDA</option>
             {toOptions(activeRows(kordas)).map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
           </select>
-          <select value={statusFilter} onChange={event => { setStatusFilter(event.target.value); setPage(1); }} className={`${inputClass} w-auto`}>
+          <select value={statusFilter} onChange={event => { setStatusFilter(event.target.value); setPage(1); }} className={`${inputClass} w-full sm:w-auto min-w-[160px]`} aria-label="Filter status">
             <option value="">Semua status</option>
             {SHIPMENT_STATUSES.map(status => <option key={status} value={status}>{status}</option>)}
           </select>
@@ -677,7 +699,7 @@ export const ShipmentsPage: React.FC = () => {
           headerGroups={LOGISTICS_HEADER_GROUPS}
           indexOffset={(currentPage - 1) * 10}
           hideCheckboxFilter
-          emptyLabel={shipments.length === 0 ? (isDriver ? 'Belum ada pengiriman yang ditugaskan kepada Anda.' : 'Belum ada data pengiriman.') : 'Tidak ada pengiriman yang cocok dengan filter.'}
+          emptyLabel={loadError && shipments.length === 0 ? 'Gagal memuat data pengiriman.' : shipments.length === 0 ? (isDriver ? 'Belum ada pengiriman yang ditugaskan kepada Anda.' : 'Belum ada data pengiriman.') : 'Tidak ada pengiriman yang cocok dengan filter.'}
         />
         {filteredShipments.length > 10 && (
           <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t border-slate-200">
