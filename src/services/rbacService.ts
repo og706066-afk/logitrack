@@ -6,12 +6,62 @@ import {
   updateDoc, 
   deleteDoc, 
   serverTimestamp,
-  addDoc,
   query,
   orderBy
 } from 'firebase/firestore';
 import { auth, db, isFirebaseConfigured } from './firebase';
 import type { AuditLog, AuditLogArchive, Permission, Role, UserProfile } from '../types';
+
+type AuditLogLike = AuditLog & { [key: string]: any };
+
+function isLocalAuditId(id: unknown): boolean {
+  return typeof id === 'string' && /^log-\d+-\d+$/.test(id);
+}
+
+function stableAuditFingerprint(log: Pick<AuditLog, 'userId' | 'action' | 'module' | 'description' | 'createdAt' | 'id'> & { localId?: string; migratedFromLocalId?: string }): string {
+  const created = log.createdAt?.seconds ? new Date(log.createdAt.seconds * 1000).toISOString() : String(log.createdAt ?? '');
+  return [log.localId || log.migratedFromLocalId || log.id, log.userId, log.action, log.module, log.description, created].join('|');
+}
+
+function normalizeAuditLog(raw: any, fallbackSource: 'firestore' | 'local'): AuditLogLike {
+  const id = String(raw?.id ?? '');
+  const source = raw?.source ?? (fallbackSource === 'firestore' ? 'firestore' : (isLocalAuditId(id) ? 'local' : 'local'));
+  const syncStatus = raw?.syncStatus ?? (source === 'firestore' ? 'synced' : isLocalAuditId(id) ? 'pending' : 'pending');
+  return {
+    ...raw,
+    id,
+    userId: String(raw?.userId ?? ''),
+    userName: String(raw?.userName ?? ''),
+    action: String(raw?.action ?? ''),
+    module: String(raw?.module ?? ''),
+    description: String(raw?.description ?? ''),
+    createdAt: raw?.createdAt ?? null,
+    source,
+    syncStatus,
+    localId: raw?.localId ?? (isLocalAuditId(id) ? id : undefined),
+    firestoreId: raw?.firestoreId ?? (source === 'firestore' && !isLocalAuditId(id) ? id : undefined),
+  } as AuditLogLike;
+}
+
+function readLocalAuditLogs(): AuditLogLike[] {
+  const saved = localStorage.getItem(STORAGE_AUDIT_KEY);
+  if (!saved) return [];
+  try {
+    const parsed = JSON.parse(saved);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.map((item) => normalizeAuditLog(item, 'local'));
+  } catch {
+    return [];
+  }
+}
+
+function writeLocalAuditLogs(logs: AuditLogLike[]): void {
+  localStorage.setItem(STORAGE_AUDIT_KEY, JSON.stringify(logs.slice(0, 200)));
+}
+
+export function isArchivableAuditLog(log: Pick<AuditLog, 'id' | 'source' | 'syncStatus'>): boolean {
+  return !isLocalAuditId(log.id) && (log.source === 'firestore' || log.source === 'migrated' || (!log.source && !isLocalAuditId(log.id))) && log.syncStatus !== 'pending' && log.syncStatus !== 'failed';
+}
 
 export const MASTER_PERMISSIONS: Permission[] = [
   // Dashboard
@@ -577,51 +627,185 @@ export async function updateUserRoleAndStatus(
   });
 }
 
-export async function logAudit(data: Omit<AuditLog, 'id' | 'createdAt'>): Promise<void> {
-  const newLog: AuditLog = {
-    id: 'log-' + Date.now() + '-' + Math.floor(Math.random()*1000),
-    ...data,
-    createdAt: new Date()
+export type MigrateAuditLogsResult = {
+  migratedCount: number;
+  skippedCount: number;
+  failedCount: number;
+  mappings: Array<{ localId: string; firestoreId: string; status: 'migrated' | 'skipped' | 'failed'; reason?: string }>;
+};
+
+export async function migrateLocalAuditLogs(): Promise<MigrateAuditLogsResult> {
+  if (!isFirebaseConfigured || !auth) throw new Error('Firebase belum dikonfigurasi.');
+  const user = auth.currentUser;
+  if (!user) throw new Error('Sesi Anda tidak ditemukan. Silakan login ulang.');
+
+  const localLogs = readLocalAuditLogs().filter((l) => isLocalAuditId(l.id) && !l.firestoreId && l.syncStatus !== 'migrated');
+  if (localLogs.length === 0) {
+    return { migratedCount: 0, skippedCount: 0, failedCount: 0, mappings: [] };
+  }
+
+  let token: string;
+  try { token = await user.getIdToken(); } catch { throw new Error('Gagal mengambil sesi autentikasi. Silakan login ulang.'); }
+
+  const payload = {
+    logs: localLogs.slice(0, 50).map((l) => ({
+      localId: l.localId || l.id,
+      action: l.action,
+      module: l.module,
+      description: l.description,
+      createdAt: typeof l.createdAt === 'string' ? l.createdAt : l.createdAt?.seconds ? new Date(l.createdAt.seconds * 1000).toISOString() : new Date().toISOString(),
+      clientEventId: l.clientEventId || stableAuditFingerprint(l),
+    })),
   };
 
-  const saved = localStorage.getItem(STORAGE_AUDIT_KEY);
-  const logs: AuditLog[] = saved ? JSON.parse(saved) : [];
-  logs.unshift(newLog);
-  localStorage.setItem(STORAGE_AUDIT_KEY, JSON.stringify(logs.slice(0, 200)));
+  let response: Response;
+  try {
+    response = await fetch(`${getApiBaseUrl()}/api/audit-logs/migrate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify(payload),
+    });
+  } catch {
+    throw new Error('Backend migrasi tidak tersedia. Pastikan server aktif atau VITE_API_URL sudah dikonfigurasi.');
+  }
 
-  if (isFirebaseConfigured && db) {
-    try {
-      await addDoc(collection(db, 'audit_logs'), { ...newLog, createdAt: serverTimestamp() });
-    } catch (_e) {}
+  const contentType = response.headers.get('content-type') || '';
+  const result = contentType.includes('application/json') ? await response.json().catch(() => null) : null;
+  if (!response.ok || !result?.success) {
+    throw new Error((result && typeof result.message === 'string' && result.message) || 'Gagal migrasi log lokal.');
+  }
+
+  const mappings: MigrateAuditLogsResult['mappings'] = Array.isArray(result.mappings) ? result.mappings : [];
+  const byLocalId = new Map(mappings.map((m) => [m.localId, m]));
+  const updated: AuditLogLike[] = readLocalAuditLogs().map((l) => {
+    const map = byLocalId.get(l.localId || l.id);
+    if (!map) return l;
+    if (map.status === 'migrated' || map.status === 'skipped') {
+      return { ...l, syncStatus: 'migrated' as const, source: 'local' as const, firestoreId: map.firestoreId || l.firestoreId, syncError: undefined, lastSyncAttemptAt: new Date().toISOString() };
+    }
+    return { ...l, syncStatus: 'failed' as const, syncError: map.reason || 'Gagal migrasi item.', lastSyncAttemptAt: new Date().toISOString() };
+  });
+  writeLocalAuditLogs(updated);
+
+  return {
+    migratedCount: Number(result.migratedCount) || 0,
+    skippedCount: Number(result.skippedCount) || 0,
+    failedCount: Number(result.failedCount) || 0,
+    mappings,
+  };
+}
+
+export type LogAuditResult = {
+  savedLocal: boolean;
+  synced: boolean;
+  id: string;
+  syncError?: string;
+};
+
+export async function logAudit(data: Omit<AuditLog, 'id' | 'createdAt' | 'source' | 'syncStatus' | 'firestoreId' | 'localId'>): Promise<LogAuditResult> {
+  const now = new Date();
+  const localId = 'log-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+
+  if (!isFirebaseConfigured || !db) {
+    const localLog: AuditLogLike = {
+      id: localId,
+      localId,
+      ...data,
+      createdAt: now.toISOString(),
+      source: 'local',
+      syncStatus: 'pending',
+      syncError: 'Firebase belum dikonfigurasi.',
+      lastSyncAttemptAt: now.toISOString(),
+    };
+    const logs = readLocalAuditLogs();
+    logs.unshift(localLog);
+    writeLocalAuditLogs(logs);
+    return { savedLocal: true, synced: false, id: localId, syncError: localLog.syncError };
+  }
+
+  try {
+    const ref = doc(collection(db, 'audit_logs'));
+    await setDoc(ref, {
+      userId: data.userId,
+      userName: data.userName,
+      action: data.action,
+      module: data.module,
+      description: data.description,
+      ...(data.ipAddress ? { ipAddress: data.ipAddress } : {}),
+      createdAt: serverTimestamp(),
+      clientTimestamp: now.toISOString(),
+      source: 'client',
+    });
+
+    const syncedLog: AuditLogLike = {
+      id: ref.id,
+      firestoreId: ref.id,
+      localId,
+      ...data,
+      createdAt: now.toISOString(),
+      source: 'firestore',
+      syncStatus: 'synced',
+      lastSyncAttemptAt: now.toISOString(),
+    };
+    const logs = readLocalAuditLogs().filter((l) => l.id !== localId);
+    logs.unshift(syncedLog);
+    writeLocalAuditLogs(logs);
+    return { savedLocal: true, synced: true, id: ref.id };
+  } catch (error) {
+    const syncError = error instanceof Error ? error.message : 'Gagal menyinkronkan audit log ke Firestore.';
+    const pendingLog: AuditLogLike = {
+      id: localId,
+      localId,
+      ...data,
+      createdAt: now.toISOString(),
+      source: 'local',
+      syncStatus: 'failed',
+      syncError,
+      lastSyncAttemptAt: now.toISOString(),
+      clientEventId: stableAuditFingerprint({ id: localId, localId, ...data, createdAt: now.toISOString() } as any),
+    };
+    const logs = readLocalAuditLogs();
+    logs.unshift(pendingLog);
+    writeLocalAuditLogs(logs);
+    console.warn('Audit log disimpan lokal karena gagal sinkron ke Firestore.', { action: data.action, module: data.module });
+    return { savedLocal: true, synced: false, id: localId, syncError };
   }
 }
 
 export async function getAuditLogs(): Promise<AuditLog[]> {
+  const localLogs = readLocalAuditLogs();
+  const pendingLocal = localLogs.filter((l) => l.source !== 'firestore' || l.syncStatus === 'pending' || l.syncStatus === 'failed' || isLocalAuditId(l.id));
+
   if (isFirebaseConfigured && db) {
     try {
-      const snap = await getDocs(query(collection(db, 'audit_logs'), orderBy('createdAt', 'desc')));
-      if (!snap.empty) {
-        return snap.docs.map(d => ({ id: d.id, ...d.data() } as AuditLog));
-      }
-    } catch (_e) {
+      let rows: AuditLogLike[] = [];
       try {
+        const snap = await getDocs(query(collection(db, 'audit_logs'), orderBy('createdAt', 'desc')));
+        rows = snap.docs.map(d => normalizeAuditLog({ id: d.id, ...d.data() }, 'firestore'));
+      } catch {
         const snap = await getDocs(collection(db, 'audit_logs'));
-        if (!snap.empty) {
-          return snap.docs.map(d => ({ id: d.id, ...d.data() } as AuditLog)).sort((a, b) => {
-            const tA = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : new Date(a.createdAt).getTime();
-            const tB = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : new Date(b.createdAt).getTime();
-            return tB - tA;
-          });
-        }
-      } catch (_err) {}
+        rows = snap.docs.map(d => normalizeAuditLog({ id: d.id, ...d.data() }, 'firestore')).sort((a, b) => {
+          const tA = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : new Date(a.createdAt).getTime();
+          const tB = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : new Date(b.createdAt).getTime();
+          return tB - tA;
+        });
+      }
+
+      const firestoreIds = new Set(rows.map((r) => r.id));
+      const migratedIds = new Set(localLogs.map((l) => l.firestoreId).filter(Boolean) as string[]);
+      const unsynced = pendingLocal.filter((l) => !firestoreIds.has(l.id) && !migratedIds.has(l.id) && !l.firestoreId);
+      return [...unsynced, ...rows].sort((a, b) => {
+        const tA = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : new Date(a.createdAt).getTime();
+        const tB = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : new Date(b.createdAt).getTime();
+        return tB - tA;
+      });
+    } catch (error) {
+      if (pendingLocal.length > 0) return pendingLocal;
+      throw error;
     }
   }
 
-  const saved = localStorage.getItem(STORAGE_AUDIT_KEY);
-  if (saved) {
-    try { return JSON.parse(saved); } catch (_e) {}
-  }
-  return [];
+  return localLogs;
 }
 
 const STORAGE_ARCHIVE_KEY = 'silog_audit_archives';
@@ -630,20 +814,19 @@ export async function getArchivedAuditLogs(): Promise<AuditLogArchive[]> {
   if (isFirebaseConfigured && db) {
     try {
       const snap = await getDocs(query(collection(db, 'audit_log_archives'), orderBy('archivedAt', 'desc')));
-      if (!snap.empty) {
-        return snap.docs.map(d => ({ id: d.id, ...d.data() } as AuditLogArchive));
-      }
+      return snap.docs.map(d => ({ id: d.id, ...d.data() } as AuditLogArchive));
     } catch (_e) {
       try {
         const snap = await getDocs(collection(db, 'audit_log_archives'));
-        if (!snap.empty) {
-          return snap.docs.map(d => ({ id: d.id, ...d.data() } as AuditLogArchive)).sort((a, b) => {
-            const tA = a.archivedAt?.seconds ? a.archivedAt.seconds * 1000 : new Date(a.archivedAt).getTime();
-            const tB = b.archivedAt?.seconds ? b.archivedAt.seconds * 1000 : new Date(b.archivedAt).getTime();
-            return tB - tA;
-          });
-        }
-      } catch (_err) {}
+        return snap.docs.map(d => ({ id: d.id, ...d.data() } as AuditLogArchive)).sort((a, b) => {
+          const tA = a.archivedAt?.seconds ? a.archivedAt.seconds * 1000 : new Date(a.archivedAt).getTime();
+          const tB = b.archivedAt?.seconds ? b.archivedAt.seconds * 1000 : new Date(b.archivedAt).getTime();
+          return tB - tA;
+        });
+      } catch (error) {
+        console.warn('Gagal memuat audit_log_archives dari Firestore.', error);
+        throw error;
+      }
     }
   }
 
@@ -673,6 +856,11 @@ function formatArchiveApiError(status: number, payload: any): string {
 export async function archiveAuditLogs(logIds: string[], archiveReason?: string): Promise<{ archivedCount: number; archivedIds: string[] }> {
   if (!isFirebaseConfigured || !auth) {
     throw new Error('Firebase belum dikonfigurasi.');
+  }
+
+  const invalidLocalIds = logIds.filter((id) => isLocalAuditId(id));
+  if (invalidLocalIds.length > 0) {
+    throw new Error('Beberapa log belum tersinkron ke Firestore dan tidak dapat diarsipkan. Sinkronkan/migrasikan log lokal terlebih dahulu.');
   }
 
   const user = auth.currentUser;

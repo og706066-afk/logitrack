@@ -168,6 +168,9 @@ export interface StockMovement {
   createdAt: any;
 }
 
+export type AuditLogSource = 'firestore' | 'local' | 'migrated';
+export type AuditLogSyncStatus = 'synced' | 'pending' | 'failed' | 'migrated';
+
 export interface AuditLog {
   id: string;
   userId: string;
@@ -177,6 +180,14 @@ export interface AuditLog {
   description: string;
   ipAddress?: string;
   createdAt: any;
+  source?: AuditLogSource;
+  syncStatus?: AuditLogSyncStatus;
+  localId?: string;
+  firestoreId?: string;
+  syncError?: string;
+  lastSyncAttemptAt?: string;
+  migratedFromLocalId?: string;
+  clientEventId?: string;
 }
 
 export interface AuditLogArchive extends AuditLog {

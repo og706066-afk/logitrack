@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Archive, ScrollText, ShieldAlert } from 'lucide-react';
 import type { AuditLog, AuditLogArchive } from '../types';
-import { archiveAuditLogs, getArchivedAuditLogs, getAuditLogs } from '../services/rbacService';
+import { archiveAuditLogs, getArchivedAuditLogs, getAuditLogs, isArchivableAuditLog, migrateLocalAuditLogs } from '../services/rbacService';
 import { DataTable, type TableColumn } from '../components/DataViews';
 import { AlertBox, LoadingOverlay } from '../components/ui';
 import { useAuth } from '../contexts/AuthContext';
@@ -32,6 +32,7 @@ export const AuditLogs: React.FC = () => {
   const [archivedLogs, setArchivedLogs] = useState<AuditLogArchive[]>([]);
   const [loading, setLoading] = useState(true);
   const [archiving, setArchiving] = useState(false);
+  const [migrating, setMigrating] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [selectedLogs, setSelectedLogs] = useState<AuditLog[]>([]);
@@ -109,6 +110,23 @@ export const AuditLogs: React.FC = () => {
       filterable: false,
       render: (row) => <span className="text-slate-600">{row.description || '-'}</span>,
     },
+    {
+      key: 'syncStatus',
+      label: 'Sinkron',
+      filterable: false,
+      render: (row) => {
+        const archivable = isArchivableAuditLog(row);
+        const localPending = !archivable;
+        return (
+          <div className="min-w-[140px]">
+            <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-semibold ${localPending ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-700'}`}>
+              {localPending ? 'Lokal/Belum sinkron' : 'Tersinkron'}
+            </span>
+            {row.syncError ? <div className="text-[11px] text-amber-700 mt-1 line-clamp-2">{row.syncError}</div> : null}
+          </div>
+        );
+      },
+    },
   ], []);
 
   const archivedColumns: TableColumn<AuditLogArchive>[] = useMemo(() => [
@@ -155,18 +173,47 @@ export const AuditLogs: React.FC = () => {
 
   const handleArchiveRequest = (rows: AuditLog[]) => {
     if (!isSuperAdmin) return;
-    setSelectedLogs(rows);
+    const archivable = rows.filter(isArchivableAuditLog);
+    if (archivable.length === 0) {
+      setError('Log lokal/belum tersinkron tidak dapat diarsipkan. Sinkronkan/migrasikan terlebih dahulu.');
+      return;
+    }
+    if (archivable.length !== rows.length) {
+      setError('Sebagian log yang dipilih belum tersinkron ke Firestore dan tidak akan diarsipkan.');
+    }
+    setSelectedLogs(archivable);
     setConfirmArchive(true);
+  };
+
+  const handleMigrateLocal = async () => {
+    if (!isSuperAdmin || migrating) return;
+    setMigrating(true);
+    setError('');
+    setSuccess('');
+    try {
+      const result = await migrateLocalAuditLogs();
+      setSuccess(`Migrasi selesai: ${result.migratedCount} berhasil, ${result.skippedCount} dilewati, ${result.failedCount} gagal.`);
+      await loadLogs();
+    } catch (e: any) {
+      setError(e.message || 'Gagal migrasi log lokal.');
+    } finally {
+      setMigrating(false);
+    }
   };
 
   const handleArchiveConfirm = async () => {
     if (!isSuperAdmin || selectedLogs.length === 0 || archiving) return;
+    const archivableSelected = selectedLogs.filter(isArchivableAuditLog);
+    if (archivableSelected.length !== selectedLogs.length) {
+      setError('Beberapa log belum tersinkron ke Firestore dan tidak dapat diarsipkan. Sinkronkan/migrasikan log lokal terlebih dahulu.');
+      return;
+    }
     setConfirmArchive(false);
     setArchiving(true);
     setError('');
     setSuccess('');
     try {
-      const ids = selectedLogs.map((l) => l.id);
+      const ids = archivableSelected.map((l) => l.id);
       const result = await archiveAuditLogs(ids, archiveReason.trim() || undefined);
       setSuccess(`${result.archivedCount} aktivitas berhasil diarsipkan.`);
       setArchiveReason('');
@@ -220,16 +267,28 @@ export const AuditLogs: React.FC = () => {
             placeholder={tab === 'active' ? 'Cari aktivitas...' : 'Cari arsip aktivitas...'}
             className="w-full sm:max-w-sm px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-ocean"
           />
-          {tab === 'active' && isSuperAdmin && selectedLogs.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setConfirmArchive(true)}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-xl text-sm transition shadow-sm"
-            >
-              <Archive className="w-4 h-4" />
-              Arsipkan ({selectedLogs.length})
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {tab === 'active' && isSuperAdmin && (
+              <button
+                type="button"
+                onClick={() => void handleMigrateLocal()}
+                disabled={migrating}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-700 hover:bg-slate-800 text-white font-semibold rounded-xl text-sm transition shadow-sm disabled:opacity-60"
+              >
+                {migrating ? 'Migrasi...' : 'Sinkronkan Log Lokal'}
+              </button>
+            )}
+            {tab === 'active' && isSuperAdmin && selectedLogs.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setConfirmArchive(true)}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-xl text-sm transition shadow-sm"
+              >
+                <Archive className="w-4 h-4" />
+                Arsipkan ({selectedLogs.filter(isArchivableAuditLog).length})
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -259,9 +318,10 @@ export const AuditLogs: React.FC = () => {
               onBulkDelete={isSuperAdmin ? handleArchiveRequest : undefined}
               bulkDeleteLabel="Arsipkan yang dipilih"
               bulkActionIcon={<Archive className="w-3.5 h-3.5" />}
-              onSelectionChange={setSelectedLogs}
+              onSelectionChange={(rows) => setSelectedLogs(rows.filter(isArchivableAuditLog))}
               clearSelectionToken={clearSelectionToken}
               emptyLabel="Belum ada aktivitas tercatat."
+              disableRowSelection={(row) => !isArchivableAuditLog(row)}
             />
           </div>
         )

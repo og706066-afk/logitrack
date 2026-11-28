@@ -91,6 +91,7 @@ interface DataTableProps<T> {
   clearSelectionToken?: number;
   emptyLabel?: string;
   hideCheckboxFilter?: boolean;
+  disableRowSelection?: (row: T) => boolean;
 }
 
 export function DataTable<T>({
@@ -110,12 +111,14 @@ export function DataTable<T>({
   clearSelectionToken,
   emptyLabel = 'Belum ada data.',
   hideCheckboxFilter = false,
+  disableRowSelection,
 }: DataTableProps<T>) {
   const [open, setOpen] = useState(false);
   const [filters, setFilters] = useState<Record<string, string[]>>({});
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const selectAllRef = useRef<HTMLInputElement>(null);
   const canSelect = selectable ?? Boolean(onBulkDelete || onDelete);
+  const isRowSelectable = (row: T) => !disableRowSelection?.(row);
 
   const standardColumns = useMemo(() => createStandardColumns<T>(), []);
   const actionColumns = useMemo(
@@ -167,8 +170,9 @@ export function DataTable<T>({
   })), [rows, filterGroups, filters]);
 
   const visibleKeySet = useMemo(() => new Set(visibleRows.map(rowKey)), [visibleRows, rowKey]);
+  const selectableVisibleRows = visibleRows.filter(isRowSelectable);
   const selectedRows = canSelect ? rows.filter(row => selectedKeys.includes(rowKey(row)) && visibleKeySet.has(rowKey(row))) : [];
-  const allVisibleSelected = visibleRows.length > 0 && selectedRows.length === visibleRows.length;
+  const allVisibleSelected = selectableVisibleRows.length > 0 && selectableVisibleRows.every(row => selectedKeys.includes(rowKey(row)));
 
   useEffect(() => {
     if (selectAllRef.current) {
@@ -195,13 +199,15 @@ export function DataTable<T>({
 
   const toggleSelectAll = () => {
     setSelectedKeys(current => {
-      const visibleKeys = visibleRows.map(rowKey);
+      const visibleKeys = selectableVisibleRows.map(rowKey);
       const remaining = current.filter(key => !visibleKeys.includes(key));
-      return allVisibleSelected ? remaining : [...remaining, ...visibleKeys];
+      return allVisibleSelected ? remaining : [...remaining, ...visibleKeys.filter(key => !current.includes(key))];
     });
   };
 
-  const toggleRow = (key: string) => {
+  const toggleRow = (row: T) => {
+    if (!isRowSelectable(row)) return;
+    const key = rowKey(row);
     setSelectedKeys(current => current.includes(key) ? current.filter(item => item !== key) : [...current, key]);
   };
 
@@ -383,13 +389,13 @@ export function DataTable<T>({
                 <tr key={rowKey(row)} className="hover:bg-slate-50/80 transition">
                   {canSelect && (
                     <td className="p-4">
-                      <input
-                        type="checkbox"
-                        checked={selectedKeys.includes(rowKey(row))}
-                        onChange={() => toggleRow(rowKey(row))}
-                        aria-label={`Pilih ${effectiveColumns[0]?.label ?? 'data'}`}
-                        className="w-4 h-4 accent-ocean"
-                      />
+                        <input
+                          type="checkbox"
+                          checked={selectedKeys.includes(rowKey(row))}
+                          onChange={() => toggleRow(row)}
+                          disabled={!isRowSelectable(row)}
+                          className="w-3.5 h-3.5 accent-ocean disabled:opacity-40"
+                        />
                     </td>
                   )}
                   {effectiveColumns.map(column => (
