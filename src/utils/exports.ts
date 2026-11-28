@@ -1,3 +1,5 @@
+import type { BackupDataset } from '../services/backupService';
+
 export interface ExportColumn<T> {
   key: string;
   label: string;
@@ -91,6 +93,153 @@ export async function exportToPdf<T>(filename: string, title: string, rows: T[],
     alternateRowStyles: { fillColor: [246, 248, 247] },
     margin: { left: 14, right: 14 },
   });
+  document.save(`${safeFilename(filename)}.pdf`);
+}
+
+function columnLetter(index: number): string {
+  let remaining = index;
+  let result = '';
+  while (remaining > 0) {
+    const remainder = (remaining - 1) % 26;
+    result = String.fromCharCode(65 + remainder) + result;
+    remaining = Math.floor((remaining - 1) / 26);
+  }
+  return result;
+}
+
+function backupSheetName(value: string, used: Set<string>): string {
+  const base = value.replace(/[\\/?*[\]:]/g, '-').slice(0, 31) || 'Sheet';
+  let name = base;
+  let suffix = 2;
+  while (used.has(name)) {
+    const tail = `-${suffix}`;
+    name = `${base.slice(0, 31 - tail.length)}${tail}`;
+    suffix += 1;
+  }
+  used.add(name);
+  return name;
+}
+
+export async function exportBackupToExcel(filename: string, datasets: BackupDataset[]): Promise<void> {
+  const { default: ExcelJS } = await import('exceljs');
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = 'SILOG';
+  workbook.created = new Date();
+
+  const summary = workbook.addWorksheet('Ringkasan');
+  summary.columns = [
+    { header: 'Koleksi', key: 'label', width: 28 },
+    { header: 'Nama Firestore', key: 'name', width: 28 },
+    { header: 'Jumlah Dokumen', key: 'count', width: 18 },
+    { header: 'Status', key: 'status', width: 32 },
+  ];
+  datasets.forEach((dataset) => {
+    summary.addRow({
+      label: dataset.label,
+      name: dataset.name,
+      count: dataset.rows.length,
+      status: dataset.error ? `Gagal: ${dataset.error}` : 'Berhasil',
+    });
+  });
+  summary.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+  summary.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF047857' } };
+  summary.views = [{ state: 'frozen', ySplit: 1 }];
+  if (datasets.length > 0) {
+    summary.autoFilter = { from: 'A1', to: `D${datasets.length + 1}` };
+  }
+
+  const usedNames = new Set(['Ringkasan']);
+  datasets.forEach((dataset) => {
+    if (dataset.error) return;
+    const sheet = workbook.addWorksheet(backupSheetName(dataset.label, usedNames));
+    const columns = [
+      { header: 'ID Dokumen', key: '__id', width: 30 },
+      ...dataset.fields.map((field) => ({
+        header: field,
+        key: field,
+        width: Math.min(48, Math.max(14, field.length + 4)),
+      })),
+    ];
+    sheet.columns = columns;
+    dataset.rows.forEach((row) => {
+      const values: Record<string, string | number> = { __id: row.id };
+      dataset.fields.forEach((field) => { values[field] = row.values[field] ?? ''; });
+      sheet.addRow(values);
+    });
+    sheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    sheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF047857' } };
+    sheet.views = [{ state: 'frozen', ySplit: 1 }];
+    if (dataset.rows.length > 0) {
+      sheet.autoFilter = {
+        from: 'A1',
+        to: `${columnLetter(columns.length)}${dataset.rows.length + 1}`,
+      };
+    }
+  });
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  downloadBlob(`${safeFilename(filename)}.xlsx`, blob);
+}
+
+export async function exportBackupToPdf(filename: string, title: string, datasets: BackupDataset[]): Promise<void> {
+  const [{ jsPDF }, { default: autoTable }] = await Promise.all([import('jspdf'), import('jspdf-autotable')]);
+  const document = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  const totalRows = datasets.reduce((total, dataset) => total + dataset.rows.length, 0);
+
+  document.setFontSize(14);
+  document.text(title, 14, 16);
+  document.setFontSize(9);
+  document.text(`Dicetak: ${new Date().toLocaleString('id-ID')} | Total dokumen: ${totalRows}`, 14, 22);
+
+  autoTable(document, {
+    startY: 27,
+    head: [['Koleksi', 'Nama Firestore', 'Jumlah Dokumen', 'Status']],
+    body: datasets.map(dataset => [
+      dataset.label,
+      dataset.name,
+      String(dataset.rows.length),
+      dataset.error ? 'Gagal' : 'Berhasil',
+    ]),
+    styles: { fontSize: 8, cellPadding: 2 },
+    headStyles: { fillColor: [4, 120, 87], textColor: 255 },
+    margin: { left: 14, right: 14 },
+  });
+
+  const preferredFields = [
+    'name', 'displayName', 'userName', 'status', 'createdAt', 'updatedAt',
+    'requestNumber', 'transactionNumber', 'shipmentNumber', 'distributionNumber',
+  ];
+  let cursor = (document as any).lastAutoTable?.finalY + 10 || 40;
+
+  datasets.forEach((dataset) => {
+    if (dataset.error) return;
+    if (cursor > 170) {
+      document.addPage();
+      cursor = 20;
+    }
+    document.setFontSize(11);
+    document.text(`${dataset.label} (${dataset.rows.length} dokumen)`, 14, cursor);
+    cursor += 3;
+    const fields = [
+      ...preferredFields.filter((field) => dataset.fields.includes(field)),
+      ...dataset.fields.filter((field) => !preferredFields.includes(field)),
+    ].slice(0, 8);
+    autoTable(document, {
+      startY: cursor,
+      head: [['ID Dokumen', ...fields]],
+      body: dataset.rows.map(row => [
+        row.id,
+        ...fields.map((field) => String(row.values[field] ?? '').slice(0, 160)),
+      ]),
+      styles: { fontSize: 7, cellPadding: 1.5, overflow: 'linebreak' },
+      headStyles: { fillColor: [4, 120, 87], textColor: 255 },
+      alternateRowStyles: { fillColor: [246, 248, 247] },
+      margin: { left: 14, right: 14 },
+    });
+    cursor = (document as any).lastAutoTable?.finalY + 9 || cursor + 30;
+  });
+
   document.save(`${safeFilename(filename)}.pdf`);
 }
 

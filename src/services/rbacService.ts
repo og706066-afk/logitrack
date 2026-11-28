@@ -184,6 +184,8 @@ export const MASTER_PERMISSIONS: Permission[] = [
 
   { id: 'imports.view', module: 'Import Excel', action: 'view', name: 'Buka Import Excel', description: 'Mengakses fitur impor data Excel pada modul' },
   { id: 'imports.execute', module: 'Import Excel', action: 'execute', name: 'Jalankan Import', description: 'Mengimpor data Excel yang telah divalidasi' },
+
+  { id: 'backup.export', module: 'Pengaturan', action: 'export', name: 'Backup Data', description: 'Mengunduh salinan seluruh data aplikasi dalam format Excel atau PDF' },
 ];
 
 const STORAGE_ROLES_KEY = 'silog_roles_data';

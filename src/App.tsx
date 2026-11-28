@@ -21,6 +21,7 @@ import { MasterDataPage } from './pages/masterData';
 import { FinancePage } from './pages/finance';
 import { RegionsPage } from './pages/regions';
 import { ReportsAdvancedPage } from './pages/reportsAdvanced';
+import { BackupDataPage } from './pages/BackupData';
 
 export function App() {
   return (
@@ -59,6 +60,7 @@ export function App() {
                         <Route path="/finance" element={<ProtectedRoute requiredPermission="finance.view"><FinancePage /></ProtectedRoute>} />
                         <Route path="/regions" element={<ProtectedRoute requiredPermission="regions.view"><RegionsPage /></ProtectedRoute>} />
                         <Route path="/reports-advanced" element={<ProtectedRoute requiredPermission="reports.view"><ReportsAdvancedPage /></ProtectedRoute>} />
+                        <Route path="/backup" element={<ProtectedRoute requiredPermission="backup.export"><BackupDataPage /></ProtectedRoute>} />
                       </Routes>
                     </Layout>
                   </ProtectedRoute>

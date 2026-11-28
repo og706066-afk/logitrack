@@ -18,7 +18,8 @@ import {
   ScrollText,
   Wallet,
   MapPin,
-  Building2
+  Building2,
+  Download
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -57,6 +58,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
   const adminMenuItems = [
     { title: 'Manajemen Pengguna', path: '/users', icon: UsersRound, permission: 'users.view' },
     { title: 'Manajemen Role', path: '/roles', icon: ShieldCheck, permission: 'roles.view' },
+    { title: 'Backup Data', path: '/backup', icon: Download, permission: 'backup.export' },
     { title: 'Pengaturan Sistem', path: '/settings', icon: Settings, permission: '' },
   ];
 

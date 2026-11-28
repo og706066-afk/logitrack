@@ -104,6 +104,7 @@ Rute existing (`/products`, `/categories`, `/suppliers`, `/stock-in`, `/stock-ou
 | `/finance` | Pemasukan, pengeluaran, buku kas, saldo, ekspor |
 | `/regions` | Wilayah, RT, penerima, riwayat penyaluran |
 | `/reports-advanced` | 12 jenis laporan + Excel/PDF/cetak |
+| `/backup` | Backup seluruh data Firestore ke Excel/PDF (permission `backup.export`, Super Admin) |
 
 Dashboard menampilkan 12 ringkasan, grafik masuk/keluar, stok per kategori, distribusi pengiriman, aktivitas, peringatan stok minimum, filter periode, dan filter kategori. Seluruh angka berasal dari Firestore.
 
