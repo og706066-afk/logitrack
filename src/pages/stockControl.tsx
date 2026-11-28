@@ -477,8 +477,8 @@ export const StockControlPage: React.FC = () => {
         <FilterBar search={search} onSearch={setSearch}>
           {activeTab !== 'HISTORY' && (
             <>
-              <input type="date" value={dateFrom} onChange={event => setDateFrom(event.target.value)} className={`${inputClass} w-auto`} aria-label="Tanggal mulai" />
-              <input type="date" value={dateTo} onChange={event => setDateTo(event.target.value)} className={`${inputClass} w-auto`} aria-label="Tanggal akhir" />
+              <input type="date" value={dateFrom} onChange={event => setDateFrom(event.target.value)} className={`${inputClass} w-full sm:w-auto min-w-[140px]`} aria-label="Tanggal mulai" />
+              <input type="date" value={dateTo} onChange={event => setDateTo(event.target.value)} className={`${inputClass} w-full sm:w-auto min-w-[140px]`} aria-label="Tanggal akhir" />
               <select value={categoryFilter} onChange={event => setCategoryFilter(event.target.value)} className={`${inputClass} w-auto`} aria-label="Filter kategori">
                 <option value="">Semua kategori</option>
                 {categories.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}

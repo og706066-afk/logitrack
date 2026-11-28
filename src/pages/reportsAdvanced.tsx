@@ -715,8 +715,8 @@ export const ReportsAdvancedPage: React.FC = () => {
           <select value={reportType} onChange={event => setReportType(event.target.value as ReportKey)} className={`${inputClass} min-w-[210px]`}>
             {REPORT_TYPES.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}
           </select>
-          <input type="date" value={from} onChange={event => setFrom(event.target.value)} className={`${inputClass} max-w-[180px]`} aria-label="Tanggal dari" />
-          <input type="date" value={to} onChange={event => setTo(event.target.value)} className={`${inputClass} max-w-[180px]`} aria-label="Tanggal sampai" />
+          <input type="date" value={from} onChange={event => setFrom(event.target.value)} className={`${inputClass} w-full sm:w-auto sm:max-w-[180px] min-w-[140px]`} aria-label="Tanggal dari" />
+          <input type="date" value={to} onChange={event => setTo(event.target.value)} className={`${inputClass} w-full sm:w-auto sm:max-w-[180px] min-w-[140px]`} aria-label="Tanggal sampai" />
           <select value={category} onChange={event => setCategory(event.target.value)} className={`${inputClass} max-w-[180px]`} aria-label="Kategori">
             <option value="">Semua kategori</option>
             {categoryOptions.map(name => <option key={name} value={name}>{name}</option>)}

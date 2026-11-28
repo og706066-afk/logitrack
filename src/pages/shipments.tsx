@@ -667,8 +667,8 @@ export const ShipmentsPage: React.FC = () => {
             <option value="">Semua status</option>
             {SHIPMENT_STATUSES.map(status => <option key={status} value={status}>{status}</option>)}
           </select>
-          <input type="date" value={dateFrom} onChange={event => { setDateFrom(event.target.value); setPage(1); }} className={`${inputClass} w-auto`} aria-label="Tanggal dari" />
-          <input type="date" value={dateTo} onChange={event => { setDateTo(event.target.value); setPage(1); }} className={`${inputClass} w-auto`} aria-label="Tanggal sampai" />
+          <input type="date" value={dateFrom} onChange={event => { setDateFrom(event.target.value); setPage(1); }} className={`${inputClass} w-full sm:w-auto min-w-[140px]`} aria-label="Tanggal dari" />
+          <input type="date" value={dateTo} onChange={event => { setDateTo(event.target.value); setPage(1); }} className={`${inputClass} w-full sm:w-auto min-w-[140px]`} aria-label="Tanggal sampai" />
         </FilterBar>
         <DataTable
           columns={[...shipmentTableColumns, ...columns]}

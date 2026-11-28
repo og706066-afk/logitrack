@@ -393,8 +393,8 @@ export const FinancePage: React.FC = () => {
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         <FilterBar search={search} onSearch={setSearch}>
-          <input type="date" value={from} onChange={event => setFrom(event.target.value)} className={`${inputClass} max-w-[190px]`} aria-label="Tanggal dari" />
-          <input type="date" value={to} onChange={event => setTo(event.target.value)} className={`${inputClass} max-w-[190px]`} aria-label="Tanggal sampai" />
+          <input type="date" value={from} onChange={event => setFrom(event.target.value)} className={`${inputClass} w-full sm:w-auto sm:max-w-[190px] min-w-[140px]`} aria-label="Tanggal dari" />
+          <input type="date" value={to} onChange={event => setTo(event.target.value)} className={`${inputClass} w-full sm:w-auto sm:max-w-[190px] min-w-[140px]`} aria-label="Tanggal sampai" />
           <select value={typeFilter} onChange={event => setTypeFilter(event.target.value as TypeFilter)} className={`${inputClass} max-w-[180px]`}>
             <option value="Semua">Semua jenis</option>
             <option value="Pemasukan">Pemasukan</option>
