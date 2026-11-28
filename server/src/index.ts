@@ -9,6 +9,25 @@ import { auditLogRouter } from './routes/auditLogRoutes.js';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 5000;
+const trustProxyEnv = process.env.TRUST_PROXY?.trim().toLowerCase();
+
+if (trustProxyEnv !== undefined && trustProxyEnv !== '') {
+  if (trustProxyEnv === 'false' || trustProxyEnv === '0') {
+    app.set('trust proxy', false);
+  } else if (trustProxyEnv === 'true' || trustProxyEnv === '1') {
+    app.set('trust proxy', 1);
+  } else if (/^[1-9]\d*$/.test(trustProxyEnv)) {
+    app.set('trust proxy', Number(trustProxyEnv));
+  } else {
+    throw new Error(
+      `Konfigurasi TRUST_PROXY tidak valid: "${process.env.TRUST_PROXY}". Gunakan true/1, false/0, atau angka hop positif.`,
+    );
+  }
+} else if (process.env.RAILWAY_STATIC_URL || process.env.RAILWAY_ENVIRONMENT || process.env.NODE_ENV === 'production') {
+  // Railway runs behind a reverse proxy; trust the first hop so express-rate-limit
+  // uses the client IP from X-Forwarded-For without allowing arbitrary spoofing.
+  app.set('trust proxy', 1);
+}
 
 app.use(cors({
   origin: process.env.CORS_ORIGIN?.split(',') ?? ['http://localhost:5173'],
