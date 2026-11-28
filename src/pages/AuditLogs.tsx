@@ -191,6 +191,7 @@ export const AuditLogs: React.FC = () => {
             rowKey={(log) => log.id}
             hideCheckboxFilter
             selectable={isSuperAdmin}
+            onDelete={isSuperAdmin ? (row) => handleDeleteRequest([row]) : undefined}
             onBulkDelete={isSuperAdmin ? handleDeleteRequest : undefined}
             bulkDeleteLabel="Hapus yang dipilih"
             bulkActionIcon={<Trash2 className="w-3.5 h-3.5" />}
