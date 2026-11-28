@@ -39,7 +39,18 @@ VITE_FIREBASE_PROJECT_ID=
 VITE_FIREBASE_STORAGE_BUCKET=
 VITE_FIREBASE_MESSAGING_SENDER_ID=
 VITE_FIREBASE_APP_ID=
+VITE_API_URL=
 ```
+
+`VITE_API_URL` adalah base URL backend Express yang sudah di-deploy (tanpa trailing slash), misalnya `https://silog-api.onrender.com`. Variabel ini wajib diisi di Vercel **Project Settings → Environment Variables** untuk Production, Preview, dan Development. Jika kosong, frontend memanggil `/api/...` ke origin yang sama dengan aplikasi; karena `vercel.json` hanya berisi SPA rewrite ke `index.html`, permintaan `POST /api/audit-logs/archive` akan ditolak dengan `405 Method Not Allowed`.
+
+Backend yang dituju harus mengizinkan origin frontend melalui `CORS_ORIGIN` (bisa beberapa origin, dipisah koma), misalnya `CORS_ORIGIN=https://logitrack.vercel.app`. Selain itu, tambahkan origin backend tersebut ke directive `connect-src` pada header `Content-Security-Policy` di `vercel.json`, karena nilai bawaan hanya `connect-src 'self' ...`:
+
+```text
+connect-src 'self' https://silog-api.onrender.com https://*.googleapis.com ...
+```
+
+Setelah mengubah environment variable atau `vercel.json`, lakukan redeploy agar perubahan berlaku.
 
 Deploy rules:
 
@@ -47,7 +58,7 @@ Deploy rules:
 firebase deploy --only firestore:rules,firestore:indexes,storage
 ```
 
-Vercel: gunakan `vercel.json` yang sudah ada (SPA rewrite). Tambahkan semua variabel `VITE_FIREBASE_*` di Project Settings. Hosting Firebase tidak dipakai untuk aplikasi; Firestore/Storage tetap berada di project Firebase yang sama.
+Vercel: gunakan `vercel.json` yang sudah ada (SPA rewrite). Tambahkan semua variabel `VITE_FIREBASE_*` dan `VITE_API_URL` di Project Settings seperti di atas. Hosting Firebase tidak dipakai untuk aplikasi; Firestore/Storage tetap berada di project Firebase yang sama.
 
 ## Struktur data Firestore
 
