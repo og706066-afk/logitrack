@@ -841,26 +841,26 @@ function getApiBaseUrl(): string {
   return (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ?? '';
 }
 
-function formatArchiveApiError(status: number, payload: any): string {
+function formatDeleteAuditApiError(status: number, payload: any): string {
   const message = typeof payload?.message === 'string' ? payload.message : '';
-  if (status === 400) return message || 'Permintaan arsip tidak valid. Periksa data yang dipilih.';
+  if (status === 400) return message || 'Permintaan hapus tidak valid. Periksa data yang dipilih.';
   if (status === 401) return 'Sesi Anda tidak valid atau kedaluwarsa. Silakan login ulang.';
-  if (status === 403) return 'Anda tidak memiliki izin untuk mengarsipkan aktivitas.';
-  if (status === 404) return 'Endpoint arsip tidak ditemukan. Pastikan backend arsip aktif dan VITE_API_URL dikonfigurasi dengan benar.';
-  if (status === 409) return message || 'Sebagian aktivitas sudah diarsipkan atau tidak ditemukan. Muat ulang data.';
-  if (status === 429) return message || 'Terlalu banyak permintaan arsip. Coba lagi beberapa menit lagi.';
-  if (status >= 500) return 'Server gagal memproses arsip. Coba lagi beberapa saat.';
-  return message || 'Gagal mengarsipkan aktivitas.';
+  if (status === 403) return 'Anda tidak memiliki izin untuk menghapus aktivitas.';
+  if (status === 404) return 'Endpoint hapus tidak ditemukan. Pastikan backend aktif dan VITE_API_URL dikonfigurasi dengan benar.';
+  if (status === 409) return message || 'Sebagian aktivitas tidak ditemukan. Muat ulang data.';
+  if (status === 429) return message || 'Terlalu banyak permintaan hapus. Coba lagi beberapa menit lagi.';
+  if (status >= 500) return 'Server gagal memproses hapus. Coba lagi beberapa saat.';
+  return message || 'Gagal menghapus aktivitas.';
 }
 
-export async function archiveAuditLogs(logIds: string[], archiveReason?: string): Promise<{ archivedCount: number; archivedIds: string[] }> {
+export async function deleteAuditLogs(logIds: string[]): Promise<{ deletedCount: number; deletedIds: string[] }> {
   if (!isFirebaseConfigured || !auth) {
     throw new Error('Firebase belum dikonfigurasi.');
   }
 
   const invalidLocalIds = logIds.filter((id) => isLocalAuditId(id));
   if (invalidLocalIds.length > 0) {
-    throw new Error('Beberapa log belum tersinkron ke Firestore dan tidak dapat diarsipkan. Sinkronkan/migrasikan log lokal terlebih dahulu.');
+    throw new Error('Log lokal/belum tersinkron tidak dapat dihapus dari server. Hapus hanya log Firestore yang tersinkron.');
   }
 
   const user = auth.currentUser;
@@ -875,16 +875,16 @@ export async function archiveAuditLogs(logIds: string[], archiveReason?: string)
 
   let response: Response;
   try {
-    response = await fetch(`${getApiBaseUrl()}/api/audit-logs/archive`, {
+    response = await fetch(`${getApiBaseUrl()}/api/audit-logs/delete`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ logIds, archiveReason }),
+      body: JSON.stringify({ logIds }),
     });
   } catch {
-    throw new Error('Backend arsip tidak tersedia. Pastikan server aktif atau VITE_API_URL sudah dikonfigurasi.');
+    throw new Error('Backend hapus tidak tersedia. Pastikan server aktif atau VITE_API_URL sudah dikonfigurasi.');
   }
 
   const contentType = response.headers.get('content-type') || '';
@@ -894,10 +894,10 @@ export async function archiveAuditLogs(logIds: string[], archiveReason?: string)
 
   if (!response.ok || !payload?.success) {
     if (response.ok && !payload) {
-      throw new Error('Respons arsip tidak valid. Pastikan endpoint /api/audit-logs/archive mengarah ke backend, bukan frontend.');
+      throw new Error('Respons hapus tidak valid. Pastikan endpoint /api/audit-logs/delete mengarah ke backend, bukan frontend.');
     }
-    throw new Error(formatArchiveApiError(response.status, payload));
+    throw new Error(formatDeleteAuditApiError(response.status, payload));
   }
 
-  return { archivedCount: payload.archivedCount ?? logIds.length, archivedIds: payload.archivedIds ?? logIds };
+  return { deletedCount: payload.deletedCount ?? logIds.length, deletedIds: payload.deletedIds ?? logIds };
 }

@@ -1,13 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Archive, ScrollText, ShieldAlert } from 'lucide-react';
-import type { AuditLog, AuditLogArchive } from '../types';
-import { archiveAuditLogs, getArchivedAuditLogs, getAuditLogs, isArchivableAuditLog, migrateLocalAuditLogs } from '../services/rbacService';
+import { ScrollText, ShieldAlert, Trash2 } from 'lucide-react';
+import type { AuditLog } from '../types';
+import { deleteAuditLogs, getAuditLogs, isArchivableAuditLog } from '../services/rbacService';
 import { DataTable, type TableColumn } from '../components/DataViews';
 import { AlertBox, LoadingOverlay } from '../components/ui';
 import { useAuth } from '../contexts/AuthContext';
 import { useDataVersion } from '../contexts/DataSyncContext';
-
-type TabKey = 'active' | 'archived';
 
 function toTime(value: any): number {
   if (!value) return 0;
@@ -24,20 +22,16 @@ function formatDateTime(value: any): string {
 
 export const AuditLogs: React.FC = () => {
   const { currentUser } = useAuth();
-  const dataVersion = useDataVersion('audit_logs', 'audit_log_archives');
+  const dataVersion = useDataVersion('audit_logs');
   const isSuperAdmin = currentUser?.role === 'Super Admin';
 
-  const [tab, setTab] = useState<TabKey>('active');
   const [logs, setLogs] = useState<AuditLog[]>([]);
-  const [archivedLogs, setArchivedLogs] = useState<AuditLogArchive[]>([]);
   const [loading, setLoading] = useState(true);
-  const [archiving, setArchiving] = useState(false);
-  const [migrating, setMigrating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [selectedLogs, setSelectedLogs] = useState<AuditLog[]>([]);
-  const [confirmArchive, setConfirmArchive] = useState(false);
-  const [archiveReason, setArchiveReason] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [clearSelectionToken, setClearSelectionToken] = useState(0);
   const [search, setSearch] = useState('');
 
@@ -45,22 +39,14 @@ export const AuditLogs: React.FC = () => {
     try {
       setLoading(true);
       setError('');
-      if (isSuperAdmin) {
-        const [active, archived] = await Promise.all([getAuditLogs(), getArchivedAuditLogs()]);
-        setLogs(active);
-        setArchivedLogs(archived);
-      } else {
-        const active = await getAuditLogs();
-        setLogs(active);
-        setArchivedLogs([]);
-        setTab('active');
-      }
+      const active = await getAuditLogs();
+      setLogs(active);
     } catch (e: any) {
       setError(e.message || 'Gagal memuat audit log.');
     } finally {
       setLoading(false);
     }
-  }, [isSuperAdmin]);
+  }, []);
 
   useEffect(() => {
     void loadLogs();
@@ -76,15 +62,7 @@ export const AuditLogs: React.FC = () => {
     );
   }, [logs, search]);
 
-  const filteredArchived = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return archivedLogs;
-    return archivedLogs.filter((log) =>
-      [log.userName, log.action, log.module, log.description, log.archivedByName, log.archivedBy, log.archiveReason, log.id, log.originalLogId]
-        .filter(Boolean)
-        .some((v) => String(v).toLowerCase().includes(q)),
-    );
-  }, [archivedLogs, search]);
+  // archived tab removed
 
   const activeColumns: TableColumn<AuditLog>[] = useMemo(() => [
     {
@@ -110,120 +88,46 @@ export const AuditLogs: React.FC = () => {
       filterable: false,
       render: (row) => <span className="text-slate-600">{row.description || '-'}</span>,
     },
-    {
-      key: 'syncStatus',
-      label: 'Sinkron',
-      filterable: false,
-      render: (row) => {
-        const archivable = isArchivableAuditLog(row);
-        const localPending = !archivable;
-        return (
-          <div className="min-w-[140px]">
-            <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-semibold ${localPending ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-700'}`}>
-              {localPending ? 'Lokal/Belum sinkron' : 'Tersinkron'}
-            </span>
-            {row.syncError ? <div className="text-[11px] text-amber-700 mt-1 line-clamp-2">{row.syncError}</div> : null}
-          </div>
-        );
-      },
-    },
   ], []);
 
-  const archivedColumns: TableColumn<AuditLogArchive>[] = useMemo(() => [
-    {
-      key: 'archivedAt',
-      label: 'Diarsipkan',
-      filterable: false,
-      render: (row) => <span className="text-xs text-slate-600 whitespace-nowrap">{formatDateTime(row.archivedAt)}</span>,
-    },
-    {
-      key: 'archivedByName',
-      label: 'Diarsipkan Oleh',
-      render: (row) => <span className="font-medium text-slate-800">{row.archivedByName || row.archivedBy || '-'}</span>,
-    },
-    {
-      key: 'createdAt',
-      label: 'Waktu Aktivitas',
-      filterable: false,
-      render: (row) => <span className="text-xs text-slate-600 whitespace-nowrap">{formatDateTime(row.createdAt)}</span>,
-    },
-    {
-      key: 'userName',
-      label: 'Pengguna',
-      render: (row) => <span className="font-medium text-slate-800">{row.userName || '-'}</span>,
-    },
-    { key: 'module', label: 'Modul' },
-    {
-      key: 'action',
-      label: 'Aksi',
-      render: (row) => <span className="inline-flex items-center px-2 py-1 rounded bg-slate-100 text-xs font-semibold text-slate-700">{row.action}</span>,
-    },
-    {
-      key: 'description',
-      label: 'Keterangan',
-      filterable: false,
-      render: (row) => (
-        <div>
-          <div className="text-slate-600">{row.description || '-'}</div>
-          {row.archiveReason && <div className="text-xs text-slate-400 mt-0.5">Alasan: {row.archiveReason}</div>}
-        </div>
-      ),
-    },
-  ], []);
+  // archived columns removed
 
-  const handleArchiveRequest = (rows: AuditLog[]) => {
+  const handleDeleteRequest = (rows: AuditLog[]) => {
     if (!isSuperAdmin) return;
-    const archivable = rows.filter(isArchivableAuditLog);
-    if (archivable.length === 0) {
-      setError('Log lokal/belum tersinkron tidak dapat diarsipkan. Sinkronkan/migrasikan terlebih dahulu.');
+    const deletable = rows.filter(isArchivableAuditLog);
+    if (deletable.length === 0) {
+      setError('Pilih log Firestore yang tersinkron untuk dihapus.');
       return;
     }
-    if (archivable.length !== rows.length) {
-      setError('Sebagian log yang dipilih belum tersinkron ke Firestore dan tidak akan diarsipkan.');
+    if (deletable.length !== rows.length) {
+      setError('Sebagian log yang dipilih tidak dapat dihapus (belum tersinkron).');
     }
-    setSelectedLogs(archivable);
-    setConfirmArchive(true);
+    setSelectedLogs(deletable);
+    setConfirmDelete(true);
   };
 
-  const handleMigrateLocal = async () => {
-    if (!isSuperAdmin || migrating) return;
-    setMigrating(true);
+  const handleDeleteConfirm = async () => {
+    if (!isSuperAdmin || selectedLogs.length === 0 || deleting) return;
+    const deletable = selectedLogs.filter(isArchivableAuditLog);
+    if (deletable.length !== selectedLogs.length) {
+      setError('Beberapa log yang dipilih tidak dapat dihapus.');
+      return;
+    }
+    setConfirmDelete(false);
+    setDeleting(true);
     setError('');
     setSuccess('');
     try {
-      const result = await migrateLocalAuditLogs();
-      setSuccess(`Migrasi selesai: ${result.migratedCount} berhasil, ${result.skippedCount} dilewati, ${result.failedCount} gagal.`);
-      await loadLogs();
-    } catch (e: any) {
-      setError(e.message || 'Gagal migrasi log lokal.');
-    } finally {
-      setMigrating(false);
-    }
-  };
-
-  const handleArchiveConfirm = async () => {
-    if (!isSuperAdmin || selectedLogs.length === 0 || archiving) return;
-    const archivableSelected = selectedLogs.filter(isArchivableAuditLog);
-    if (archivableSelected.length !== selectedLogs.length) {
-      setError('Beberapa log belum tersinkron ke Firestore dan tidak dapat diarsipkan. Sinkronkan/migrasikan log lokal terlebih dahulu.');
-      return;
-    }
-    setConfirmArchive(false);
-    setArchiving(true);
-    setError('');
-    setSuccess('');
-    try {
-      const ids = archivableSelected.map((l) => l.id);
-      const result = await archiveAuditLogs(ids, archiveReason.trim() || undefined);
-      setSuccess(`${result.archivedCount} aktivitas berhasil diarsipkan.`);
-      setArchiveReason('');
+      const ids = deletable.map((l) => l.id);
+      const result = await deleteAuditLogs(ids);
+      setSuccess(`${result.deletedCount} aktivitas berhasil dihapus.`);
       setSelectedLogs([]);
       setClearSelectionToken((t) => t + 1);
       await loadLogs();
     } catch (e: any) {
-      setError(e.message || 'Gagal mengarsipkan aktivitas.');
+      setError(e.message || 'Gagal menghapus aktivitas.');
     } finally {
-      setArchiving(false);
+      setDeleting(false);
     }
   };
 
@@ -237,26 +141,8 @@ export const AuditLogs: React.FC = () => {
               Audit Log Sistem & Keamanan
             </h1>
             <p className="text-sm text-slate-500 mt-0.5">
-              Riwayat pencatatan aktivitas sensitif. Super Admin dapat mengarsipkan aktivitas terpilih.
+              Riwayat pencatatan aktivitas sensitif. Super Admin dapat menghapus aktivitas terpilih.
             </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => { setTab('active'); setSearch(''); setSelectedLogs([]); setClearSelectionToken((t) => t + 1); }}
-              className={`px-3 py-2 rounded-xl text-sm font-semibold border transition ${tab === 'active' ? 'bg-ocean text-white border-ocean' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
-            >
-              Aktivitas
-            </button>
-            {isSuperAdmin && (
-              <button
-                type="button"
-                onClick={() => { setTab('archived'); setSearch(''); setSelectedLogs([]); setClearSelectionToken((t) => t + 1); }}
-                className={`px-3 py-2 rounded-xl text-sm font-semibold border transition inline-flex items-center gap-1.5 ${tab === 'archived' ? 'bg-ocean text-white border-ocean' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
-              >
-                <Archive className="w-4 h-4" /> Arsip
-              </button>
-            )}
           </div>
         </div>
 
@@ -264,28 +150,18 @@ export const AuditLogs: React.FC = () => {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder={tab === 'active' ? 'Cari aktivitas...' : 'Cari arsip aktivitas...'}
+            placeholder="Cari aktivitas..."
             className="w-full sm:max-w-sm px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-ocean"
           />
           <div className="flex items-center gap-2">
-            {tab === 'active' && isSuperAdmin && (
+            {isSuperAdmin && selectedLogs.length > 0 && (
               <button
                 type="button"
-                onClick={() => void handleMigrateLocal()}
-                disabled={migrating}
-                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-700 hover:bg-slate-800 text-white font-semibold rounded-xl text-sm transition shadow-sm disabled:opacity-60"
+                onClick={() => setConfirmDelete(true)}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl text-sm transition shadow-sm"
               >
-                {migrating ? 'Migrasi...' : 'Sinkronkan Log Lokal'}
-              </button>
-            )}
-            {tab === 'active' && isSuperAdmin && selectedLogs.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setConfirmArchive(true)}
-                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-xl text-sm transition shadow-sm"
-              >
-                <Archive className="w-4 h-4" />
-                Arsipkan ({selectedLogs.filter(isArchivableAuditLog).length})
+                <Trash2 className="w-4 h-4" />
+                Hapus ({selectedLogs.filter(isArchivableAuditLog).length})
               </button>
             )}
           </div>
@@ -300,77 +176,49 @@ export const AuditLogs: React.FC = () => {
           <div className="w-8 h-8 border-4 border-ocean-light border-t-ocean rounded-full animate-spin" />
           Memuat audit log...
         </div>
-      ) : tab === 'active' || !isSuperAdmin ? (
-        filteredLogs.length === 0 ? (
-          <div className="bg-white rounded-2xl p-12 text-center border border-slate-200 shadow-xs">
-            <ShieldAlert className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <h3 className="text-base font-bold text-slate-700">Belum ada aktivitas tercatat</h3>
-            <p className="text-xs text-slate-500 mt-1">Aktivitas perubahan akan tercatat di sini.</p>
-          </div>
-        ) : (
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-            <DataTable<AuditLog>
-              standard={false}
-              columns={activeColumns}
-              rows={filteredLogs}
-              rowKey={(log) => log.id}
-              selectable={isSuperAdmin}
-              onBulkDelete={isSuperAdmin ? handleArchiveRequest : undefined}
-              bulkDeleteLabel="Arsipkan yang dipilih"
-              bulkActionIcon={<Archive className="w-3.5 h-3.5" />}
-              onSelectionChange={(rows) => setSelectedLogs(rows.filter(isArchivableAuditLog))}
-              clearSelectionToken={clearSelectionToken}
-              emptyLabel="Belum ada aktivitas tercatat."
-              disableRowSelection={(row) => !isArchivableAuditLog(row)}
-            />
-          </div>
-        )
-      ) : filteredArchived.length === 0 ? (
+      ) : filteredLogs.length === 0 ? (
         <div className="bg-white rounded-2xl p-12 text-center border border-slate-200 shadow-xs">
-          <Archive className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-          <h3 className="text-base font-bold text-slate-700">Belum ada arsip aktivitas</h3>
-          <p className="text-xs text-slate-500 mt-1">Aktivitas yang diarsipkan akan muncul di sini.</p>
+          <ShieldAlert className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+          <h3 className="text-base font-bold text-slate-700">Belum ada aktivitas tercatat</h3>
+          <p className="text-xs text-slate-500 mt-1">Aktivitas perubahan akan tercatat di sini.</p>
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-          <DataTable<AuditLogArchive>
+          <DataTable<AuditLog>
             standard={false}
-            columns={archivedColumns}
-            rows={filteredArchived}
+            columns={activeColumns}
+            rows={filteredLogs}
             rowKey={(log) => log.id}
-            selectable={false}
-            emptyLabel="Belum ada arsip aktivitas."
+            selectable={isSuperAdmin}
+            onBulkDelete={isSuperAdmin ? handleDeleteRequest : undefined}
+            bulkDeleteLabel="Hapus yang dipilih"
+            bulkActionIcon={<Trash2 className="w-3.5 h-3.5" />}
+            onSelectionChange={(rows) => setSelectedLogs(rows.filter(isArchivableAuditLog))}
+            clearSelectionToken={clearSelectionToken}
+            emptyLabel="Belum ada aktivitas tercatat."
+            disableRowSelection={(row) => !isArchivableAuditLog(row)}
           />
         </div>
       )}
 
-      {confirmArchive && (
+      {confirmDelete && (
         <div className="fixed inset-0 bg-slate-900/50 z-50 flex items-center justify-center p-4 backdrop-blur-xs animate-fade-in">
           <div className="bg-white rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl animate-slide-up">
-            <h3 className="text-base font-bold text-slate-800 mb-2">Arsipkan Aktivitas</h3>
+            <h3 className="text-base font-bold text-slate-800 mb-2">Hapus Aktivitas</h3>
             <p className="text-sm text-slate-600 mb-4">
-              Anda akan mengarsipkan <span className="font-semibold">{selectedLogs.length}</span> aktivitas. Aktivitas akan dipindahkan dari daftar utama ke arsip dan tidak dapat dihapus permanen dari UI ini.
+              Anda akan menghapus <span className="font-semibold">{selectedLogs.length}</span> aktivitas. Tindakan ini tidak dapat dibatalkan.
             </p>
-            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">Alasan Arsip (opsional)</label>
-            <textarea
-              value={archiveReason}
-              onChange={(e) => setArchiveReason(e.target.value)}
-              rows={3}
-              maxLength={500}
-              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-ocean"
-              placeholder="Contoh: Pembersihan log rutin bulan ini"
-            />
             <div className="flex justify-end gap-3 mt-5">
-              <button onClick={() => setConfirmArchive(false)} disabled={archiving} className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-50 disabled:opacity-60">Batal</button>
-              <button onClick={() => void handleArchiveConfirm()} disabled={archiving} className="px-4 py-2 bg-amber-600 text-white rounded-xl text-sm font-semibold hover:bg-amber-700 inline-flex items-center gap-2 disabled:opacity-60">
-                <Archive className="w-4 h-4" /> {archiving ? 'Mengarsipkan...' : 'Arsipkan'}
+              <button onClick={() => setConfirmDelete(false)} disabled={deleting} className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-50 disabled:opacity-60">Batal</button>
+              <button onClick={() => void handleDeleteConfirm()} disabled={deleting} className="px-4 py-2 bg-red-600 text-white rounded-xl text-sm font-semibold hover:bg-red-700 inline-flex items-center gap-2 disabled:opacity-60">
+                <Trash2 className="w-4 h-4" /> {deleting ? 'Menghapus...' : 'Hapus'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {archiving && <LoadingOverlay label="Mengarsipkan aktivitas..." />}
+      {deleting && <LoadingOverlay label="Menghapus aktivitas..." />}
     </div>
   );
 };

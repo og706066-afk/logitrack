@@ -1,11 +1,10 @@
 ﻿import { z } from 'zod';
 
-const firestoreDocId = z.string().trim().min(1, 'ID log tidak valid').max(128, 'ID log tidak valid').refine((id) => !/^log-\d+-\d+$/.test(id), 'Format ID log tidak valid untuk arsip');
+const firestoreDocId = z.string().trim().min(1, 'ID log tidak valid').max(128, 'ID log tidak valid').refine((id) => !/^log-\d+-\d+$/.test(id), 'Format ID log tidak valid');
 
-export const archiveAuditLogsSchema = z.object({
+export const deleteAuditLogsSchema = z.object({
   logIds: z.array(firestoreDocId).min(1, 'Pilih minimal satu log').max(50, 'Maksimal 50 log per permintaan'),
-  archiveReason: z.string().trim().max(500, 'Alasan arsip terlalu panjang').optional(),
-});
+}).strict();
 
 const localAuditId = z.string().trim().regex(/^log-\d+-\d+$/, 'ID lokal tidak valid').max(128);
 const isoDateString = z.string().trim().max(64).refine((value) => !Number.isNaN(new Date(value).getTime()), 'Tanggal log tidak valid').optional();
@@ -21,5 +20,11 @@ export const migrateAuditLogsSchema = z.object({
   }).strict()).min(1, 'Pilih minimal satu log').max(50, 'Maksimal 50 log per migrasi'),
 }).strict();
 
-export type ArchiveAuditLogsInput = z.infer<typeof archiveAuditLogsSchema>;
+export const archiveAuditLogsSchema = z.object({
+  logIds: z.array(firestoreDocId).min(1, 'Pilih minimal satu log').max(50, 'Maksimal 50 log per permintaan'),
+  archiveReason: z.string().trim().max(500, 'Alasan arsip terlalu panjang').optional(),
+}).strict();
+
+export type DeleteAuditLogsInput = z.infer<typeof deleteAuditLogsSchema>;
 export type MigrateAuditLogsInput = z.infer<typeof migrateAuditLogsSchema>;
+export type ArchiveAuditLogsInput = z.infer<typeof archiveAuditLogsSchema>;
