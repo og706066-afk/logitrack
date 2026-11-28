@@ -189,6 +189,7 @@ export const AuditLogs: React.FC = () => {
             columns={activeColumns}
             rows={filteredLogs}
             rowKey={(log) => log.id}
+            hideCheckboxFilter
             selectable={isSuperAdmin}
             onBulkDelete={isSuperAdmin ? handleDeleteRequest : undefined}
             bulkDeleteLabel="Hapus yang dipilih"
