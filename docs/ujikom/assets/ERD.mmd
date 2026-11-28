@@ -1,0 +1,188 @@
+erDiagram
+    USERS {
+        string uid PK
+        string email
+        string role
+        string permissions
+        boolean isActive
+    }
+    ROLES {
+        string id PK
+        string name
+        string permissions
+    }
+    PERMISSIONS {
+        string id PK
+        string module
+        string action
+    }
+    AUDIT_LOGS {
+        string id PK
+        string userId FK
+        string action
+        string module
+    }
+    AUDIT_LOG_ARCHIVES {
+        string id PK
+        string originalLogId FK
+        string archivedBy FK
+    }
+    PRODUCTS {
+        string id PK
+        string code
+        string name
+        string categoryId FK
+        string warehouseId FK
+        number currentStock
+    }
+    CATEGORIES {
+        string id PK
+        string name
+    }
+    WAREHOUSES {
+        string id PK
+        string name
+    }
+    SUPPLIERS {
+        string id PK
+        string name
+    }
+    KORDAS {
+        string id PK
+        string name
+    }
+    DEPARTMENTS {
+        string id PK
+        string name
+    }
+    NEEDS_REQUESTS {
+        string id PK
+        string requestNumber
+        string itemId FK
+        string kordaId FK
+        string departmentId FK
+        string status
+    }
+    SHIPMENTS {
+        string id PK
+        string shipmentNumber
+        string kordaId FK
+        string driverId FK
+        string status
+    }
+    STOCK_TRANSACTIONS {
+        string id PK
+        string transactionNumber
+        string itemId FK
+        string categoryId FK
+        string referenceType
+        string referenceId
+        string status
+    }
+    DISTRIBUTIONS {
+        string id PK
+        string distributionNumber
+        string itemId FK
+        string departmentId FK
+    }
+    FINANCE_TRANSACTIONS {
+        string id PK
+        string transactionNumber
+        string referenceType
+        string referenceId
+    }
+    REGIONS {
+        string id PK
+        string name
+    }
+    RECIPIENTS {
+        string id PK
+        string regionId FK
+        string name
+    }
+    ACTIVITY_LOGS {
+        string id PK
+        string userId FK
+        string referenceId
+    }
+    NOTIFICATIONS {
+        string id PK
+        string userId FK
+    }
+    STOCK_BATCHES {
+        string id PK
+        string productId FK
+        string supplierId FK
+        string stockInId FK
+    }
+    STOCK_IN {
+        string id PK
+        string supplierId FK
+    }
+    STOCK_OUT {
+        string id PK
+        string productId FK
+    }
+    REQUESTS {
+        string id PK
+        string requestNumber
+        string status
+    }
+    REQUEST_DETAILS {
+        string id PK
+        string requestId FK
+        string productId FK
+    }
+    DELIVERIES {
+        string id PK
+        string requestId FK
+        string driverId FK
+        string status
+    }
+    DELIVERY_DETAILS {
+        string id PK
+        string deliveryId FK
+        string productId FK
+    }
+    VEHICLES {
+        string id PK
+        string driverId FK
+    }
+    STOCK_MOVEMENTS {
+        string id PK
+        string productId FK
+        string referenceId
+    }
+
+    USERS ||--o{ AUDIT_LOGS : creates
+    USERS ||--o{ ACTIVITY_LOGS : creates
+    USERS ||--o{ NOTIFICATIONS : receives
+    USERS ||--o{ SHIPMENTS : drives
+    USERS ||--o{ DELIVERIES : drives
+    USERS ||--o{ VEHICLES : assigned_to
+    USERS }o--|| ROLES : "has role"
+    ROLES }o--o{ PERMISSIONS : "permissions"
+    USERS }o--o{ PERMISSIONS : "copied permissions"
+    CATEGORIES ||--o{ PRODUCTS : categorizes
+    WAREHOUSES ||--o{ PRODUCTS : stores
+    PRODUCTS ||--o{ STOCK_BATCHES : "has batch"
+    SUPPLIERS ||--o{ STOCK_BATCHES : supplies
+    SUPPLIERS ||--o{ STOCK_IN : supplies
+    PRODUCTS ||--o{ STOCK_OUT : leaves
+    PRODUCTS ||--o{ STOCK_MOVEMENTS : moves
+    PRODUCTS ||--o{ STOCK_TRANSACTIONS : mutates
+    PRODUCTS ||--o{ NEEDS_REQUESTS : "requested item"
+    PRODUCTS ||--o{ DISTRIBUTIONS : "distributed item"
+    KORDAS ||--o{ NEEDS_REQUESTS : targets
+    DEPARTMENTS ||--o{ NEEDS_REQUESTS : targets
+    KORDAS ||--o{ SHIPMENTS : targets
+    DEPARTMENTS ||--o{ DISTRIBUTIONS : targets
+    REGIONS ||--o{ RECIPIENTS : contains
+    REQUESTS ||--o{ REQUEST_DETAILS : has
+    REQUESTS ||--o{ DELIVERIES : fulfilled_by
+    DELIVERIES ||--o{ DELIVERY_DETAILS : has
+    AUDIT_LOGS ||--|| AUDIT_LOG_ARCHIVES : "archived to"
+    STOCK_TRANSACTIONS }o..o{ NEEDS_REQUESTS : "reference"
+    STOCK_TRANSACTIONS }o..o{ DISTRIBUTIONS : "reference"
+    FINANCE_TRANSACTIONS }o..o{ STOCK_TRANSACTIONS : "reference"
+    ACTIVITY_LOGS }o..o{ STOCK_TRANSACTIONS : "reference"

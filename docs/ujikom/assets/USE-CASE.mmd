@@ -1,0 +1,121 @@
+flowchart LR
+    SA((Super Admin))
+    M((Manager))
+    KG((Kepala Gudang))
+    SG((Staf Gudang))
+    SUB((Sub Gudang))
+    D((Driver))
+    V((Viewer))
+    AUTH((Firebase Auth))
+    API((Backend API))
+
+    subgraph P1[Autentikasi & Profil]
+        UC_LOGIN([Login])
+        UC_REGISTER([Registrasi Viewer])
+        UC_PROFILE([Ubah Profil])
+        UC_LOGOUT([Logout])
+    end
+
+    subgraph P2[RBAC & Audit]
+        UC_USERS([Kelola Pengguna])
+        UC_ROLES([Kelola Role & Permission])
+        UC_AUDIT_VIEW([Lihat Audit Log])
+        UC_AUDIT_DELETE([Hapus Audit Log])
+        UC_BACKUP([Backup Data])
+        UC_AUDIT_WRITE([Tulis Audit Log])
+    end
+
+    subgraph P3[Master Data]
+        UC_PRODUCTS([Kelola Master Barang])
+        UC_CATEGORIES([Kelola Kategori])
+        UC_SUPPLIERS([Kelola Supplier])
+        UC_WAREHOUSES([Kelola Gudang])
+        UC_MASTERDATA([Kelola KORDA & Bagian])
+    end
+
+    subgraph P4[Stok]
+        UC_STOCKIN([Catat Barang Masuk])
+        UC_STOCKOUT([Catat Barang Keluar])
+        UC_STOCK_TX([Catat Transaksi Stok])
+        UC_CONFIRM_TX([Konfirmasi Transaksi Stok])
+        UC_CARD_STOCK([Lihat Kartu Stok])
+    end
+
+    subgraph P5[Kebutuhan & Pengiriman]
+        UC_NEED([Ajukan Kebutuhan Barang])
+        UC_APPROVE_NEED([Setujui / Tolak Kebutuhan])
+        UC_DISTRIBUTION([Catat Distribusi])
+        UC_SHIPMENT([Buat Pengiriman])
+        UC_SHIPMENT_UPDATE([Update Status Pengiriman])
+        UC_PROOF([Unggah Bukti Foto])
+        UC_RECEIVE([Konfirmasi Penerimaan])
+    end
+
+    subgraph P6[Keuangan, Wilayah & Laporan]
+        UC_FINANCE([Catat Transaksi Keuangan])
+        UC_FINANCE_VIEW([Lihat Buku Kas])
+        UC_REGION([Kelola Wilayah & Penerima])
+        UC_REPORT([Lihat Laporan])
+        UC_REPORT_EXPORT([Ekspor Laporan])
+        UC_IMPORT([Import Excel])
+    end
+
+    SA --> UC_USERS
+    SA --> UC_ROLES
+    SA --> UC_AUDIT_VIEW
+    SA --> UC_AUDIT_DELETE
+    SA --> UC_BACKUP
+    SA --> UC_PRODUCTS
+    SA --> UC_STOCK_TX
+    SA --> UC_APPROVE_NEED
+    SA --> UC_REPORT_EXPORT
+
+    M --> UC_LOGIN
+    M --> UC_NEED
+    M --> UC_APPROVE_NEED
+    M --> UC_CONFIRM_TX
+    M --> UC_SHIPMENT
+    M --> UC_REPORT
+    M --> UC_REPORT_EXPORT
+    M --> UC_AUDIT_VIEW
+
+    KG --> UC_PRODUCTS
+    KG --> UC_CATEGORIES
+    KG --> UC_SUPPLIERS
+    KG --> UC_WAREHOUSES
+    KG --> UC_STOCKIN
+    KG --> UC_STOCKOUT
+    KG --> UC_REPORT_EXPORT
+
+    SG --> UC_PRODUCTS
+    SG --> UC_STOCK_TX
+    SG --> UC_CARD_STOCK
+    SG --> UC_DISTRIBUTION
+    SG --> UC_NEED
+    SG --> UC_IMPORT
+
+    SUB --> UC_STOCKIN
+    SUB --> UC_STOCKOUT
+    SUB --> UC_NEED
+    SUB --> UC_SHIPMENT_UPDATE
+
+    D --> UC_SHIPMENT_UPDATE
+    D --> UC_PROOF
+    D --> UC_RECEIVE
+    D --> UC_NEED
+
+    V --> UC_LOGIN
+    V --> UC_PROFILE
+    V --> UC_LOGOUT
+
+    UC_LOGIN -.->|include| UC_PROFILE
+    UC_LOGIN -.->|include| AUTH
+    UC_STOCK_TX -.->|include| UC_AUDIT_WRITE
+    UC_STOCKIN -.->|include| UC_STOCK_TX
+    UC_STOCKOUT -.->|include| UC_STOCK_TX
+    UC_CONFIRM_TX -.->|extend| UC_STOCK_TX
+    UC_NEED -.->|include| UC_CARD_STOCK
+    UC_IMPORT -.->|include| UC_AUDIT_WRITE
+    UC_AUDIT_DELETE -.->|include| API
+    UC_AUDIT_WRITE -.->|uid| AUTH
+    UC_BACKUP -.->|baca Firestore| API
